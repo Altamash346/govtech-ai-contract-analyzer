@@ -92,9 +92,11 @@ def register(req: RegisterRequest):
 async def upload_document(
     file: UploadFile = File(...),
     doc_type: str = Form("contract"),
-    user_id: Optional[int] = Form(1),
+    user_id: int = Form(...),
     ai_mode: str = Form("fast")
 ):
+    if not user_id:
+        raise HTTPException(status_code=401, detail="Authentication required. Please log in to upload documents.")
     suffix = os.path.splitext(file.filename)[1] or ".pdf"
     with tempfile.NamedTemporaryFile(delete=False, suffix=suffix) as tmp:
         contents = await file.read()
@@ -297,17 +299,11 @@ def recommend_schemes(req: SchemeRecommendationRequest):
 
 # ─── Saved Documents History ──────────────────────────────────────────────────
 @app.get("/api/documents")
-def get_user_documents(user_id: int = None):
+def get_user_documents(user_id: int):
+    if not user_id:
+        raise HTTPException(status_code=401, detail="Authentication required. Please log in.")
     session = db.SessionLocal()
-    query = session.query(db.Document)
-    if user_id:
-        user_docs = query.filter_by(user_id=user_id).order_by(db.Document.uploaded_at.desc()).all()
-        if user_docs:
-            docs = user_docs
-        else:
-            docs = session.query(db.Document).order_by(db.Document.uploaded_at.desc()).all()
-    else:
-        docs = query.order_by(db.Document.uploaded_at.desc()).all()
+    docs = session.query(db.Document).filter_by(user_id=user_id).order_by(db.Document.uploaded_at.desc()).all()
 
     results = []
     for d in docs:

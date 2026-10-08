@@ -103,17 +103,28 @@ export default function App() {
     localStorage.setItem('gov_aimode', aiMode);
   }, [aiMode]);
 
+  const fetchUserDocuments = (userId) => {
+    if (!userId) {
+      setDocuments([]);
+      return;
+    }
+    fetch(`${API_BASE}/documents?user_id=${userId}`)
+      .then(r => r.json())
+      .then(d => setDocuments(d.documents || []))
+      .catch(() => setDocuments([]));
+  };
+
   useEffect(() => {
     fetch(`${API_BASE}/schemes`)
       .then(r => r.json())
       .then(d => setSchemes(d.schemes || []))
       .catch(() => {});
 
-    if (user) {
-      fetch(`${API_BASE}/documents`)
-        .then(r => r.json())
-        .then(d => setDocuments(d.documents || []))
-        .catch(() => {});
+    if (user?.id) {
+      fetchUserDocuments(user.id);
+    } else {
+      setDocuments([]);
+      setCurrentDoc(null);
     }
   }, [user]);
 
@@ -139,6 +150,7 @@ export default function App() {
         setUser(data.user);
         localStorage.setItem('gov_user', JSON.stringify(data.user));
         setShowAuthModal(false);
+        fetchUserDocuments(data.user.id);
       } else {
         setAuthMode('login');
         setAuthError('Account registered successfully! Please log in.');
@@ -151,12 +163,22 @@ export default function App() {
   const handleLogout = () => {
     setUser(null);
     localStorage.removeItem('gov_user');
+    setCurrentDoc(null);
+    setDocuments([]);
+    setMessages([]);
+    setDebateResult(null);
+    setTranslatedText('');
+    setRecommendationsData(null);
   };
 
   // Upload handler
   const handleUpload = async (e) => {
     e.preventDefault();
     if (!uploadFile) return;
+    if (!user?.id) {
+      alert('Authentication required. Please log in before uploading documents.');
+      return;
+    }
 
     setIsUploading(true);
     setUploadStage('Uploading document to AI Analyzer pipeline...');
@@ -165,7 +187,7 @@ export default function App() {
     formData.append('file', uploadFile);
     formData.append('doc_type', uploadDocType);
     formData.append('ai_mode', aiMode);
-    formData.append('user_id', user ? user.id : 1);
+    formData.append('user_id', user.id);
 
     try {
       setTimeout(() => setUploadStage('Extracting text & identifying legal clauses...'), 1200);
@@ -182,9 +204,7 @@ export default function App() {
       setMessages([]);
       scrollTo(uploadRef);
 
-      fetch(`${API_BASE}/documents`)
-        .then(r => r.json())
-        .then(d => setDocuments(d.documents || []));
+      fetchUserDocuments(user.id);
     } catch (err) {
       alert(`Analysis error: ${err.message}`);
     } finally {
@@ -211,7 +231,7 @@ export default function App() {
           question: userText,
           index_dir: currentDoc.index_dir,
           doc_id: currentDoc.id,
-          user_id: user ? user.id : 1,
+          user_id: user ? user.id : null,
           ai_mode: aiMode
         })
       });
@@ -387,6 +407,201 @@ export default function App() {
   };
 
   const isDark = theme === 'dark';
+
+  // ─── AUTHENTICATION GATEWAY (Access blocked before login) ───
+  if (!user) {
+    return (
+      <div className={`min-h-screen font-sans flex flex-col transition-colors duration-200 ${isDark ? 'bg-[#0b1329] text-[#f8fafc]' : 'bg-[#f8fafc] text-[#0f2b48]'}`}>
+        {/* National Identity Tricolor Bar */}
+        <div className="h-1.5 w-full flex">
+          <div className="h-full w-1/3 bg-[#FF9933]"></div>
+          <div className="h-full w-1/3 bg-white"></div>
+          <div className="h-full w-1/3 bg-[#138808]"></div>
+        </div>
+
+        {/* Top Utility Header */}
+        <header className={`border-b py-3 px-4 sm:px-8 flex items-center justify-between transition-colors ${isDark ? 'bg-[#0f172a] border-[#1e293b]' : 'bg-white border-[#e2e8f0]'}`}>
+          <div className="flex items-center space-x-3">
+            <div className="w-10 h-10 rounded bg-[#0f3d68] text-white flex items-center justify-center font-bold shadow-md">
+              <Scale className="w-5 h-5 text-[#ea580c]" />
+            </div>
+            <div>
+              <div className="text-[10px] font-bold tracking-widest uppercase text-[#ea580c]">
+                भारत सरकार · GOVERNMENT OF INDIA
+              </div>
+              <div className="text-lg font-black font-serif-gov text-[#0f3d68] dark:text-[#38bdf8]">
+                NyayaMitra AI
+              </div>
+            </div>
+          </div>
+          <button
+            onClick={() => setTheme(isDark ? 'bright' : 'dark')}
+            className={`p-1.5 rounded border transition-all cursor-pointer ${isDark ? 'bg-[#1e293b] border-[#334155] text-amber-400' : 'bg-white border-[#cbd5e1] text-gray-700'}`}
+            title="Toggle Bright/Dark mode"
+          >
+            {isDark ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
+          </button>
+        </header>
+
+        {/* Authentication Gateway Main Container */}
+        <main className="flex-1 flex items-center justify-center p-4 sm:p-6 lg:p-8">
+          <div className="max-w-md w-full">
+            {/* National Seal Badge */}
+            <div className="text-center mb-6">
+              <div className="inline-block px-3.5 py-1 rounded-full text-[11px] font-bold uppercase tracking-widest bg-amber-50 text-[#c2410c] border border-amber-200 dark:bg-amber-950/60 dark:text-amber-300 dark:border-amber-900 mb-3 shadow-xs">
+                OFFICIAL GOVERNMENT GATEWAY · SECURE AUTHENTICATION
+              </div>
+              <h1 className="text-2xl sm:text-3xl font-black font-serif-gov text-[#0f3d68] dark:text-[#38bdf8]">
+                NyayaMitra AI
+              </h1>
+              <p className="text-xs text-gray-500 dark:text-gray-400 mt-1 max-w-sm mx-auto">
+                Sign in to access your private legal contract audit workspace, automated visual PDF redlines, and citizen welfare scheme recommendations.
+              </p>
+            </div>
+
+            {/* Auth Card */}
+            <div className={`p-6 sm:p-8 rounded-2xl shadow-xl border-t-4 border-t-[#0f3d68] border transition-colors ${isDark ? 'bg-[#1e293b] border-[#334155]' : 'bg-white border-[#e2e8f0]'}`}>
+              {/* Tab Selector */}
+              <div className={`p-1 rounded-lg border flex items-center mb-6 ${isDark ? 'bg-slate-800 border-slate-700' : 'bg-gray-100 border-gray-200'}`}>
+                <button
+                  type="button"
+                  onClick={() => { setAuthMode('login'); setAuthError(''); }}
+                  className={`flex-1 py-2 text-xs font-bold uppercase tracking-wider rounded transition-all cursor-pointer ${
+                    authMode === 'login'
+                      ? 'bg-[#0f3d68] text-white shadow-xs'
+                      : 'text-gray-500 hover:text-gray-800 dark:text-gray-400 dark:hover:text-white'
+                  }`}
+                >
+                  Sign In
+                </button>
+                <button
+                  type="button"
+                  onClick={() => { setAuthMode('register'); setAuthError(''); }}
+                  className={`flex-1 py-2 text-xs font-bold uppercase tracking-wider rounded transition-all cursor-pointer ${
+                    authMode === 'register'
+                      ? 'bg-[#0f3d68] text-white shadow-xs'
+                      : 'text-gray-500 hover:text-gray-800 dark:text-gray-400 dark:hover:text-white'
+                  }`}
+                >
+                  Create Account
+                </button>
+              </div>
+
+              {authError && (
+                <div className={`mb-5 p-3 rounded text-xs font-semibold border ${
+                  authError.includes('successfully')
+                    ? 'bg-emerald-50 text-emerald-800 border-emerald-200 dark:bg-emerald-950/50 dark:text-emerald-300 dark:border-emerald-800'
+                    : 'bg-red-50 text-red-800 border-red-200 dark:bg-red-950/50 dark:text-red-300 dark:border-red-800'
+                }`}>
+                  {authError}
+                </div>
+              )}
+
+              <form onSubmit={handleAuth} className="space-y-4">
+                {authMode === 'register' && (
+                  <div>
+                    <label className="block text-xs font-bold uppercase mb-1.5 text-gray-700 dark:text-gray-200">
+                      Full Legal Name
+                    </label>
+                    <input
+                      type="text"
+                      required
+                      value={authName}
+                      onChange={e => setAuthName(e.target.value)}
+                      placeholder="e.g. Aarav Sharma"
+                      className="w-full px-3.5 py-2.5 text-xs rounded border border-gray-300 dark:border-gray-600 bg-white dark:bg-slate-800 text-gray-900 dark:text-gray-100 placeholder-gray-400 focus:outline-hidden focus:ring-2 focus:ring-[#0f3d68]"
+                    />
+                  </div>
+                )}
+
+                <div>
+                  <label className="block text-xs font-bold uppercase mb-1.5 text-gray-700 dark:text-gray-200">
+                    Official Email Address
+                  </label>
+                  <input
+                    type="email"
+                    required
+                    value={authEmail}
+                    onChange={e => setAuthEmail(e.target.value)}
+                    placeholder="e.g. officer@gov.in or user@gmail.com"
+                    className="w-full px-3.5 py-2.5 text-xs rounded border border-gray-300 dark:border-gray-600 bg-white dark:bg-slate-800 text-gray-900 dark:text-gray-100 placeholder-gray-400 focus:outline-hidden focus:ring-2 focus:ring-[#0f3d68]"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold uppercase mb-1.5 text-gray-700 dark:text-gray-200">
+                    Password
+                  </label>
+                  <input
+                    type="password"
+                    required
+                    value={authPassword}
+                    onChange={e => setAuthPassword(e.target.value)}
+                    placeholder="••••••••"
+                    className="w-full px-3.5 py-2.5 text-xs rounded border border-gray-300 dark:border-gray-600 bg-white dark:bg-slate-800 text-gray-900 dark:text-gray-100 placeholder-gray-400 focus:outline-hidden focus:ring-2 focus:ring-[#0f3d68]"
+                  />
+                </div>
+
+                <button
+                  type="submit"
+                  className="w-full py-3 bg-[#ea580c] hover:bg-[#c2410c] text-white font-bold text-xs uppercase tracking-wider rounded shadow-md transition-all cursor-pointer flex items-center justify-center gap-2 mt-2"
+                >
+                  <Shield className="w-4 h-4" />
+                  {authMode === 'login' ? 'SIGN IN TO WORKSPACE' : 'CREATE OFFICIAL ACCOUNT'}
+                </button>
+              </form>
+
+              {/* Quick Demo Switcher / Login Shortcut for testing */}
+              {authMode === 'login' && (
+                <div className="mt-6 pt-5 border-t border-gray-200 dark:border-gray-700">
+                  <div className="text-[11px] font-bold text-gray-500 uppercase tracking-wider mb-2">
+                    Quick Test Sign-In (Select User Account):
+                  </div>
+                  <div className="grid grid-cols-3 gap-2">
+                    {[
+                      { name: 'meet', email: 'meet@gmail.com' },
+                      { name: 'bbb', email: 'bbb@gmail.com' },
+                      { name: 'aaa', email: 'aaa@gmail.com' }
+                    ].map(u => (
+                      <button
+                        key={u.email}
+                        type="button"
+                        onClick={() => {
+                          setAuthEmail(u.email);
+                          setAuthPassword('123');
+                        }}
+                        className={`p-2 rounded border text-center transition-all cursor-pointer text-[11px] font-semibold ${
+                          authEmail === u.email
+                            ? 'bg-[#0f3d68] text-white border-[#0f3d68]'
+                            : 'bg-gray-50 dark:bg-slate-800 text-gray-700 dark:text-gray-300 border-gray-300 dark:border-gray-600 hover:border-gray-400'
+                        }`}
+                      >
+                        <User className="w-3.5 h-3.5 mx-auto mb-0.5 opacity-70" />
+                        {u.name}
+                      </button>
+                    ))}
+                  </div>
+                  <div className="text-[10px] text-gray-400 mt-2 text-center">
+                    Each user account has its own isolated audit history.
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* Bottom Security Highlights */}
+            <div className="mt-6 text-center space-y-1">
+              <div className="flex items-center justify-center gap-2 text-[11px] font-semibold text-gray-500 dark:text-gray-400">
+                <Lock className="w-3.5 h-3.5 text-[#138808]" /> 100% In-Country Sovereign Data Security & DPDP Compliance
+              </div>
+              <p className="text-[10px] text-gray-400">
+                Documents and audit history are strictly segregated and only accessible by the authenticated user.
+              </p>
+            </div>
+          </div>
+        </main>
+      </div>
+    );
+  }
 
   return (
     <div className={`min-h-screen font-sans transition-colors duration-200 ${isDark ? 'bg-[#0b1329] text-[#f8fafc]' : 'bg-[#f8fafc] text-[#0f2b48]'}`}>
@@ -1657,14 +1872,14 @@ export default function App() {
               Inspection & Audit Records
             </h2>
             <p className="text-xs text-gray-500 mt-1">
-              Load past analyzed documents with 1 click to review summaries, risks, and Q&A history.
+              Private audit history for <strong>{user?.name}</strong> ({user?.email}). Only contracts uploaded by your account are displayed here.
             </p>
           </div>
 
           <div className="max-w-3xl mx-auto space-y-3">
             {documents.length === 0 ? (
               <div className="p-8 rounded-lg border text-center text-gray-400 text-xs bg-white dark:bg-[#1e293b]">
-                No historical inspection documents yet. Upload a document in Module 1 to begin.
+                No historical inspection documents for your account yet. Upload a document in Module 1 to begin.
               </div>
             ) : (
               documents.map(doc => (
@@ -1675,7 +1890,7 @@ export default function App() {
                   </div>
                   <div className="flex items-center gap-2">
                     <a
-                      href={`http://localhost:8000/api/report/download/${doc.id}`}
+                      href={`${API_BASE}/report/download/${doc.id}`}
                       target="_blank"
                       rel="noreferrer"
                       download
