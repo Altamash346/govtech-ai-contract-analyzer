@@ -1,0 +1,14 @@
+streamlit
+langchain
+langchain-ollama
+langchain-community
+pymupdf
+pytesseract
+faiss-cpu
+sentence-transformers
+reportlab
+pyttsx3
+python-dotenv
+psycopg2-binary
+sqlalchemy
+pydantic
