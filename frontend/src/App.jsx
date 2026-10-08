@@ -451,10 +451,10 @@ export default function App() {
             </div>
             <div>
               <div className="text-[11px] font-bold tracking-widest uppercase text-[#ea580c]">
-                AI LEGAL & POLICY ANALYZER
+                LEGAL & WELFARE INTELLIGENCE
               </div>
               <div className="text-xl font-black font-serif-gov tracking-tight text-[#0f3d68] dark:text-[#38bdf8]">
-                AI Analyzer Platform
+                NyayaMitra AI
               </div>
             </div>
           </div>
@@ -533,13 +533,13 @@ export default function App() {
 
               {/* Headline */}
               <h1 className="text-4xl sm:text-5xl lg:text-6xl font-black font-serif-gov leading-[1.15] tracking-tight mb-6">
-                <span className="text-[#0f3d68] dark:text-[#38bdf8] block">AI Contract & Policy</span>
-                <span className="text-[#ea580c] block">Analyzer Platform</span>
+                <span className="text-[#0f3d68] dark:text-[#38bdf8] block">NyayaMitra AI</span>
+                <span className="text-[#ea580c] block text-2xl sm:text-3xl lg:text-4xl">Legal Intelligence & Citizen Welfare</span>
               </h1>
 
               {/* Description */}
               <p className="text-base sm:text-lg text-gray-600 dark:text-gray-300 leading-relaxed mb-8 max-w-xl font-normal">
-                An advanced AI-powered analysis system for automated verification of legal agreements, contracts, policies, and citizen welfare schemes across India. Ensuring fair terms, statutory compliance, and risk remediation through modern AI.
+                NyayaMitra AI is an advanced sovereign platform for automated verification of legal agreements, contracts, and citizen welfare schemes across India. Ensuring fair terms, statutory compliance, and social entitlement discovery through modern AI.
               </p>
 
               {/* Action Buttons */}
@@ -1705,7 +1705,7 @@ export default function App() {
             <div>
               <div className="flex items-center space-x-2 text-white font-bold font-serif-gov text-sm mb-3">
                 <Scale className="w-5 h-5 text-[#ea580c]" />
-                <span>AI Analyzer Platform</span>
+                <span>NyayaMitra AI</span>
               </div>
               <p className="text-gray-400 leading-relaxed">
                 Empowering citizens, legal professionals, and regulatory authorities with artificial intelligence compliance verification.
@@ -1738,7 +1738,7 @@ export default function App() {
 
           <div className="pt-8 border-t border-gray-700/60 flex flex-col sm:flex-row items-center justify-between text-xs text-gray-400 gap-4">
             <div>
-              © 2026 AI Contract & Policy Analyzer Platform · Government of India
+              © 2026 NyayaMitra AI · Sovereign Legal & Welfare Intelligence Platform
             </div>
             <div className="flex space-x-4">
               <span>Privacy Policy</span>

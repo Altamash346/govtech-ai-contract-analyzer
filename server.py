@@ -28,7 +28,7 @@ import multilingual
 # Initialize DB on startup
 db.init_db()
 
-app = FastAPI(title="Government AI Legal & Compliance Platform API", version="2.0")
+app = FastAPI(title="NyayaMitra AI — Legal & Welfare Intelligence API", version="2.0")
 
 # Enable CORS for React frontend (Vite runs on localhost:5173)
 app.add_middleware(

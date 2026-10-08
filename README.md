@@ -1,4 +1,4 @@
-# ⚖️ GovTech AI: Legal Contract Intelligence & Citizen Welfare Platform
+# ⚖️ NyayaMitra AI: Legal Contract Intelligence & Citizen Welfare Platform
 
 An advanced, sovereign GovTech AI platform for automated verification of legal agreements, government tenders, contracts, and citizen welfare schemes across India.
 
