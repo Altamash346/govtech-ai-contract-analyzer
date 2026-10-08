@@ -106,6 +106,7 @@ export default function App() {
   const [uploadDocType, setUploadDocType] = useState('contract');
   const [isUploading, setIsUploading] = useState(false);
   const [uploadStage, setUploadStage] = useState('');
+  const [isReanalyzing, setIsReanalyzing] = useState(false);
 
   // Q&A Chat State
   const [messages, setMessages] = useState([]);
@@ -242,6 +243,27 @@ export default function App() {
     setDebateResult(null);
     setTranslatedText('');
     setRecommendationsData(null);
+  };
+
+  const handleReanalyze = async (docId) => {
+    if (!docId) return;
+    setIsReanalyzing(true);
+    try {
+      const res = await fetch(`${API_BASE}/documents/${docId}/reanalyze`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ai_mode: aiMode })
+      });
+      const data = await res.json();
+      if (data.success && data.document) {
+        setCurrentDoc(data.document);
+        setDocuments(prev => prev.map(d => d.id === docId ? data.document : d));
+      }
+    } catch (err) {
+      console.error("Re-analyze error:", err);
+    } finally {
+      setIsReanalyzing(false);
+    }
   };
 
   // Upload handler
@@ -1018,7 +1040,19 @@ export default function App() {
                       <p className="text-xs text-emerald-700 dark:text-emerald-400">{currentDoc.page_count} Pages Indexed · Analysis Complete</p>
                     </div>
                   </div>
-                  <div className="flex items-center gap-2.5">
+                  <div className="flex items-center gap-2.5 flex-wrap">
+                    <button
+                      type="button"
+                      disabled={isReanalyzing}
+                      onClick={() => handleReanalyze(currentDoc.id)}
+                      className={`px-3.5 py-2 rounded text-xs font-bold uppercase tracking-wider border transition-all flex items-center gap-1.5 cursor-pointer shadow-xs ${
+                        isDark ? 'bg-slate-800 border-slate-700 text-slate-200 hover:bg-slate-700' : 'bg-white border-gray-300 text-gray-700 hover:bg-gray-50'
+                      }`}
+                      title={`Re-audit this contract with ${aiMode === 'fast' ? 'Faster Cloud AI' : 'Local Secure AI'}`}
+                    >
+                      <Activity className={`w-3.5 h-3.5 text-[#ea580c] ${isReanalyzing ? 'animate-spin' : ''}`} />
+                      {isReanalyzing ? 'Re-Auditing...' : `Re-Audit (${aiMode === 'fast' ? '⚡ Fast' : '🔒 Secure'})`}
+                    </button>
                     <a
                       href={`http://localhost:8000/api/report/download/${currentDoc.id}`}
                       target="_blank"
@@ -1049,8 +1083,12 @@ export default function App() {
                     <div className="text-xs text-gray-500 uppercase font-semibold mt-1">Clauses Classified</div>
                   </div>
                   <div className={`p-4 rounded border text-center ${isDark ? 'bg-[#1e293b] border-[#334155]' : 'bg-white border-[#e2e8f0]'}`}>
-                    <div className="text-2xl font-black text-emerald-600">{Object.keys(currentDoc.entities || {}).length}</div>
-                    <div className="text-xs text-gray-500 uppercase font-semibold mt-1">Entity Categories</div>
+                    <div className="text-2xl font-black text-emerald-600">
+                      {Object.values(currentDoc.entities || {}).flat().length > 0 
+                        ? Object.values(currentDoc.entities || {}).flat().length 
+                        : Object.keys(currentDoc.entities || {}).length}
+                    </div>
+                    <div className="text-xs text-gray-500 uppercase font-semibold mt-1">Extracted Entities</div>
                   </div>
                 </div>
 
@@ -1077,20 +1115,80 @@ export default function App() {
                     Detected Risks & Remediation ({(currentDoc.risks || []).length})
                   </h3>
                   <div className="space-y-3">
-                    {(currentDoc.risks || []).map((risk, i) => (
-                      <div key={i} className={`p-4 rounded border-l-4 text-xs ${
-                        risk.risk_level === 'High' 
-                          ? 'bg-red-50 border-red-500 text-red-950 dark:bg-red-950/30 dark:text-red-200' 
-                          : 'bg-amber-50 border-amber-500 text-amber-950 dark:bg-amber-950/30 dark:text-amber-200'
-                      }`}>
-                        <div className="font-bold uppercase text-[11px] mb-1">[{risk.risk_level}] {risk.clause_type}</div>
-                        <blockquote className="italic mb-2 border-l-2 pl-2 border-gray-400">"{risk.risky_excerpt}"</blockquote>
-                        <div className="mb-1"><strong>Why Risky:</strong> {risk.why_risky}</div>
-                        <div><strong>Remediation:</strong> <span className="font-semibold text-emerald-700 dark:text-emerald-400">{risk.suggested_replacement}</span></div>
-                      </div>
-                    ))}
+                    {(currentDoc.risks || []).length === 0 ? (
+                      <p className="text-xs text-gray-500 italic">No significant legal liabilities or one-sided terms detected.</p>
+                    ) : (
+                      (currentDoc.risks || []).map((risk, i) => (
+                        <div key={i} className={`p-4 rounded border-l-4 text-xs ${
+                          risk.risk_level === 'High' 
+                            ? 'bg-red-50 border-red-500 text-red-950 dark:bg-red-950/30 dark:text-red-200' 
+                            : 'bg-amber-50 border-amber-500 text-amber-950 dark:bg-amber-950/30 dark:text-amber-200'
+                        }`}>
+                          <div className="font-bold uppercase text-[11px] mb-1">[{risk.risk_level}] {risk.clause_type}</div>
+                          <blockquote className="italic mb-2 border-l-2 pl-2 border-gray-400">"{risk.risky_excerpt}"</blockquote>
+                          <div className="mb-1"><strong>Why Risky:</strong> {risk.why_risky}</div>
+                          <div><strong>Remediation:</strong> <span className="font-semibold text-emerald-700 dark:text-emerald-400">{risk.suggested_replacement}</span></div>
+                        </div>
+                      ))
+                    )}
                   </div>
                 </div>
+
+                {/* Classified Legal Clauses */}
+                {(currentDoc.clauses || []).length > 0 && (
+                  <div className={`p-6 rounded-lg border shadow-sm ${isDark ? 'bg-[#1e293b] border-[#334155]' : 'bg-white border-[#e2e8f0]'}`}>
+                    <h3 className="text-base font-bold font-serif-gov text-[#0f3d68] dark:text-[#38bdf8] mb-4 flex items-center gap-2">
+                      <FileText className="w-4 h-4 text-[#ea580c]" />
+                      Classified Legal Clauses ({(currentDoc.clauses || []).length})
+                    </h3>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5">
+                      {(currentDoc.clauses || []).map((clause, idx) => (
+                        <div key={idx} className={`p-4 rounded border text-xs space-y-1.5 ${isDark ? 'bg-slate-800/70 border-slate-700' : 'bg-gray-50/80 border-gray-200'}`}>
+                          <div className="font-bold text-[#0f3d68] dark:text-[#38bdf8] uppercase text-[11px] flex items-center gap-1.5">
+                            <span className="w-1.5 h-1.5 rounded-full bg-[#ea580c]"></span>
+                            {clause.clause_type}
+                          </div>
+                          <p className="text-gray-700 dark:text-gray-300 text-xs font-medium">{clause.summary}</p>
+                          {clause.verbatim_excerpt && (
+                            <div className="p-2 rounded bg-white dark:bg-slate-900/60 border border-gray-200 dark:border-gray-800 italic text-[11px] text-gray-500 dark:text-gray-400">
+                              "{clause.verbatim_excerpt}"
+                            </div>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* Key Entities & Contract Metadata */}
+                {currentDoc.entities && Object.keys(currentDoc.entities).some(k => (currentDoc.entities[k] || []).length > 0) && (
+                  <div className={`p-6 rounded-lg border shadow-sm ${isDark ? 'bg-[#1e293b] border-[#334155]' : 'bg-white border-[#e2e8f0]'}`}>
+                    <h3 className="text-base font-bold font-serif-gov text-[#0f3d68] dark:text-[#38bdf8] mb-4 flex items-center gap-2">
+                      <Layers className="w-4 h-4 text-[#ea580c]" />
+                      Extracted Entities & Metadata
+                    </h3>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 text-xs">
+                      {Object.entries(currentDoc.entities).map(([category, items]) => {
+                        if (!items || items.length === 0) return null;
+                        return (
+                          <div key={category} className={`p-3.5 rounded border ${isDark ? 'bg-slate-800/50 border-slate-700' : 'bg-gray-50/70 border-gray-200'}`}>
+                            <div className="font-bold uppercase tracking-wider text-[10px] text-[#ea580c] mb-2">
+                              {category.replace('_', ' ')}
+                            </div>
+                            <ul className="space-y-1">
+                              {items.map((item, i) => (
+                                <li key={i} className="text-gray-800 dark:text-gray-200 font-medium flex items-start gap-1.5">
+                                  <span className="text-gray-400">•</span>
+                                  <span>{typeof item === 'string' ? item : item.name || JSON.stringify(item)}</span>
+                                </li>
+                              ))}
+                            </ul>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
               </div>
             )}
           </div>

@@ -334,6 +334,56 @@ def get_user_documents(user_id: int):
     session.close()
     return {"documents": results}
 
+# ─── Re-analyze Document with Chosen AI Engine ───────────────────────────────
+class ReanalyzeRequest(BaseModel):
+    ai_mode: str = "fast"
+
+@app.post("/api/documents/{doc_id}/reanalyze")
+def reanalyze_document(doc_id: int, req: ReanalyzeRequest):
+    session = db.SessionLocal()
+    doc = session.query(db.Document).filter_by(id=doc_id).first()
+    if not doc:
+        session.close()
+        raise HTTPException(status_code=404, detail="Document not found")
+
+    full_text = ""
+    if doc.faiss_index_path:
+        orig_pdf = os.path.join(doc.faiss_index_path, "original.pdf")
+        if os.path.exists(orig_pdf):
+            pages = ingestion.extract_text_from_pdf(orig_pdf)
+            full_text = "\n".join([ingestion.preprocess_text(p["text"]) for p in pages])
+        else:
+            chunks_path = os.path.join(doc.faiss_index_path, "chunks.json")
+            if os.path.exists(chunks_path):
+                with open(chunks_path, "r", encoding="utf-8") as f:
+                    chunks_data = json.load(f)
+                    full_text = "\n".join([c.get("text", "") for c in chunks_data])
+
+    if not full_text:
+        full_text = doc.summary or "Standard Contract Agreement"
+
+    audit = analysis.analyze_document_complete(full_text, mode=req.ai_mode)
+    doc.summary = audit["summary"]
+    doc.clauses = json.dumps(audit["clauses"])
+    doc.risks = json.dumps(audit["risks"])
+    doc.entities = json.dumps(audit["entities"])
+    session.commit()
+
+    updated_doc = {
+        "id": doc.id,
+        "filename": doc.filename,
+        "doc_type": doc.doc_type,
+        "page_count": doc.page_count,
+        "summary": audit["summary"],
+        "risks": audit["risks"],
+        "clauses": audit["clauses"],
+        "entities": audit["entities"],
+        "index_dir": doc.faiss_index_path,
+        "full_text": full_text
+    }
+    session.close()
+    return {"success": True, "document": updated_doc}
+
 # ─── Download Official AI Audit Report (PDF) ──────────────────────────────────
 @app.get("/api/report/download/{doc_id}")
 def download_audit_report(doc_id: int):

@@ -30,7 +30,11 @@ def _call_gemini(prompt: str) -> str:
         import google.generativeai as genai
         genai.configure(api_key=config.GEMINI_API_KEY)
         model = genai.GenerativeModel(config.GEMINI_MODEL)
-        response = model.generate_content(prompt, request_options={"timeout": 45})
+        response = model.generate_content(
+            prompt,
+            generation_config={"temperature": 0.1},
+            request_options={"timeout": 45}
+        )
         return response.text.strip()
     except Exception as e:
         # Fall back to local secure engine without exposing internal provider details
@@ -41,46 +45,105 @@ def _call_gemini(prompt: str) -> str:
 
 
 def _call_ollama(prompt: str) -> str:
-    """Send prompt to local secure engine."""
+    """Send prompt to local secure engine with deterministic temperature and ample token window."""
     try:
         from langchain_ollama import OllamaLLM
-        llm = OllamaLLM(model=config.OLLAMA_MODEL, base_url=config.OLLAMA_BASE_URL)
+        llm = OllamaLLM(
+            model=config.OLLAMA_MODEL,
+            base_url=config.OLLAMA_BASE_URL,
+            temperature=0.1,
+            num_predict=4096
+        )
         return llm.invoke(prompt)
     except Exception as e:
         return f"Error contacting local processing engine: {str(e)}"
 
 
 def _safe_parse_json(text: str) -> list | dict:
-    """Attempt to parse JSON from LLM output, with fallback."""
+    """
+    Robust JSON parser for LLM outputs.
+    Automatically repairs:
+    - Markdown code fences (```json ... ```)
+    - Trailing commas before closing braces/brackets
+    - Missing closing braces or brackets (unclosed root objects from token truncation)
+    - Unescaped control characters (strict=False)
+    """
     if not text:
         return {}
     clean = text.strip()
-    if clean.startswith("```json"):
-        clean = clean[7:]
-    elif clean.startswith("```"):
-        clean = clean[3:]
-    if clean.endswith("```"):
-        clean = clean[:-3]
+    if '```json' in clean:
+        clean = clean.split('```json', 1)[1]
+    elif '```' in clean:
+        clean = clean.split('```', 1)[1]
+    if '```' in clean:
+        clean = clean.split('```', 1)[0]
     clean = clean.strip()
 
-    try:
-        start = min(
-            (clean.find('[') if '[' in clean else len(clean)),
-            (clean.find('{') if '{' in clean else len(clean))
-        )
-        end = max(clean.rfind(']'), clean.rfind('}'))
-        if start < len(clean) and end != -1:
-            return json.loads(clean[start:end+1])
-        return json.loads(clean)
-    except Exception:
-        try:
-            sb = text.find('{')
-            eb = text.rfind('}')
-            if sb != -1 and eb != -1:
-                return json.loads(text[sb:eb+1])
-        except Exception:
-            pass
+    sb = clean.find('{')
+    ab = clean.find('[')
+    if sb == -1 and ab == -1:
         return {}
+    
+    start_char = '{' if (sb != -1 and (ab == -1 or sb < ab)) else '['
+    start_idx = clean.find(start_char)
+    snippet = clean[start_idx:]
+
+    # 1. Direct parse attempt
+    try:
+        return json.loads(snippet, strict=False)
+    except Exception:
+        pass
+
+    # 2. Strip trailing commas
+    cleaned_commas = re.sub(r',\s*([\]}])', r'\1', snippet)
+    try:
+        return json.loads(cleaned_commas, strict=False)
+    except Exception:
+        pass
+
+    # 3. Stack-based unclosed bracket/brace auto-closer
+    stack = []
+    in_string = False
+    escape = False
+    for ch in cleaned_commas:
+        if escape:
+            escape = False
+            continue
+        if ch == '\\':
+            escape = True
+            continue
+        if ch == '"':
+            in_string = not in_string
+            continue
+        if not in_string:
+            if ch == '{':
+                stack.append('}')
+            elif ch == '[':
+                stack.append(']')
+            elif ch in ('}', ']'):
+                if stack and stack[-1] == ch:
+                    stack.pop()
+
+    repaired = cleaned_commas
+    if in_string:
+        repaired += '"'
+    while stack:
+        repaired += stack.pop()
+
+    try:
+        return json.loads(repaired, strict=False)
+    except Exception:
+        pass
+
+    # 4. Fallback: try substring from first { to last }
+    try:
+        eb = snippet.rfind('}')
+        if eb != -1:
+            return json.loads(snippet[:eb+1], strict=False)
+    except Exception:
+        pass
+
+    return {}
 
 
 # ─── REQ-3.1: Document Summary ────────────────────────────────────────────────
@@ -433,9 +496,9 @@ def analyze_document_complete(full_text: str, mode: str = None) -> dict:
     """
     Perform complete legal document analysis in a SINGLE unified AI request.
     Extracts summary, classified clauses, risk remediation, and key entities all at once.
-    Reduces API calls from 4 to 1, preventing rate limits and slashing processing time by ~75%.
+    Normalizes outputs across both Gemini and Ollama for unified, consistent presentation.
     """
-    truncated = full_text[:5000] + ("..." if len(full_text) > 5000 else "")
+    truncated = full_text[:7000] + ("..." if len(full_text) > 7000 else "")
     prompt = f"""You are an elite legal contract and regulatory compliance analyst.
 Analyze the following document and return a comprehensive legal audit as a SINGLE valid JSON object.
 
@@ -453,13 +516,13 @@ Your JSON output MUST have exactly these 4 top-level keys:
    - "why_risky": plain English explanation of the danger (max 40 words)
    - "suggested_replacement": a safer, balanced legal wording replacement
 4. "entities": An object containing extracted key metadata:
-   - "parties": list of entity/person names
-   - "dates": list of dates mentioned
-   - "monetary_values": list of amounts or financial terms
-   - "locations": list of jurisdictions or places
-   - "key_terms": list of important defined terms
+   - "parties": list of entity or person names as plain strings (e.g. ["Municipal Corporation of Greater Mumbai", "Contractor"])
+   - "dates": list of dates mentioned as strings
+   - "monetary_values": list of amounts or financial terms as strings
+   - "locations": list of jurisdictions or places as strings
+   - "key_terms": list of important defined terms as strings
 
-Return ONLY the raw JSON object. Do not include markdown code fences or conversational text.
+Return ONLY the raw JSON object. Ensure all brackets are properly closed. Do not include markdown code fences or conversational text.
 
 DOCUMENT:
 {truncated}
@@ -476,17 +539,53 @@ JSON:"""
     if not summary or not isinstance(summary, str) or len(summary.strip()) < 10:
         summary = "Document analyzed successfully. Review the classified clauses, risk remediation, and extracted entities below."
 
-    clauses = parsed.get("clauses")
-    if not isinstance(clauses, list):
-        clauses = []
+    raw_clauses = parsed.get("clauses")
+    if not isinstance(raw_clauses, list):
+        raw_clauses = []
+    clauses = []
+    for c in raw_clauses:
+        if isinstance(c, dict) and c.get("clause_type"):
+            clauses.append({
+                "clause_type": str(c.get("clause_type", "Standard Clause")).strip(),
+                "summary": str(c.get("summary", "")).strip(),
+                "verbatim_excerpt": str(c.get("verbatim_excerpt", "")).strip()
+            })
 
-    risks = parsed.get("risks")
-    if not isinstance(risks, list):
-        risks = []
+    raw_risks = parsed.get("risks")
+    if not isinstance(raw_risks, list):
+        raw_risks = []
+    risks = []
+    for r in raw_risks:
+        if isinstance(r, dict) and (r.get("clause_type") or r.get("why_risky")):
+            lvl = str(r.get("risk_level", "Medium")).strip().capitalize()
+            if lvl not in ["High", "Medium", "Low"]:
+                lvl = "Medium"
+            risks.append({
+                "risk_level": lvl,
+                "clause_type": str(r.get("clause_type", "General Risk")).strip(),
+                "risky_excerpt": str(r.get("risky_excerpt", "")).strip(),
+                "why_risky": str(r.get("why_risky", "")).strip(),
+                "suggested_replacement": str(r.get("suggested_replacement", "")).strip()
+            })
 
-    entities = parsed.get("entities")
-    if not isinstance(entities, dict):
-        entities = {"parties": [], "dates": [], "monetary_values": [], "locations": [], "key_terms": []}
+    raw_entities = parsed.get("entities")
+    if not isinstance(raw_entities, dict):
+        raw_entities = {}
+    
+    entities = {}
+    for k in ["parties", "dates", "monetary_values", "locations", "key_terms"]:
+        raw_items = raw_entities.get(k, [])
+        if not isinstance(raw_items, list):
+            raw_items = [str(raw_items)] if raw_items else []
+        clean_list = []
+        for item in raw_items:
+            if isinstance(item, dict):
+                name = item.get("name") or item.get("party_name") or item.get("title") or item.get("entity") or str(item)
+                role = item.get("title") or item.get("party_role") or item.get("role")
+                clean_list.append(f"{name} ({role})" if role and role != name else str(name))
+            elif item:
+                clean_list.append(str(item).strip())
+        entities[k] = clean_list
 
     return {
         "summary": summary,
