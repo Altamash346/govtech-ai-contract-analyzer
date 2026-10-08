@@ -10,13 +10,86 @@ import {
 
 const API_BASE = '/api';
 
+export const INDIAN_LANGUAGES = [
+  { code: 'en', name: 'English', native: 'English' },
+  { code: 'hi', name: 'Hindi', native: 'हिन्दी' },
+  { code: 'mr', name: 'Marathi', native: 'मराठी' },
+  { code: 'bn', name: 'Bengali', native: 'বাংলা' },
+  { code: 'ta', name: 'Tamil', native: 'தமிழ்' },
+  { code: 'te', name: 'Telugu', native: 'తెలుగు' },
+  { code: 'gu', name: 'Gujarati', native: 'ગુજરાતી' },
+  { code: 'kn', name: 'Kannada', native: 'ಕನ್ನಡ' },
+  { code: 'ml', name: 'Malayalam', native: 'മലയാളം' },
+  { code: 'pa', name: 'Punjabi', native: 'ਪੰਜਾਬੀ' },
+  { code: 'or', name: 'Odia', native: 'ଓଡ଼ିଆ' },
+  { code: 'as', name: 'Assamese', native: 'অসমীয়া' },
+  { code: 'ur', name: 'Urdu', native: 'اردو' },
+  { code: 'sa', name: 'Sanskrit', native: 'संस्कृतम्' },
+  { code: 'ne', name: 'Nepali', native: 'नेपाली' },
+  { code: 'sd', name: 'Sindhi', native: 'सिन्धी' },
+  { code: 'mai', name: 'Maithili', native: 'मैथिली' },
+  { code: 'kok', name: 'Konkani', native: 'कोंकणी' },
+  { code: 'doi', name: 'Dogri', native: 'डोगरी' },
+  { code: 'mni', name: 'Manipuri', native: 'মৈতৈলোন্' },
+  { code: 'sat', name: 'Santali', native: 'ᱥᱟᱱᱛᱟᱲᱤ' },
+  { code: 'bho', name: 'Bhojpuri', native: 'भोजपुरी' },
+];
+
 export default function App() {
   const [theme, setTheme] = useState(() => localStorage.getItem('gov_theme') || 'bright');
   const [aiMode, setAiMode] = useState(() => localStorage.getItem('gov_aimode') || 'fast');
+  const [siteLang, setSiteLang] = useState(() => localStorage.getItem('gov_site_lang') || 'en');
   const [user, setUser] = useState(() => {
     const saved = localStorage.getItem('gov_user');
     return saved ? JSON.parse(saved) : null;
   });
+
+  const changeSiteLanguage = (langCode) => {
+    setSiteLang(langCode);
+    localStorage.setItem('gov_site_lang', langCode);
+
+    const host = window.location.hostname;
+    if (langCode === 'en') {
+      document.cookie = 'googtrans=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;';
+      document.cookie = `googtrans=; expires=Thu, 01 Jan 1970 00:00:00 UTC; domain=${host}; path=/;`;
+      const combo = document.querySelector('.goog-te-combo');
+      if (combo) {
+        combo.value = 'en';
+        combo.dispatchEvent(new Event('change'));
+      }
+      setTimeout(() => window.location.reload(), 200);
+    } else {
+      document.cookie = `googtrans=/en/${langCode}; path=/;`;
+      document.cookie = `googtrans=/en/${langCode}; domain=${host}; path=/;`;
+      const combo = document.querySelector('.goog-te-combo');
+      if (combo) {
+        combo.value = langCode;
+        combo.dispatchEvent(new Event('change'));
+      } else {
+        window.location.reload();
+      }
+    }
+  };
+
+  useEffect(() => {
+    const saved = localStorage.getItem('gov_site_lang');
+    if (saved && saved !== 'en') {
+      let attempts = 0;
+      const interval = setInterval(() => {
+        attempts++;
+        const combo = document.querySelector('.goog-te-combo');
+        if (combo) {
+          combo.value = saved;
+          combo.dispatchEvent(new Event('change'));
+          clearInterval(interval);
+        }
+        if (attempts >= 15) {
+          clearInterval(interval);
+        }
+      }, 300);
+      return () => clearInterval(interval);
+    }
+  }, []);
   
   // Auth Modal
   const [showAuthModal, setShowAuthModal] = useState(false);
@@ -434,13 +507,34 @@ export default function App() {
               </div>
             </div>
           </div>
-          <button
-            onClick={() => setTheme(isDark ? 'bright' : 'dark')}
-            className={`p-1.5 rounded border transition-all cursor-pointer ${isDark ? 'bg-[#1e293b] border-[#334155] text-amber-400' : 'bg-white border-[#cbd5e1] text-gray-700'}`}
-            title="Toggle Bright/Dark mode"
-          >
-            {isDark ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
-          </button>
+          <div className="flex items-center space-x-2.5">
+            {/* Indian Language Selector */}
+            <div className={`flex items-center gap-1.5 px-2.5 py-1 rounded border text-xs font-semibold ${
+              isDark ? 'bg-[#1e293b] border-[#334155] text-slate-200' : 'bg-white border-[#cbd5e1] text-gray-700 shadow-xs'
+            }`}>
+              <Globe className="w-3.5 h-3.5 text-[#ea580c] shrink-0" />
+              <select
+                value={siteLang}
+                onChange={(e) => changeSiteLanguage(e.target.value)}
+                aria-label="Select Indian Language"
+                className="bg-transparent border-none text-xs font-semibold focus:outline-none cursor-pointer pr-1 text-inherit"
+              >
+                {INDIAN_LANGUAGES.map((l) => (
+                  <option key={l.code} value={l.code} className={isDark ? 'bg-[#1e293b] text-white' : 'bg-white text-gray-900'}>
+                    {l.native} ({l.name})
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <button
+              onClick={() => setTheme(isDark ? 'bright' : 'dark')}
+              className={`p-1.5 rounded border transition-all cursor-pointer ${isDark ? 'bg-[#1e293b] border-[#334155] text-amber-400' : 'bg-white border-[#cbd5e1] text-gray-700'}`}
+              title="Toggle Bright/Dark mode"
+            >
+              {isDark ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
+            </button>
+          </div>
         </header>
 
         {/* Authentication Gateway Main Container */}
@@ -621,7 +715,26 @@ export default function App() {
             <span className="hidden md:inline text-gray-400">|</span>
             <span className="hidden md:inline font-medium">AI Contract & Policy Analysis Platform</span>
           </div>
-          <div className="flex items-center space-x-4">
+          <div className="flex items-center space-x-2.5 sm:space-x-3.5">
+            {/* Indian Language Selector */}
+            <div className={`flex items-center gap-1.5 px-2 py-0.5 rounded border text-[11px] font-semibold ${
+              isDark ? 'bg-[#1e293b] border-[#334155] text-slate-200' : 'bg-white border-[#cbd5e1] text-gray-700 shadow-xs'
+            }`}>
+              <Globe className="w-3.5 h-3.5 text-[#ea580c] shrink-0" />
+              <select
+                value={siteLang}
+                onChange={(e) => changeSiteLanguage(e.target.value)}
+                aria-label="Select Indian Language"
+                className="bg-transparent border-none text-[11px] font-semibold focus:outline-none cursor-pointer pr-1 text-inherit"
+              >
+                {INDIAN_LANGUAGES.map((l) => (
+                  <option key={l.code} value={l.code} className={isDark ? 'bg-[#1e293b] text-white' : 'bg-white text-gray-900'}>
+                    {l.native} ({l.name})
+                  </option>
+                ))}
+              </select>
+            </div>
+
             {/* Processing Mode Switcher */}
             <div className="flex items-center gap-1.5">
               <span className="text-[10px] uppercase font-bold text-gray-500 hidden sm:inline">Processing:</span>
