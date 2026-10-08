@@ -495,8 +495,12 @@ export default function App() {
         {/* Top Utility Header */}
         <header className={`border-b py-3 px-4 sm:px-8 flex items-center justify-between transition-colors ${isDark ? 'bg-[#0f172a] border-[#1e293b]' : 'bg-white border-[#e2e8f0]'}`}>
           <div className="flex items-center space-x-3">
-            <div className="w-10 h-10 rounded bg-[#0f3d68] text-white flex items-center justify-center font-bold shadow-md">
-              <Scale className="w-5 h-5 text-[#ea580c]" />
+            <div className="relative">
+              <img
+                src="/logo.jpg"
+                alt="NyayaMitra AI Logo"
+                className="w-11 h-11 rounded-lg object-cover shadow-md border border-amber-500/50 ring-1 ring-amber-400/30"
+              />
             </div>
             <div>
               <div className="text-[10px] font-bold tracking-widest uppercase text-[#ea580c]">
@@ -540,6 +544,18 @@ export default function App() {
         {/* Authentication Gateway Main Container */}
         <main className="flex-1 flex items-center justify-center p-4 sm:p-6 lg:p-8">
           <div className="max-w-md w-full">
+            {/* National Crest Logo */}
+            <div className="flex justify-center mb-5">
+              <div className="relative group">
+                <div className="absolute -inset-1 rounded-2xl bg-gradient-to-r from-[#ea580c] via-cyan-500 to-emerald-500 opacity-60 blur-md group-hover:opacity-85 transition duration-300"></div>
+                <img
+                  src="/logo.jpg"
+                  alt="NyayaMitra AI Sovereign Crest"
+                  className="relative w-24 h-24 rounded-2xl object-cover shadow-2xl border-2 border-white/40 dark:border-slate-700"
+                />
+              </div>
+            </div>
+
             {/* National Seal Badge */}
             <div className="text-center mb-6">
               <div className="inline-block px-3.5 py-1 rounded-full text-[11px] font-bold uppercase tracking-widest bg-amber-50 text-[#c2410c] border border-amber-200 dark:bg-amber-950/60 dark:text-amber-300 dark:border-amber-900 mb-3 shadow-xs">
@@ -774,8 +790,12 @@ export default function App() {
       <header className={`border-b sticky top-0 z-40 backdrop-blur-md transition-colors ${isDark ? 'bg-[#0f172a]/95 border-[#334155]' : 'bg-white/95 border-[#e2e8f0]'}`}>
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3.5 flex items-center justify-between">
           <div className="flex items-center space-x-3.5">
-            <div className="w-11 h-11 rounded bg-[#0f3d68] text-white flex items-center justify-center font-bold shadow-md">
-              <Scale className="w-6 h-6 text-[#ea580c]" />
+            <div className="relative">
+              <img
+                src="/logo.jpg"
+                alt="NyayaMitra AI Logo"
+                className="w-11 h-11 rounded-lg object-cover shadow-md border border-amber-500/50 ring-1 ring-amber-400/30"
+              />
             </div>
             <div>
               <div className="text-[11px] font-bold tracking-widest uppercase text-[#ea580c]">
@@ -2031,8 +2051,8 @@ export default function App() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="grid grid-cols-1 md:grid-cols-4 gap-8 mb-10 text-xs">
             <div>
-              <div className="flex items-center space-x-2 text-white font-bold font-serif-gov text-sm mb-3">
-                <Scale className="w-5 h-5 text-[#ea580c]" />
+              <div className="flex items-center space-x-2.5 text-white font-bold font-serif-gov text-sm mb-3">
+                <img src="/logo.jpg" alt="NyayaMitra AI Logo" className="w-7 h-7 rounded object-cover border border-amber-500/50" />
                 <span>NyayaMitra AI</span>
               </div>
               <p className="text-gray-400 leading-relaxed">
@@ -2087,8 +2107,8 @@ export default function App() {
               ✕
             </button>
 
-            <div className="flex items-center gap-2 mb-4">
-              <Shield className="w-6 h-6 text-[#ea580c]" />
+            <div className="flex items-center gap-2.5 mb-4">
+              <img src="/logo.jpg" alt="NyayaMitra AI Logo" className="w-8 h-8 rounded-lg object-cover border border-amber-500/50" />
               <h3 className="font-bold text-lg font-serif-gov text-[#0f3d68] dark:text-[#38bdf8]">
                 {authMode === 'login' ? 'Sign In' : 'Create Account'}
               </h3>
