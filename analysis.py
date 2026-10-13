@@ -16,9 +16,10 @@ def _call_llm(prompt: str, mode: str = None) -> str:
     mode: "fast" → Gemini API | "secure" → local Ollama
     Falls back to config.AI_MODE if mode is not explicitly passed.
     """
+    is_cloud = getattr(config, "IS_CLOUD", False)
     active_mode = (mode or config.AI_MODE).lower()
 
-    if active_mode == "fast":
+    if is_cloud or active_mode == "fast":
         return _call_gemini(prompt)
     else:
         return _call_ollama(prompt)
@@ -37,11 +38,13 @@ def _call_gemini(prompt: str) -> str:
         )
         return response.text.strip()
     except Exception as e:
-        # Fall back to local secure engine without exposing internal provider details
-        fallback_res = _call_ollama(prompt)
-        if not fallback_res.startswith("Error"):
-            return fallback_res
-        return "Unable to process document at this time. Please try using Slower (secure) mode."
+        logger.warning(f"[analysis] Gemini API error: {e}")
+        # Only fall back to local Ollama if running locally (not on cloud)
+        if not getattr(config, "IS_CLOUD", False):
+            fallback_res = _call_ollama(prompt)
+            if not fallback_res.startswith("Error"):
+                return fallback_res
+        return "Unable to process document at this time. Please verify API key settings or retry."
 
 
 def _call_ollama(prompt: str) -> str:
