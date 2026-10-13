@@ -4,8 +4,7 @@ Retrieves relevant FAISS chunks and generates cited answers via
 either local Ollama (secure) or Gemini API (fast), based on active AI mode.
 """
 import os
-import json
-import os
+import re
 import json
 import numpy as np
 import config
@@ -67,25 +66,49 @@ def load_faiss_index(index_dir: str):
 
 def retrieve_relevant_chunks(question: str, index_dir: str, top_k: int = 5) -> list[dict]:
     """
-    Find the top-k most relevant text chunks from the FAISS index for a given question.
+    Find the top-k most relevant text chunks using FAISS or fallback keyword search.
     Returns a list of chunk dicts with 'text', 'page', and 'chunk_id'.
     """
-    embedder = get_embedder()
-    index, chunks = load_faiss_index(index_dir)
+    chunks_path = os.path.join(index_dir, "chunks.json")
+    index_path = os.path.join(index_dir, "index.faiss")
 
-    question_embedding = embedder.encode([question])
-    question_embedding = np.array(question_embedding).astype("float32")
+    if not os.path.exists(chunks_path):
+        return []
 
-    distances, indices = index.search(question_embedding, top_k)
+    try:
+        with open(chunks_path, "r", encoding="utf-8") as f:
+            chunks = json.load(f)
+    except Exception:
+        return []
 
-    relevant = []
-    for i, idx in enumerate(indices[0]):
-        if idx < len(chunks):
-            chunk = chunks[idx].copy()
-            chunk["score"] = float(distances[0][i])
-            relevant.append(chunk)
+    # Attempt FAISS vector search if index exists
+    if os.path.exists(index_path):
+        try:
+            embedder = get_embedder()
+            import faiss
+            index = faiss.read_index(index_path)
+            q_emb = embedder.encode([question])
+            q_emb = np.array(q_emb).astype("float32")
+            distances, indices = index.search(q_emb, top_k)
+            relevant = []
+            for i, idx in enumerate(indices[0]):
+                if idx < len(chunks):
+                    chunk = chunks[idx].copy()
+                    chunk["score"] = float(distances[0][i])
+                    relevant.append(chunk)
+            return relevant
+        except Exception as e:
+            print(f"[rag] FAISS search fallback active: {e}")
 
-    return relevant
+    # Fallback: Keyword relevance scoring
+    q_words = set(re.findall(r"\w+", question.lower()))
+    scored = []
+    for c in chunks:
+        c_words = set(re.findall(r"\w+", c.get("text", "").lower()))
+        score = len(q_words.intersection(c_words))
+        scored.append((score, c))
+    scored.sort(key=lambda x: x[0], reverse=True)
+    return [c for _, c in scored[:top_k]]
 
 
 def ask_question(question: str, index_dir: str, mode: str = None) -> dict:

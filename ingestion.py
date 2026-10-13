@@ -133,31 +133,27 @@ def chunk_pages(pages: list[dict], chunk_size: int = 800, overlap: int = 100) ->
     return chunks
 
 
-# ─── Step 5: Generate Embeddings & Store in FAISS ────────────────────────────
-
 def build_faiss_index(chunks: list[dict], index_dir: str) -> str:
     """
-    Generate embeddings for all chunks and save them to a FAISS index.
+    Save chunk metadata and attempt FAISS vectorization with graceful memory fallback.
     Returns: path to the saved index directory.
     """
-    embedder = get_embedder()
-    texts = [c["text"] for c in chunks]
-
-    # Generate embeddings
-    embeddings = embedder.encode(texts, show_progress_bar=False)
-    embeddings = np.array(embeddings).astype("float32")
-
-    # Build FAISS index
-    import faiss
-    dim = embeddings.shape[1]
-    index = faiss.IndexFlatL2(dim)
-    index.add(embeddings)
-
-    # Save index and chunk metadata to disk
     Path(index_dir).mkdir(parents=True, exist_ok=True)
-    faiss.write_index(index, os.path.join(index_dir, "index.faiss"))
     with open(os.path.join(index_dir, "chunks.json"), "w", encoding="utf-8") as f:
         json.dump(chunks, f, ensure_ascii=False, indent=2)
+
+    try:
+        embedder = get_embedder()
+        texts = [c["text"] for c in chunks]
+        embeddings = embedder.encode(texts, show_progress_bar=False)
+        embeddings = np.array(embeddings).astype("float32")
+        import faiss
+        dim = embeddings.shape[1]
+        index = faiss.IndexFlatL2(dim)
+        index.add(embeddings)
+        faiss.write_index(index, os.path.join(index_dir, "index.faiss"))
+    except Exception as e:
+        print(f"[ingestion] Vector index fallback active ({e}). Preserved chunk text.")
 
     return index_dir
 
