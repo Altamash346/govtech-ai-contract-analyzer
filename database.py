@@ -60,8 +60,26 @@ class QAHistory(Base):
 
 
 def init_db():
-    """Create all tables in the database."""
+    """Create all tables in the database and ensure demo accounts exist."""
     Base.metadata.create_all(bind=engine)
+    session = SessionLocal()
+    demo_users = [
+        {"name": "bbb", "email": "bbb@gmail.com", "password": "123"},
+        {"name": "meet", "email": "meet@gmail.com", "password": "123"},
+        {"name": "aaa", "email": "aaa@gmail.com", "password": "123"}
+    ]
+    try:
+        for du in demo_users:
+            u = session.query(User).filter_by(email=du["email"]).first()
+            if not u:
+                session.add(User(name=du["name"], email=du["email"], password_hash=hash_password(du["password"])))
+            else:
+                u.password_hash = hash_password(du["password"])
+        session.commit()
+    except Exception as e:
+        session.rollback()
+    finally:
+        session.close()
 
 
 def get_db():

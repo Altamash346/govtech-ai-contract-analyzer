@@ -3,7 +3,10 @@ import logging
 from typing import Dict, Any, List, Tuple
 import config
 from langchain_ollama import OllamaLLM
-from streamlit_agraph import Node, Edge, Config
+try:
+    from streamlit_agraph import Node, Edge, Config
+except ImportError:
+    Node = Edge = Config = None
 
 logger = logging.getLogger(__name__)
 
@@ -55,8 +58,8 @@ def extract_knowledge_graph(document_text: str) -> Dict[str, Any]:
     """
     
     try:
-        llm = OllamaLLM(model=config.OLLAMA_MODEL, base_url=config.OLLAMA_BASE_URL)
-        response = llm.invoke(prompt)
+        from analysis import _call_llm
+        response = _call_llm(prompt)
         return _safe_parse_json(response)
     except Exception as e:
         logger.error(f"Error invoking LLM for knowledge graph extraction: {e}")
