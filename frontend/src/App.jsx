@@ -8,7 +8,7 @@ import {
   FileCheck, HelpCircle
 } from 'lucide-react';
 
-const API_BASE = '/api';
+const API_BASE = import.meta.env.VITE_API_BASE || '/api';
 
 export const INDIAN_LANGUAGES = [
   { code: 'en', name: 'English', native: 'English' },
@@ -1054,7 +1054,7 @@ export default function App() {
                       {isReanalyzing ? 'Re-Auditing...' : `Re-Audit (${aiMode === 'fast' ? '⚡ Fast' : '🔒 Secure'})`}
                     </button>
                     <a
-                      href={`http://localhost:8000/api/report/download/${currentDoc.id}`}
+                      href={`${API_BASE}/report/download/${currentDoc.id}`}
                       target="_blank"
                       rel="noreferrer"
                       download
@@ -1097,7 +1097,7 @@ export default function App() {
                   <div className="flex items-center justify-between mb-3">
                     <h3 className="text-base font-bold font-serif-gov text-[#0f3d68] dark:text-[#38bdf8]">Executive Summary</h3>
                     <a
-                      href={`http://localhost:8000/api/report/download/${currentDoc.id}`}
+                      href={`${API_BASE}/report/download/${currentDoc.id}`}
                       target="_blank"
                       rel="noreferrer"
                       download
