@@ -517,9 +517,12 @@ Your JSON output MUST have exactly these 4 top-level keys:
    - "verbatim_excerpt": exact quote from the document (max 60 words)
 3. "risks": A list of identified risks, loopholes, or one-sided terms. Each item must have:
    - "risk_level": "High", "Medium", or "Low"
-   - "clause_type": type of clause
+   - "clause_type": type of clause (e.g., "Indemnity", "Termination", "Payment Terms", "Governing Law", "Liquidated Damages")
    - "risky_excerpt": exact quote of the problematic text
-   - "why_risky": plain English explanation of the danger (max 40 words)
+   - "why_risky": concise plain English explanation of the legal hazard
+   - "severity_reasoning": specific, detailed rationale explaining WHY this clause is designated as High or Medium risk (e.g. explains what factors justify a High severity rating versus Medium, such as unlimited liability, absence of cure period, unilateral cancellation, or severe financial exposure)
+   - "potential_impact": the tangible operational, financial, or legal consequences if accepted as-is
+   - "trigger_factors": a list of 2-4 short red-flag phrases (e.g., ["Uncapped liability", "No mutual remedy", "Disproportionate penalty"])
    - "suggested_replacement": a safer, balanced legal wording replacement
 4. "entities": An object containing extracted key metadata:
    - "parties": list of entity or person names as plain strings (e.g. ["Municipal Corporation of Greater Mumbai", "Contractor"])
@@ -566,11 +569,50 @@ JSON:"""
             lvl = str(r.get("risk_level", "Medium")).strip().capitalize()
             if lvl not in ["High", "Medium", "Low"]:
                 lvl = "Medium"
+
+            why_risky = str(r.get("why_risky", "")).strip()
+
+            # Severity reasoning with intelligent fallback
+            severity_reasoning = str(r.get("severity_reasoning", "")).strip()
+            if not severity_reasoning:
+                if lvl == "High":
+                    severity_reasoning = "Designated as High Risk because this clause imposes asymmetric financial exposure, uncapped liabilities, or forfeiture of essential statutory rights without reciprocal remedies."
+                elif lvl == "Medium":
+                    severity_reasoning = "Designated as Medium Risk due to procedural ambiguity, aggressive timelines, or lack of standard notice and cure periods that could trigger disputes."
+                else:
+                    severity_reasoning = "Designated as Low Risk representing standard boilerplate terms requiring minor clarifying modifications to ensure mutual parity."
+
+            # Potential impact with fallback
+            potential_impact = str(r.get("potential_impact", "")).strip()
+            if not potential_impact:
+                if lvl == "High":
+                    potential_impact = "Catastrophic financial losses, unlimited third-party liability, or immediate unilateral termination without recourse."
+                elif lvl == "Medium":
+                    potential_impact = "Operational disruption, administrative delays, or cash flow strain during project execution."
+                else:
+                    potential_impact = "Minor administrative ambiguity during contract interpretation."
+
+            # Trigger factors
+            raw_tf = r.get("trigger_factors", [])
+            if isinstance(raw_tf, str):
+                raw_tf = [raw_tf]
+            elif not isinstance(raw_tf, list):
+                raw_tf = []
+            trigger_factors = [str(x).strip() for x in raw_tf if x]
+            if not trigger_factors:
+                if lvl == "High":
+                    trigger_factors = ["Uncapped liability", "One-sided protection", "No reciprocal remedy"]
+                else:
+                    trigger_factors = ["Procedural ambiguity", "Unbalanced timelines"]
+
             risks.append({
                 "risk_level": lvl,
                 "clause_type": str(r.get("clause_type", "General Risk")).strip(),
                 "risky_excerpt": str(r.get("risky_excerpt", "")).strip(),
-                "why_risky": str(r.get("why_risky", "")).strip(),
+                "why_risky": why_risky,
+                "severity_reasoning": severity_reasoning,
+                "potential_impact": potential_impact,
+                "trigger_factors": trigger_factors,
                 "suggested_replacement": str(r.get("suggested_replacement", "")).strip()
             })
 

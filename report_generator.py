@@ -100,7 +100,15 @@ def generate_report(
             risk_style = "RiskHigh" if level == "High" else ("RiskMedium" if level == "Medium" else "BodySmall")
             story.append(Paragraph(f"● [{level} RISK] {risk.get('clause_type', 'Unknown Clause')}", styles[risk_style]))
             story.append(Paragraph(f"<i>Risky Text:</i> \"{risk.get('risky_excerpt', '')}\"", styles["BodySmall"]))
-            story.append(Paragraph(f"<b>Why Risky:</b> {risk.get('why_risky', '')}", styles["BodySmall"]))
+            story.append(Paragraph(f"<b>Hazard Analysis:</b> {risk.get('why_risky', '')}", styles["BodySmall"]))
+            if risk.get("severity_reasoning"):
+                story.append(Paragraph(f"<b>Why Rated {level} Risk:</b> {risk.get('severity_reasoning')}", styles["BodySmall"]))
+            if risk.get("potential_impact"):
+                story.append(Paragraph(f"<b>Potential Legal/Financial Impact:</b> {risk.get('potential_impact')}", styles["BodySmall"]))
+            if risk.get("trigger_factors"):
+                tf = risk.get("trigger_factors")
+                tf_str = ", ".join(tf) if isinstance(tf, list) else str(tf)
+                story.append(Paragraph(f"<b>Trigger Red Flags:</b> {tf_str}", styles["BodySmall"]))
             story.append(Paragraph(f"<b>Suggested Fix:</b> {risk.get('suggested_replacement', '')}", styles["BodySmall"]))
             story.append(Spacer(1, 0.3*cm))
     else:

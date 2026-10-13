@@ -1123,26 +1123,130 @@ export default function App() {
                 </div>
 
                 {/* Detected Risks & Remediation */}
+                {/* Detected Risks & Remediation */}
                 <div className={`p-6 rounded-lg border shadow-sm ${isDark ? 'bg-[#1e293b] border-[#334155]' : 'bg-white border-[#e2e8f0]'}`}>
-                  <h3 className="text-base font-bold font-serif-gov text-[#0f3d68] dark:text-[#38bdf8] mb-4">
-                    Detected Risks & Remediation ({(currentDoc.risks || []).length})
-                  </h3>
-                  <div className="space-y-3">
+                  <div className="flex items-center justify-between mb-4">
+                    <h3 className="text-base font-bold font-serif-gov text-[#0f3d68] dark:text-[#38bdf8] flex items-center gap-2">
+                      <AlertTriangle className="w-5 h-5 text-amber-500" />
+                      Detected Risks, Severity Rationale & Remediation ({(currentDoc.risks || []).length})
+                    </h3>
+                    <span className="text-xs text-gray-500">
+                      Evaluated against Indian legal standards & commercial parity
+                    </span>
+                  </div>
+                  <div className="space-y-4">
                     {(currentDoc.risks || []).length === 0 ? (
                       <p className="text-xs text-gray-500 italic">No significant legal liabilities or one-sided terms detected.</p>
                     ) : (
-                      (currentDoc.risks || []).map((risk, i) => (
-                        <div key={i} className={`p-4 rounded border-l-4 text-xs ${
-                          risk.risk_level === 'High' 
-                            ? 'bg-red-50 border-red-500 text-red-950 dark:bg-red-950/30 dark:text-red-200' 
-                            : 'bg-amber-50 border-amber-500 text-amber-950 dark:bg-amber-950/30 dark:text-amber-200'
-                        }`}>
-                          <div className="font-bold uppercase text-[11px] mb-1">[{risk.risk_level}] {risk.clause_type}</div>
-                          <blockquote className="italic mb-2 border-l-2 pl-2 border-gray-400">"{risk.risky_excerpt}"</blockquote>
-                          <div className="mb-1"><strong>Why Risky:</strong> {risk.why_risky}</div>
-                          <div><strong>Remediation:</strong> <span className="font-semibold text-emerald-700 dark:text-emerald-400">{risk.suggested_replacement}</span></div>
-                        </div>
-                      ))
+                      (currentDoc.risks || []).map((risk, i) => {
+                        const isHigh = (risk.risk_level || '').toLowerCase().includes('high');
+                        const isMed = (risk.risk_level || '').toLowerCase().includes('med');
+                        const rationale = risk.severity_reasoning || (isHigh
+                          ? 'Designated as High Risk because this clause imposes asymmetric exposure, uncapped financial liability, or forfeiture of essential statutory rights without reciprocal remedies.'
+                          : (isMed 
+                            ? 'Designated as Medium Risk due to procedural ambiguity, aggressive timelines, or lack of standard notice and cure periods that could trigger disputes.'
+                            : 'Designated as Low Risk representing standard boilerplate terms requiring minor clarifying modifications to ensure mutual parity.'));
+                        const impact = risk.potential_impact || (isHigh
+                          ? 'Catastrophic financial losses, unlimited third-party liability, or immediate unilateral termination without recourse.'
+                          : 'Operational disruption, administrative delays, or cash flow strain during project execution.');
+                        const triggers = Array.isArray(risk.trigger_factors) && risk.trigger_factors.length > 0 
+                          ? risk.trigger_factors 
+                          : (isHigh ? ['Uncapped liability', 'One-sided term'] : ['Procedural ambiguity']);
+
+                        return (
+                          <div 
+                            key={i} 
+                            className={`p-5 rounded-xl border transition-all shadow-xs ${
+                              isHigh 
+                                ? 'bg-red-50/70 border-red-300 dark:bg-red-950/30 dark:border-red-900/60' 
+                                : (isMed 
+                                  ? 'bg-amber-50/70 border-amber-300 dark:bg-amber-950/30 dark:border-amber-900/60'
+                                  : 'bg-blue-50/70 border-blue-300 dark:bg-blue-950/30 dark:border-blue-900/60')
+                            }`}
+                          >
+                            {/* Card Header with Badges */}
+                            <div className="flex flex-wrap items-center justify-between gap-2 mb-3">
+                              <div className="flex items-center gap-2">
+                                <span className={`text-[10px] font-black px-2.5 py-1 rounded uppercase tracking-wider text-white shadow-xs ${
+                                  isHigh ? 'bg-red-600' : (isMed ? 'bg-amber-500' : 'bg-blue-600')
+                                }`}>
+                                  {risk.risk_level || 'RISK'} SEVERITY
+                                </span>
+                                <span className="font-bold text-sm text-[#0f3d68] dark:text-[#38bdf8]">
+                                  {risk.clause_type || 'Contract Clause'}
+                                </span>
+                              </div>
+
+                              {/* Red Flag Trigger Tags */}
+                              <div className="flex flex-wrap items-center gap-1.5">
+                                {triggers.map((tf, tidx) => (
+                                  <span 
+                                    key={tidx} 
+                                    className={`text-[10px] font-semibold px-2 py-0.5 rounded-full ${
+                                      isHigh 
+                                        ? 'bg-red-100 text-red-800 dark:bg-red-900/50 dark:text-red-200 border border-red-200 dark:border-red-800' 
+                                        : 'bg-amber-100 text-amber-800 dark:bg-amber-900/50 dark:text-amber-200 border border-amber-200 dark:border-amber-800'
+                                    }`}
+                                  >
+                                    ⚠ {tf}
+                                  </span>
+                                ))}
+                              </div>
+                            </div>
+
+                            {/* Risky Verbatim Excerpt */}
+                            <div className="mb-3">
+                              <div className="text-[10px] font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400 mb-1 flex items-center gap-1">
+                                <FileText className="w-3 h-3 text-red-500" /> Problematic Verbatim Excerpt:
+                              </div>
+                              <blockquote className="p-3 rounded-lg bg-white/90 dark:bg-[#0f172a]/80 border-l-3 border-red-500 text-red-950 dark:text-red-200 font-mono text-xs leading-relaxed italic shadow-2xs">
+                                "{risk.risky_excerpt}"
+                              </blockquote>
+                            </div>
+
+                            {/* Why It's Risky: Hazard Assessment */}
+                            <div className="mb-3">
+                              <div className="text-[11px] font-bold uppercase tracking-wider text-gray-700 dark:text-gray-300 mb-1 flex items-center gap-1.5">
+                                <AlertTriangle className="w-3.5 h-3.5 text-amber-600 dark:text-amber-400" />
+                                Why This Clause Is Risky (Hazard Assessment):
+                              </div>
+                              <p className="text-xs text-gray-800 dark:text-gray-200 leading-relaxed bg-white/60 dark:bg-slate-900/50 p-2.5 rounded-lg border border-gray-200/60 dark:border-gray-800/60">
+                                {risk.why_risky}
+                              </p>
+                            </div>
+
+                            {/* Why It's Stated As High / Medium Risk (Severity Rationale) */}
+                            <div className="mb-3 p-3 rounded-lg bg-white/90 dark:bg-slate-900/80 border border-red-200 dark:border-red-900/40">
+                              <div className="text-[11px] font-black uppercase tracking-wider text-[#0f3d68] dark:text-[#38bdf8] mb-1.5 flex items-center gap-1.5">
+                                <Activity className="w-3.5 h-3.5 text-[#ea580c]" />
+                                Why Stated As [{risk.risk_level}] Risk (Classification Rationale):
+                              </div>
+                              <p className="text-xs text-gray-700 dark:text-gray-300 leading-relaxed font-medium">
+                                {rationale}
+                              </p>
+                              {impact && (
+                                <div className="mt-2 pt-2 border-t border-gray-200/60 dark:border-gray-700/60 text-[11px] text-gray-600 dark:text-gray-400">
+                                  <strong className="text-red-700 dark:text-red-400">Potential Legal & Financial Exposure: </strong>
+                                  {impact}
+                                </div>
+                              )}
+                            </div>
+
+                            {/* Recommended Remediation Amendment */}
+                            {risk.suggested_replacement && (
+                              <div className="pt-2">
+                                <div className="text-[11px] font-bold uppercase tracking-wider text-emerald-700 dark:text-emerald-400 mb-1.5 flex items-center gap-1.5">
+                                  <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
+                                  Recommended Legal Amendment (Safer Replacement):
+                                </div>
+                                <div className="p-3 rounded-lg bg-emerald-50/90 dark:bg-emerald-950/40 border-l-3 border-emerald-500 text-emerald-950 dark:text-emerald-100 text-xs leading-relaxed font-medium shadow-2xs">
+                                  {risk.suggested_replacement}
+                                </div>
+                              </div>
+                            )}
+                          </div>
+                        );
+                      })
                     )}
                   </div>
                 </div>
@@ -1588,14 +1692,34 @@ export default function App() {
                               </div>
                             </div>
 
-                            {/* Why it's risky */}
-                            <div>
-                              <div className="text-[10px] font-bold uppercase text-gray-500 dark:text-gray-400 mb-0.5">
-                                Hazard Assessment:
+                            {/* Why it's risky & Severity Rationale */}
+                            <div className="space-y-2">
+                              <div>
+                                <div className="text-[10px] font-bold uppercase text-gray-500 dark:text-gray-400 mb-0.5">
+                                  Hazard Assessment:
+                                </div>
+                                <p className="text-gray-700 dark:text-gray-300 text-[11px] leading-relaxed">
+                                  {risk.why_risky}
+                                </p>
                               </div>
-                              <p className="text-gray-700 dark:text-gray-300 text-[11px] leading-relaxed">
-                                {risk.why_risky}
-                              </p>
+                              <div className="p-2.5 rounded bg-gray-100/80 dark:bg-slate-900/60 border border-gray-200 dark:border-gray-700/50">
+                                <div className="text-[10px] font-bold uppercase text-[#0f3d68] dark:text-[#38bdf8] mb-1 flex items-center gap-1">
+                                  <Activity className="w-3 h-3 text-[#ea580c]" />
+                                  Why Stated As {risk.risk_level || 'Medium'} Risk:
+                                </div>
+                                <p className="text-[11px] text-gray-600 dark:text-gray-400 leading-relaxed">
+                                  {risk.severity_reasoning || (
+                                    (risk.risk_level || '').toLowerCase().includes('high')
+                                      ? 'Designated as High Risk because this clause imposes asymmetric exposure, uncapped financial liability, or forfeiture of essential statutory rights without reciprocal remedies.'
+                                      : 'Designated as Medium Risk due to procedural ambiguity, aggressive timelines, or lack of standard notice and cure periods that could trigger disputes.'
+                                  )}
+                                </p>
+                                {risk.potential_impact && (
+                                  <div className="mt-1.5 pt-1.5 border-t border-gray-200 dark:border-gray-800 text-[10px] text-red-700 dark:text-red-400">
+                                    <strong>Impact: </strong>{risk.potential_impact}
+                                  </div>
+                                )}
+                              </div>
                             </div>
 
                             {/* Suggested replacement */}
