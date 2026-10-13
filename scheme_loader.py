@@ -9,10 +9,8 @@ Both formats can coexist in the same folder.
 """
 import os
 import json
-import faiss
 import numpy as np
 from pathlib import Path
-from sentence_transformers import SentenceTransformer
 import config
 
 SCHEMES_DATA_DIR = os.path.join(os.path.dirname(__file__), "schemes_data")
@@ -24,6 +22,7 @@ _embedder = None
 def get_embedder():
     global _embedder
     if _embedder is None:
+        from sentence_transformers import SentenceTransformer
         _embedder = SentenceTransformer(config.EMBEDDING_MODEL)
     return _embedder
 
@@ -121,6 +120,7 @@ def index_scheme(scheme: dict) -> str:
     embeddings = embedder.encode(texts, show_progress_bar=False)
     embeddings = np.array(embeddings).astype("float32")
 
+    import faiss
     dim = embeddings.shape[1]
     index = faiss.IndexFlatL2(dim)
     index.add(embeddings)

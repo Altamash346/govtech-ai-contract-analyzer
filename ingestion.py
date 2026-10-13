@@ -12,19 +12,18 @@ os.environ.setdefault("TRANSFORMERS_NO_ADVISORY_WARNINGS", "1")
 os.environ.setdefault("TOKENIZERS_PARALLELISM", "false")
 
 import pymupdf as fitz
-import faiss
 import numpy as np
 from pathlib import Path
-from sentence_transformers import SentenceTransformer
 import config
 
-# Load the embedding model once (cached after first load)
+# Load the embedding model lazily on first document upload (avoids memory spike at boot)
 _embedder = None
 
 
 def get_embedder():
     global _embedder
     if _embedder is None:
+        from sentence_transformers import SentenceTransformer
         _embedder = SentenceTransformer(config.EMBEDDING_MODEL)
     return _embedder
 
@@ -149,6 +148,7 @@ def build_faiss_index(chunks: list[dict], index_dir: str) -> str:
     embeddings = np.array(embeddings).astype("float32")
 
     # Build FAISS index
+    import faiss
     dim = embeddings.shape[1]
     index = faiss.IndexFlatL2(dim)
     index.add(embeddings)

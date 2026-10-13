@@ -5,9 +5,9 @@ either local Ollama (secure) or Gemini API (fast), based on active AI mode.
 """
 import os
 import json
-import faiss
+import os
+import json
 import numpy as np
-from sentence_transformers import SentenceTransformer
 import config
 
 _embedder = None
@@ -16,6 +16,7 @@ _embedder = None
 def get_embedder():
     global _embedder
     if _embedder is None:
+        from sentence_transformers import SentenceTransformer
         _embedder = SentenceTransformer(config.EMBEDDING_MODEL)
     return _embedder
 
@@ -57,6 +58,7 @@ def load_faiss_index(index_dir: str):
     if not os.path.exists(index_path) or not os.path.exists(chunks_path):
         raise FileNotFoundError(f"No FAISS index found at {index_dir}. Please process a document first.")
 
+    import faiss
     index = faiss.read_index(index_path)
     with open(chunks_path, "r", encoding="utf-8") as f:
         chunks = json.load(f)

@@ -39,6 +39,12 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+# ─── Health & Root Endpoints for Render Health Checks ─────────────────────────
+@app.get("/")
+@app.get("/health")
+def health():
+    return {"status": "ok", "app": "NyayaMitra AI", "version": "2.0"}
+
 # ─── Auth Models & Endpoints ──────────────────────────────────────────────────
 class LoginRequest(BaseModel):
     email: str
