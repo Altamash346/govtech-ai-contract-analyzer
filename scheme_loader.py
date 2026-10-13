@@ -134,13 +134,12 @@ def index_scheme(scheme: dict) -> str:
 
 def ensure_all_schemes_indexed() -> list[dict]:
     """
-    Load all schemes and build their FAISS indexes if not already done.
-    Returns the list of scheme metadata dicts (without full_text for performance).
+    Load all schemes fast without blocking on heavy embeddings.
+    Returns the list of scheme dicts instantly for UI rendering.
     """
     schemes = load_all_schemes()
     for scheme in schemes:
-        idx_dir = index_scheme(scheme)
-        scheme["index_dir"] = idx_dir
+        scheme["index_dir"] = os.path.join(SCHEMES_INDEX_DIR, scheme.get("id", ""))
     return schemes
 
 
