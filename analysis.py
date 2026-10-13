@@ -6,7 +6,10 @@ depending on the AI_MODE set in config / session state.
 import os
 import re
 import json
+import logging
 import config
+
+logger = logging.getLogger(__name__)
 
 # ─── LLM Routing ──────────────────────────────────────────────────────────────
 

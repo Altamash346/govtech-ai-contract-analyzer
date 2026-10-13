@@ -142,18 +142,20 @@ def build_faiss_index(chunks: list[dict], index_dir: str) -> str:
     with open(os.path.join(index_dir, "chunks.json"), "w", encoding="utf-8") as f:
         json.dump(chunks, f, ensure_ascii=False, indent=2)
 
-    try:
-        embedder = get_embedder()
-        texts = [c["text"] for c in chunks]
-        embeddings = embedder.encode(texts, show_progress_bar=False)
-        embeddings = np.array(embeddings).astype("float32")
-        import faiss
-        dim = embeddings.shape[1]
-        index = faiss.IndexFlatL2(dim)
-        index.add(embeddings)
-        faiss.write_index(index, os.path.join(index_dir, "index.faiss"))
-    except Exception as e:
-        print(f"[ingestion] Vector index fallback active ({e}). Preserved chunk text.")
+    # In cloud environments, skip slow external HuggingFace network check so upload responds in ~2s
+    if not getattr(config, "IS_CLOUD", False):
+        try:
+            embedder = get_embedder()
+            texts = [c["text"] for c in chunks]
+            embeddings = embedder.encode(texts, show_progress_bar=False)
+            embeddings = np.array(embeddings).astype("float32")
+            import faiss
+            dim = embeddings.shape[1]
+            index = faiss.IndexFlatL2(dim)
+            index.add(embeddings)
+            faiss.write_index(index, os.path.join(index_dir, "index.faiss"))
+        except Exception as e:
+            print(f"[ingestion] Vector index fallback active ({e}). Preserved chunk text.")
 
     return index_dir
 

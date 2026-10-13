@@ -21,32 +21,9 @@ def get_embedder():
 
 
 def _call_llm(prompt: str, mode: str = None) -> str:
-    """Route LLM call to fast (cloud) or secure (local)."""
-    active_mode = (mode or config.AI_MODE).lower()
-
-    if active_mode == "fast":
-        try:
-            import google.generativeai as genai
-            genai.configure(api_key=config.GEMINI_API_KEY)
-            model = genai.GenerativeModel(config.GEMINI_MODEL)
-            response = model.generate_content(prompt, request_options={"timeout": 45})
-            return response.text.strip()
-        except Exception:
-            # Fall back to local engine seamlessly without leaking technical details
-            try:
-                from langchain_ollama import OllamaLLM
-                llm = OllamaLLM(model=config.OLLAMA_MODEL, base_url=config.OLLAMA_BASE_URL)
-                return llm.invoke(prompt)
-            except Exception:
-                pass
-            return "Unable to complete request with cloud processing. Please try using Slower (secure) mode."
-    else:
-        try:
-            from langchain_ollama import OllamaLLM
-            llm = OllamaLLM(model=config.OLLAMA_MODEL, base_url=config.OLLAMA_BASE_URL)
-            return llm.invoke(prompt)
-        except Exception as e:
-            return "Local processing service is currently unavailable. Please verify the local service is running or switch to Faster mode."
+    """Route LLM call via unified analysis engine (fast Gemini in cloud, Ollama locally)."""
+    from analysis import _call_llm as unified_call_llm
+    return unified_call_llm(prompt, mode=mode)
 
 
 def load_faiss_index(index_dir: str):
