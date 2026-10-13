@@ -11,7 +11,7 @@ import json
 os.environ.setdefault("TRANSFORMERS_NO_ADVISORY_WARNINGS", "1")
 os.environ.setdefault("TOKENIZERS_PARALLELISM", "false")
 
-import fitz  # PyMuPDF
+import pymupdf as fitz
 import faiss
 import numpy as np
 from pathlib import Path
