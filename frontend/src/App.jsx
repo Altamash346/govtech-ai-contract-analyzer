@@ -10,6 +10,25 @@ import {
 
 const API_BASE = import.meta.env.VITE_API_BASE || '/api';
 
+// Safe fetch helper — prevents "Unexpected end of JSON input" when backend is unreachable
+async function safeFetch(url, options = {}) {
+  const res = await fetch(url, options);
+  const contentType = res.headers.get('content-type') || '';
+  if (!contentType.includes('application/json')) {
+    const text = await res.text();
+    throw new Error(
+      res.status === 404
+        ? 'Backend API not reachable. Please ensure the server is running.'
+        : `Server returned non-JSON response (${res.status}): ${text.slice(0, 120)}`
+    );
+  }
+  const data = await res.json();
+  if (!res.ok) {
+    throw new Error(data.detail || data.message || `Request failed with status ${res.status}`);
+  }
+  return data;
+}
+
 export const INDIAN_LANGUAGES = [
   { code: 'en', name: 'English', native: 'English' },
   { code: 'hi', name: 'Hindi', native: 'हिन्दी' },
@@ -182,15 +201,13 @@ export default function App() {
       setDocuments([]);
       return;
     }
-    fetch(`${API_BASE}/documents?user_id=${userId}`)
-      .then(r => r.json())
+    safeFetch(`${API_BASE}/documents?user_id=${userId}`)
       .then(d => setDocuments(d.documents || []))
       .catch(() => setDocuments([]));
   };
 
   useEffect(() => {
-    fetch(`${API_BASE}/schemes`)
-      .then(r => r.json())
+    safeFetch(`${API_BASE}/schemes`)
       .then(d => setSchemes(d.schemes || []))
       .catch(() => {});
 
@@ -212,13 +229,11 @@ export default function App() {
       : { name: authName, email: authEmail, password: authPassword };
     
     try {
-      const res = await fetch(`${API_BASE}${endpoint}`, {
+      const data = await safeFetch(`${API_BASE}${endpoint}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload)
       });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.detail || 'Authentication failed');
       
       if (authMode === 'login') {
         setUser(data.user);
@@ -249,12 +264,11 @@ export default function App() {
     if (!docId) return;
     setIsReanalyzing(true);
     try {
-      const res = await fetch(`${API_BASE}/documents/${docId}/reanalyze`, {
+      const data = await safeFetch(`${API_BASE}/documents/${docId}/reanalyze`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ ai_mode: aiMode })
       });
-      const data = await res.json();
       if (data.success && data.document) {
         setCurrentDoc(data.document);
         setDocuments(prev => prev.map(d => d.id === docId ? data.document : d));
@@ -288,12 +302,10 @@ export default function App() {
       setTimeout(() => setUploadStage('Extracting text & identifying legal clauses...'), 1200);
       setTimeout(() => setUploadStage(`Analyzing risk severity and verifying statutory clauses...`), 2800);
 
-      const res = await fetch(`${API_BASE}/upload`, {
+      const data = await safeFetch(`${API_BASE}/upload`, {
         method: 'POST',
         body: formData
       });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.detail || 'Analysis failed');
 
       setCurrentDoc(data.document);
       setMessages([]);
@@ -319,7 +331,7 @@ export default function App() {
     setIsChatLoading(true);
 
     try {
-      const res = await fetch(`${API_BASE}/chat`, {
+      const data = await safeFetch(`${API_BASE}/chat`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -330,7 +342,6 @@ export default function App() {
           ai_mode: aiMode
         })
       });
-      const data = await res.json();
       setMessages(prev => [...prev, {
         sender: 'ai',
         text: data.answer,
@@ -348,12 +359,11 @@ export default function App() {
     if (!currentDoc?.full_text) return;
     setIsDebating(true);
     try {
-      const res = await fetch(`${API_BASE}/multi-agent`, {
+      const data = await safeFetch(`${API_BASE}/multi-agent`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ contract_text: currentDoc.full_text, ai_mode: aiMode })
       });
-      const data = await res.json();
       setDebateResult(data);
     } catch (err) {
       alert(`Debate error: ${err.message}`);
@@ -379,7 +389,7 @@ export default function App() {
     if (!currentDoc?.full_text) return;
     setIsTranslating(true);
     try {
-      const res = await fetch(`${API_BASE}/translate`, {
+      const data = await safeFetch(`${API_BASE}/translate`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -387,7 +397,6 @@ export default function App() {
           target_language: targetLang
         })
       });
-      const data = await res.json();
       setTranslatedText(data.translated_text);
     } catch (err) {
       alert(`Translation error: ${err.message}`);
@@ -401,7 +410,7 @@ export default function App() {
     if (!selectedScheme) return;
     setIsMatching(true);
     try {
-      const res = await fetch(`${API_BASE}/schemes/match`, {
+      const data = await safeFetch(`${API_BASE}/schemes/match`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -410,7 +419,6 @@ export default function App() {
           ai_mode: aiMode
         })
       });
-      const data = await res.json();
       setEligResult(data);
     } catch (err) {
       alert(`Eligibility error: ${err.message}`);
@@ -424,7 +432,7 @@ export default function App() {
     if (e) e.preventDefault();
     setIsRecommending(true);
     try {
-      const res = await fetch(`${API_BASE}/schemes/recommend`, {
+      const data = await safeFetch(`${API_BASE}/schemes/recommend`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -432,7 +440,6 @@ export default function App() {
           ai_mode: aiMode
         })
       });
-      const data = await res.json();
       setRecommendationsData(data);
     } catch (err) {
       alert(`Recommendation error: ${err.message}`);
