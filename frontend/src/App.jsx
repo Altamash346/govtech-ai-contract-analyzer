@@ -8,7 +8,13 @@ import {
   FileCheck, HelpCircle
 } from 'lucide-react';
 
-const API_BASE = import.meta.env.VITE_API_BASE || '/api';
+const RENDER_BACKEND = 'https://govtech-ai-contract-analyzer-platform.onrender.com/api';
+
+const API_BASE = import.meta.env.VITE_API_BASE || (
+  typeof window !== 'undefined' && (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')
+    ? '/api'
+    : RENDER_BACKEND
+);
 
 // Safe fetch helper — prevents "Unexpected end of JSON input" when backend is unreachable
 async function safeFetch(url, options = {}) {
