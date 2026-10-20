@@ -1,0 +1,23 @@
+{
+  "name": "NyayaMitra AI — Sovereign Legal & Welfare Navigator",
+  "short_name": "NyayaMitra AI",
+  "description": "Sovereign AI-powered legal contract analyzer, visual PDF redlining, and citizen welfare scheme recommendation platform.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#0a2540",
+  "orientation": "portrait-primary",
+  "icons": [
+    {
+      "src": "/logo.jpg",
+      "sizes": "192x192 512x512",
+      "type": "image/jpeg",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/favicon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml"
+    }
+  ]
+}
