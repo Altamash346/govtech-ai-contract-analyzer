@@ -6,7 +6,7 @@ import {
   Calendar, DollarSign, Layers, ArrowRight, Sparkles, Cpu, Lock, PhoneCall,
   ExternalLink, Award, CheckCircle2, ChevronDown, BookOpen, Activity, AlertCircle,
   FileCheck, HelpCircle, VolumeX, Copy, Check, LayoutGrid, PieChart, Zap, Play, Pause,
-  ShieldAlert, Bot
+  ShieldAlert, Bot, X
 } from 'lucide-react';
 
 const RENDER_BACKEND = 'https://govtech-ai-contract-analyzer-platform.onrender.com/api';
@@ -1046,23 +1046,23 @@ Between: Municipal Corporation of Greater Mumbai (Authority) AND TechCorp Soluti
 
             {/* Processing Mode Switcher */}
             <div className="flex items-center gap-1.5">
-              <span className="text-[10px] uppercase font-bold text-gray-500 hidden sm:inline">Processing:</span>
-              <div className={`flex items-center rounded p-0.5 border text-[11px] font-semibold ${isDark ? 'bg-[#1e293b] border-[#334155]' : 'bg-white border-[#cbd5e1]'}`}>
+              <span className="text-[10px] uppercase font-bold text-gray-500 hidden sm:inline">AI Engine:</span>
+              <div className={`flex items-center rounded-lg p-0.5 border text-[11px] font-semibold ${isDark ? 'bg-[#1e293b] border-[#334155]' : 'bg-white border-[#cbd5e1]'}`}>
                 <button
                   type="button"
                   onClick={() => setAiMode('fast')}
-                  className={`flex items-center gap-1 px-2.5 py-0.5 rounded transition-all ${aiMode === 'fast' ? 'bg-[#ea580c] text-white shadow-xs' : 'text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200'}`}
-                  title="Faster processing mode (cloud)"
+                  className={`flex items-center gap-1 px-2.5 py-1 rounded-md transition-all ${aiMode === 'fast' ? 'bg-[#ea580c] text-white shadow-xs' : 'text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200'}`}
+                  title="Fast processing mode"
                 >
-                  <Sparkles className="w-3 h-3" /> Faster (not that much secure)
+                  <Zap className="w-3 h-3" /> Fast
                 </button>
                 <button
                   type="button"
                   onClick={() => setAiMode('secure')}
-                  className={`flex items-center gap-1 px-2.5 py-0.5 rounded transition-all ${aiMode === 'secure' ? 'bg-[#0f3d68] text-white shadow-xs' : 'text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200'}`}
-                  title="Slower processing mode (local, private)"
+                  className={`flex items-center gap-1 px-2.5 py-1 rounded-md transition-all ${aiMode === 'secure' ? 'bg-[#0f3d68] text-white shadow-xs' : 'text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200'}`}
+                  title="High security mode (local private inference)"
                 >
-                  <Lock className="w-3 h-3" /> Slower (secure)
+                  <Lock className="w-3 h-3" /> Secure
                 </button>
               </div>
             </div>
@@ -1184,24 +1184,24 @@ Between: Municipal Corporation of Greater Mumbai (Authority) AND TechCorp Soluti
               </p>
 
               {/* Action Buttons */}
-              <div className="flex flex-wrap items-center gap-3 pt-2">
+              <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 pt-2">
                 <button 
-                  onClick={() => scrollTo(uploadRef)}
-                  className="px-6 sm:px-8 py-3.5 sm:py-4 bg-[#0f3d68] hover:bg-[#0a2540] text-white font-bold text-xs sm:text-sm tracking-wider uppercase rounded-xl shadow-lg transition-all flex items-center gap-2 border-2 border-[#0f3d68] cursor-pointer"
+                  onClick={() => { setActiveTab('audit'); scrollTo(uploadRef); }}
+                  className="px-6 sm:px-8 py-3.5 sm:py-4 bg-[#0f3d68] hover:bg-[#0a2540] text-white font-bold text-xs sm:text-sm tracking-wider uppercase rounded-xl shadow-lg transition-all flex items-center justify-center gap-2 border-2 border-[#0f3d68] cursor-pointer"
                 >
                   UPLOAD & ANALYZE <ArrowRight className="w-4 h-4" />
                 </button>
                 <button 
                   onClick={handleLoadDemoContract}
-                  className="px-5 sm:px-7 py-3.5 sm:py-4 bg-[#ea580c] hover:bg-[#c2410c] text-white font-bold text-xs sm:text-sm tracking-wider uppercase rounded-xl shadow-lg transition-all flex items-center gap-2 cursor-pointer border-2 border-[#ea580c]"
+                  className="px-5 sm:px-7 py-3.5 sm:py-4 bg-[#ea580c] hover:bg-[#c2410c] text-white font-bold text-xs sm:text-sm tracking-wider uppercase rounded-xl shadow-lg transition-all flex items-center justify-center gap-2 cursor-pointer border-2 border-[#ea580c]"
                   title="Test the entire dashboard immediately with a sample tender contract"
                 >
                   <Zap className="w-4 h-4 text-amber-200" />
-                  <span>⚡ TRY DEMO CONTRACT</span>
+                  <span>TRY DEMO CONTRACT</span>
                 </button>
                 <button 
                   onClick={() => { setActiveTab('schemes'); scrollTo(schemesRef); }}
-                  className="px-5 sm:px-7 py-3.5 sm:py-4 bg-white hover:bg-gray-50 text-[#0f3d68] font-bold text-xs sm:text-sm tracking-wider uppercase rounded-xl border-2 border-[#0f3d68] shadow-sm transition-all dark:bg-transparent dark:text-white dark:border-gray-500 cursor-pointer"
+                  className="px-5 sm:px-7 py-3.5 sm:py-4 bg-white hover:bg-gray-50 text-[#0f3d68] font-bold text-xs sm:text-sm tracking-wider uppercase rounded-xl border-2 border-[#0f3d68] shadow-sm transition-all dark:bg-transparent dark:text-white dark:border-gray-500 cursor-pointer flex items-center justify-center gap-2"
                 >
                   EXPLORE SCHEMES
                 </button>
@@ -1280,8 +1280,8 @@ Between: Municipal Corporation of Greater Mumbai (Authority) AND TechCorp Soluti
               className="hidden lg:flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold text-[#ea580c] hover:bg-orange-50 dark:hover:bg-orange-950/30 border border-orange-200 dark:border-orange-800 transition-all cursor-pointer whitespace-nowrap"
               title="Instantly load realistic sample contract"
             >
-              <Sparkles className="w-3.5 h-3.5" />
-              <span>⚡ Try Demo</span>
+              <Zap className="w-3.5 h-3.5" />
+              <span>Try Demo Contract</span>
             </button>
           </div>
         </div>
@@ -1324,8 +1324,8 @@ Between: Municipal Corporation of Greater Mumbai (Authority) AND TechCorp Soluti
                       onChange={e => setAiMode(e.target.value)}
                       className="w-full px-3.5 py-2.5 text-xs rounded border border-gray-300 dark:border-gray-600 bg-white dark:bg-slate-800 text-gray-900 dark:text-gray-100 font-semibold cursor-pointer shadow-xs"
                     >
-                      <option value="fast">⚡ Faster (not that much secure)</option>
-                      <option value="secure">🔒 Slower (secure)</option>
+                      <option value="fast">Fast (Direct Cloud AI Engine)</option>
+                      <option value="secure">High Security (PII Redacted Local AI)</option>
                     </select>
                   </div>
                 </div>
@@ -1346,7 +1346,7 @@ Between: Municipal Corporation of Greater Mumbai (Authority) AND TechCorp Soluti
                     onClick={handleLoadDemoContract}
                     className="w-full sm:w-auto px-4 py-2 bg-[#ea580c] hover:bg-[#c2410c] text-white text-xs font-bold uppercase tracking-wider rounded-lg shadow-sm transition-all cursor-pointer flex items-center justify-center gap-1.5 shrink-0"
                   >
-                    <Zap className="w-3.5 h-3.5 text-amber-200" /> ⚡ TRY DEMO CONTRACT
+                    <Zap className="w-3.5 h-3.5 text-amber-200" /> TRY DEMO CONTRACT
                   </button>
                 </div>
 
@@ -1423,11 +1423,11 @@ Between: Municipal Corporation of Greater Mumbai (Authority) AND TechCorp Soluti
                   </div>
 
                   {/* Actions: Listen Audio TTS + Download PDF */}
-                  <div className="flex items-center gap-2.5 w-full md:w-auto justify-end flex-wrap">
+                  <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2.5 w-full md:w-auto justify-end">
                     <button
                       type="button"
                       onClick={() => handleSpeak(`${currentDoc.summary || ''}. Identified ${highRisksCount} high risk clauses and ${medRisksCount} medium risk clauses.`)}
-                      className="px-3.5 py-2.5 rounded-xl border text-xs font-bold transition-all flex items-center gap-2 bg-white dark:bg-slate-800 border-gray-300 dark:border-slate-700 hover:border-amber-500 text-gray-800 dark:text-gray-200 cursor-pointer shadow-xs"
+                      className="px-3.5 py-2.5 rounded-xl border text-xs font-bold transition-all flex items-center justify-center gap-2 bg-white dark:bg-slate-800 border-gray-300 dark:border-slate-700 hover:border-amber-500 text-gray-800 dark:text-gray-200 cursor-pointer shadow-xs"
                       title="Listen to Executive Summary Aloud"
                     >
                       {isSpeaking ? (
@@ -1438,7 +1438,7 @@ Between: Municipal Corporation of Greater Mumbai (Authority) AND TechCorp Soluti
                       ) : (
                         <>
                           <Volume2 className="w-4 h-4 text-[#ea580c]" />
-                          <span>🔊 LISTEN</span>
+                          <span>LISTEN SUMMARY</span>
                         </>
                       )}
                     </button>
@@ -1447,7 +1447,7 @@ Between: Municipal Corporation of Greater Mumbai (Authority) AND TechCorp Soluti
                       target="_blank"
                       rel="noreferrer"
                       download
-                      className="px-4 py-2.5 bg-[#0f3d68] hover:bg-[#0a2540] text-white text-xs font-bold uppercase tracking-wider rounded-xl shadow flex items-center gap-1.5 border border-[#0f3d68] transition-all"
+                      className="px-4 py-2.5 bg-[#0f3d68] hover:bg-[#0a2540] text-white text-xs font-bold uppercase tracking-wider rounded-xl shadow flex items-center justify-center gap-1.5 border border-[#0f3d68] transition-all"
                     >
                       <Download className="w-3.5 h-3.5 text-amber-400" />
                       <span>DOWNLOAD REPORT</span>
@@ -1473,7 +1473,7 @@ Between: Municipal Corporation of Greater Mumbai (Authority) AND TechCorp Soluti
                       title={`Re-audit this contract with ${aiMode === 'fast' ? 'Faster Cloud AI' : 'Local Secure AI'}`}
                     >
                       <Activity className={`w-3.5 h-3.5 text-[#ea580c] ${isReanalyzing ? 'animate-spin' : ''}`} />
-                      {isReanalyzing ? 'Re-Auditing...' : `Re-Audit (${aiMode === 'fast' ? '⚡ Fast' : '🔒 Secure'})`}
+                      {isReanalyzing ? 'Re-Auditing...' : `Re-Audit (${aiMode === 'fast' ? 'Fast' : 'Secure'})`}
                     </button>
                     <a
                       href={`${API_BASE}/report/download/${currentDoc.id}`}
@@ -1605,13 +1605,14 @@ Between: Municipal Corporation of Greater Mumbai (Authority) AND TechCorp Soluti
                                 {triggers.map((tf, tidx) => (
                                   <span 
                                     key={tidx} 
-                                    className={`text-[10px] font-semibold px-2 py-0.5 rounded-full ${
+                                    className={`inline-flex items-center gap-1 text-[10px] font-semibold px-2 py-0.5 rounded-full ${
                                       isHigh 
                                         ? 'bg-red-100 text-red-800 dark:bg-red-900/50 dark:text-red-200 border border-red-200 dark:border-red-800' 
                                         : 'bg-amber-100 text-amber-800 dark:bg-amber-900/50 dark:text-amber-200 border border-amber-200 dark:border-amber-800'
                                     }`}
                                   >
-                                    ⚠ {tf}
+                                    <AlertTriangle className="w-3 h-3 shrink-0" />
+                                    <span>{tf}</span>
                                   </span>
                                 ))}
                               </div>
@@ -1796,7 +1797,7 @@ Between: Municipal Corporation of Greater Mumbai (Authority) AND TechCorp Soluti
                   </div>
                   <div className="flex items-center gap-2">
                     <span className="text-[10px] bg-white/10 px-2 py-0.5 rounded font-semibold text-blue-100">
-                      {aiMode === 'fast' ? '⚡ Faster (not that much secure)' : '🔒 Slower (secure)'}
+                      {aiMode === 'fast' ? 'Fast AI Engine' : 'High Security Engine'}
                     </span>
                     <span className="text-[10px] bg-[#ea580c] px-2 py-0.5 rounded font-bold uppercase">Citation Verified</span>
                   </div>
@@ -1940,9 +1941,10 @@ Between: Municipal Corporation of Greater Mumbai (Authority) AND TechCorp Soluti
                               {/* 3 Agents Dialogue */}
                               <div className="grid grid-cols-1 md:grid-cols-3 gap-3 text-xs">
                                 {/* Critic */}
-                                <div className="p-3.5 rounded border border-red-200 dark:border-red-900/60 bg-red-50/50 dark:bg-red-950/20 space-y-1">
-                                  <div className="font-bold text-red-800 dark:text-red-400 flex items-center gap-1">
-                                    ⚔️ The Critic (Prosecution):
+                                <div className="p-3.5 rounded-lg border border-red-200 dark:border-red-900/60 bg-red-50/50 dark:bg-red-950/20 space-y-1">
+                                  <div className="font-bold text-red-800 dark:text-red-400 flex items-center gap-1.5">
+                                    <Scale className="w-3.5 h-3.5 text-red-600 dark:text-red-400 shrink-0" />
+                                    <span>The Critic (Prosecution):</span>
                                   </div>
                                   <div className="text-gray-700 dark:text-gray-300 leading-relaxed text-[11px]">
                                     {d.critic_argument}
@@ -1950,9 +1952,10 @@ Between: Municipal Corporation of Greater Mumbai (Authority) AND TechCorp Soluti
                                 </div>
 
                                 {/* Defender */}
-                                <div className="p-3.5 rounded border border-emerald-200 dark:border-emerald-900/60 bg-emerald-50/50 dark:bg-emerald-950/20 space-y-1">
-                                  <div className="font-bold text-emerald-800 dark:text-emerald-400 flex items-center gap-1">
-                                    🛡️ The Defender (Defense Counsel):
+                                <div className="p-3.5 rounded-lg border border-emerald-200 dark:border-emerald-900/60 bg-emerald-50/50 dark:bg-emerald-950/20 space-y-1">
+                                  <div className="font-bold text-emerald-800 dark:text-emerald-400 flex items-center gap-1.5">
+                                    <Shield className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400 shrink-0" />
+                                    <span>The Defender (Defense Counsel):</span>
                                   </div>
                                   <div className="text-gray-700 dark:text-gray-300 leading-relaxed text-[11px]">
                                     {d.defender_argument}
@@ -1960,9 +1963,10 @@ Between: Municipal Corporation of Greater Mumbai (Authority) AND TechCorp Soluti
                                 </div>
 
                                 {/* Judge */}
-                                <div className="p-3.5 rounded border border-blue-200 dark:border-blue-900/60 bg-blue-50/50 dark:bg-blue-950/20 space-y-1">
-                                  <div className="font-bold text-blue-800 dark:text-blue-400 flex items-center gap-1">
-                                    ⚖️ Judicial Verdict (Magistrate):
+                                <div className="p-3.5 rounded-lg border border-blue-200 dark:border-blue-900/60 bg-blue-50/50 dark:bg-blue-950/20 space-y-1">
+                                  <div className="font-bold text-blue-800 dark:text-blue-400 flex items-center gap-1.5">
+                                    <Award className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400 shrink-0" />
+                                    <span>Judicial Verdict (Magistrate):</span>
                                   </div>
                                   <div className="text-gray-800 dark:text-gray-200 leading-relaxed text-[11px] font-medium">
                                     {d.judge_verdict}
@@ -2255,30 +2259,30 @@ Between: Municipal Corporation of Greater Mumbai (Authority) AND TechCorp Soluti
                     <button
                       type="button"
                       onClick={() => setPresetProfile('farmer_female')}
-                      className="px-2.5 py-1 text-[11px] font-semibold rounded bg-emerald-50 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800 hover:bg-emerald-100 cursor-pointer"
+                      className="px-2.5 py-1 text-[11px] font-semibold rounded-lg bg-emerald-50 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800 hover:bg-emerald-100 cursor-pointer inline-flex items-center gap-1"
                     >
-                      👩 Female Farmer (28)
+                      <User className="w-3 h-3 text-emerald-600 shrink-0" /> Female Farmer (28)
                     </button>
                     <button
                       type="button"
                       onClick={() => setPresetProfile('student_male')}
-                      className="px-2.5 py-1 text-[11px] font-semibold rounded bg-sky-50 text-sky-800 dark:bg-sky-950 dark:text-sky-300 border border-sky-200 dark:border-sky-800 hover:bg-sky-100 cursor-pointer"
+                      className="px-2.5 py-1 text-[11px] font-semibold rounded-lg bg-sky-50 text-sky-800 dark:bg-sky-950 dark:text-sky-300 border border-sky-200 dark:border-sky-800 hover:bg-sky-100 cursor-pointer inline-flex items-center gap-1"
                     >
-                      👨 Male Student (22)
+                      <User className="w-3 h-3 text-sky-600 shrink-0" /> Male Student (22)
                     </button>
                     <button
                       type="button"
                       onClick={() => setPresetProfile('senior_male')}
-                      className="px-2.5 py-1 text-[11px] font-semibold rounded bg-purple-50 text-purple-800 dark:bg-purple-950 dark:text-purple-300 border border-purple-200 dark:border-purple-800 hover:bg-purple-100 cursor-pointer"
+                      className="px-2.5 py-1 text-[11px] font-semibold rounded-lg bg-purple-50 text-purple-800 dark:bg-purple-950 dark:text-purple-300 border border-purple-200 dark:border-purple-800 hover:bg-purple-100 cursor-pointer inline-flex items-center gap-1"
                     >
-                      👴 Senior Citizen (65)
+                      <User className="w-3 h-3 text-purple-600 shrink-0" /> Senior Citizen (65)
                     </button>
                     <button
                       type="button"
                       onClick={() => setPresetProfile('business_msme')}
-                      className="px-2.5 py-1 text-[11px] font-semibold rounded bg-amber-50 text-amber-800 dark:bg-amber-950 dark:text-amber-300 border border-amber-200 dark:border-amber-800 hover:bg-amber-100 cursor-pointer"
+                      className="px-2.5 py-1 text-[11px] font-semibold rounded-lg bg-amber-50 text-amber-800 dark:bg-amber-950 dark:text-amber-300 border border-amber-200 dark:border-amber-800 hover:bg-amber-100 cursor-pointer inline-flex items-center gap-1"
                     >
-                      💼 MSME Trader (38)
+                      <Building className="w-3 h-3 text-amber-600 shrink-0" /> MSME Trader (38)
                     </button>
                   </div>
                 </div>
@@ -2411,13 +2415,13 @@ Between: Municipal Corporation of Greater Mumbai (Authority) AND TechCorp Soluti
                     </label>
                     <div className="flex flex-wrap gap-2 text-xs">
                       {[
-                        { id: 'Owns Agricultural Land', label: '🌾 Owns Agricultural Land' },
-                        { id: 'BPL / Ration Card Holder', label: '💳 BPL / Ration Card Holder' },
-                        { id: 'Pregnant / Lactating Mother', label: '👶 Pregnant / Lactating Mother' },
-                        { id: 'Person with Disability (PwD)', label: '♿ Person with Disability (PwD)' },
-                        { id: 'Does Not Own a Pucca House', label: '🏠 Does Not Own Pucca House' },
-                        { id: 'Seeking Business / MSME Loan', label: '💼 Seeking Business / Startup Loan' },
-                        { id: 'Seeking Higher Education / Skill Training', label: '🎓 Seeking Higher Education / Skill Training' }
+                        { id: 'Owns Agricultural Land', label: 'Owns Agricultural Land' },
+                        { id: 'BPL / Ration Card Holder', label: 'BPL / Ration Card Holder' },
+                        { id: 'Pregnant / Lactating Mother', label: 'Pregnant / Lactating Mother' },
+                        { id: 'Person with Disability (PwD)', label: 'Person with Disability (PwD)' },
+                        { id: 'Does Not Own a Pucca House', label: 'Does Not Own Pucca House' },
+                        { id: 'Seeking Business / MSME Loan', label: 'Seeking Business / Startup Loan' },
+                        { id: 'Seeking Higher Education / Skill Training', label: 'Seeking Higher Education / Skill Training' }
                       ].map(item => {
                         const isSelected = citizenProfile.special_conditions.includes(item.id);
                         return (
@@ -2425,13 +2429,18 @@ Between: Municipal Corporation of Greater Mumbai (Authority) AND TechCorp Soluti
                             type="button"
                             key={item.id}
                             onClick={() => toggleSpecialCondition(item.id)}
-                            className={`px-3 py-1.5 rounded-full border text-xs font-semibold transition-all cursor-pointer ${
+                            className={`px-3 py-1.5 rounded-full border text-xs font-semibold transition-all cursor-pointer inline-flex items-center gap-1.5 ${
                               isSelected
                                 ? 'bg-[#0f3d68] text-white border-[#0f3d68] shadow-xs'
                                 : 'bg-gray-50 dark:bg-slate-800 text-gray-700 dark:text-gray-300 border-gray-300 dark:border-gray-600 hover:border-gray-400'
                             }`}
                           >
-                            {isSelected ? '✓ ' : ''}{item.label}
+                            <span className={`w-3.5 h-3.5 rounded-full flex items-center justify-center text-[9px] ${
+                              isSelected ? 'bg-amber-400 text-slate-900 font-black' : 'border border-gray-400 dark:border-gray-500'
+                            }`}>
+                              {isSelected ? <Check className="w-2.5 h-2.5" /> : ''}
+                            </span>
+                            <span>{item.label}</span>
                           </button>
                         );
                       })}
@@ -2442,10 +2451,10 @@ Between: Municipal Corporation of Greater Mumbai (Authority) AND TechCorp Soluti
                   <button
                     type="submit"
                     disabled={isRecommending}
-                    className="w-full py-3.5 bg-[#ea580c] hover:bg-[#c2410c] text-white font-bold text-xs uppercase tracking-wider rounded shadow-md transition-all cursor-pointer flex items-center justify-center gap-2"
+                    className="w-full py-3.5 bg-[#ea580c] hover:bg-[#c2410c] text-white font-bold text-xs uppercase tracking-wider rounded-xl shadow-md transition-all cursor-pointer flex items-center justify-center gap-2"
                   >
-                    <Sparkles className="w-4 h-4" />
-                    {isRecommending ? 'ANALYZING 96 WELFARE SCHEMES FOR YOUR PROFILE...' : 'FIND MY ELIGIBLE WELFARE SCHEMES 🎯'}
+                    <Search className="w-4 h-4" />
+                    {isRecommending ? 'ANALYZING 96 WELFARE SCHEMES FOR YOUR PROFILE...' : 'FIND MY ELIGIBLE WELFARE SCHEMES'}
                   </button>
                 </form>
               </div>
@@ -2537,9 +2546,10 @@ Between: Municipal Corporation of Greater Mumbai (Authority) AND TechCorp Soluti
                                 {rec.required_documents.map((doc, docIdx) => (
                                   <span
                                     key={docIdx}
-                                    className="text-[10px] px-2 py-0.5 rounded bg-gray-100 dark:bg-slate-700/80 text-gray-700 dark:text-gray-300 font-medium"
+                                    className="inline-flex items-center gap-1 text-[10px] px-2 py-0.5 rounded-md bg-gray-100 dark:bg-slate-700/80 text-gray-700 dark:text-gray-300 font-medium"
                                   >
-                                    📄 {doc}
+                                    <FileText className="w-3 h-3 text-blue-500 shrink-0" />
+                                    <span>{doc}</span>
                                   </span>
                                 ))}
                               </div>
@@ -2625,7 +2635,13 @@ Between: Municipal Corporation of Greater Mumbai (Authority) AND TechCorp Soluti
                     <span className="text-[10px] font-bold uppercase tracking-wider text-[#ea580c]">Eligibility Evaluation</span>
                     <h3 className="text-lg font-bold font-serif-gov text-[#0f3d68] dark:text-[#38bdf8]">{selectedScheme.name}</h3>
                   </div>
-                  <button onClick={() => setSelectedScheme(null)} className="text-gray-400 hover:text-gray-600 font-bold text-lg cursor-pointer">✕</button>
+                  <button 
+                    onClick={() => setSelectedScheme(null)} 
+                    className="p-1 rounded-lg text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-slate-800 transition-all cursor-pointer"
+                    aria-label="Close modal"
+                  >
+                    <X className="w-5 h-5" />
+                  </button>
                 </div>
 
                 <div className="grid grid-cols-2 gap-3 text-xs mb-4">
@@ -2702,7 +2718,7 @@ Between: Municipal Corporation of Greater Mumbai (Authority) AND TechCorp Soluti
                   onClick={handleLoadDemoContract}
                   className="mt-4 px-4 py-2 bg-[#ea580c] hover:bg-[#c2410c] text-white text-xs font-bold uppercase rounded-lg shadow-sm transition-all cursor-pointer inline-flex items-center gap-1.5"
                 >
-                  <Zap className="w-3.5 h-3.5 text-amber-200" /> ⚡ Load Demo Contract
+                  <Zap className="w-3.5 h-3.5 text-amber-200" /> Load Demo Contract
                 </button>
               </div>
             ) : (
@@ -2872,9 +2888,10 @@ Between: Municipal Corporation of Greater Mumbai (Authority) AND TechCorp Soluti
           <div className={`max-w-md w-full rounded-lg p-6 shadow-2xl border-t-4 border-t-[#0f3d68] border relative ${isDark ? 'bg-[#1e293b] border-[#334155]' : 'bg-white border-[#e2e8f0]'}`}>
             <button 
               onClick={() => setShowAuthModal(false)}
-              className="absolute right-4 top-4 text-gray-400 hover:text-gray-600 font-bold"
+              className="absolute right-4 top-4 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 p-1 rounded-lg hover:bg-gray-100 dark:hover:bg-slate-800 transition-all cursor-pointer"
+              aria-label="Close modal"
             >
-              ✕
+              <X className="w-5 h-5" />
             </button>
 
             <div className="flex items-center gap-2.5 mb-4">
@@ -2949,12 +2966,12 @@ Between: Municipal Corporation of Greater Mumbai (Authority) AND TechCorp Soluti
       )}
 
       {/* ── MOBILE BOTTOM NAVIGATION BAR (Thumb-friendly on Android / iOS) ── */}
-      <nav aria-label="Mobile Navigation" className="md:hidden fixed bottom-0 left-0 right-0 z-40 bg-white/95 dark:bg-[#0b1329]/95 backdrop-blur-md border-t border-gray-200 dark:border-gray-800 shadow-2xl px-2 py-1.5 flex items-center justify-around">
+      <nav aria-label="Mobile Navigation" className="md:hidden fixed bottom-0 left-0 right-0 z-40 bg-white/95 dark:bg-[#060b18]/95 backdrop-blur-xl border-t border-gray-200/80 dark:border-gray-800/80 shadow-[0_-4px_20px_rgba(0,0,0,0.08)] px-2 py-1.5 flex items-center justify-around">
         <button
           onClick={() => { setActiveTab('audit'); window.scrollTo({ top: 380, behavior: 'smooth' }); }}
-          className={`flex flex-col items-center justify-center py-1 px-2.5 rounded-lg text-[10px] font-bold transition-all ${
+          className={`flex flex-col items-center justify-center py-1.5 px-3 min-w-[58px] rounded-xl text-[10px] font-bold transition-all cursor-pointer ${
             activeTab === 'audit'
-              ? 'text-[#ea580c] dark:text-[#f97316]'
+              ? 'text-[#ea580c] dark:text-[#f97316] bg-orange-500/10 dark:bg-orange-500/20 shadow-2xs'
               : 'text-gray-500 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white'
           }`}
         >
@@ -2964,9 +2981,9 @@ Between: Municipal Corporation of Greater Mumbai (Authority) AND TechCorp Soluti
 
         <button
           onClick={() => { setActiveTab('chat'); window.scrollTo({ top: 400, behavior: 'smooth' }); }}
-          className={`flex flex-col items-center justify-center py-1 px-2.5 rounded-lg text-[10px] font-bold transition-all ${
+          className={`flex flex-col items-center justify-center py-1.5 px-3 min-w-[58px] rounded-xl text-[10px] font-bold transition-all cursor-pointer ${
             activeTab === 'chat'
-              ? 'text-[#ea580c] dark:text-[#f97316]'
+              ? 'text-[#ea580c] dark:text-[#f97316] bg-orange-500/10 dark:bg-orange-500/20 shadow-2xs'
               : 'text-gray-500 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white'
           }`}
         >
@@ -2976,9 +2993,9 @@ Between: Municipal Corporation of Greater Mumbai (Authority) AND TechCorp Soluti
 
         <button
           onClick={() => { setActiveTab('courtroom'); window.scrollTo({ top: 400, behavior: 'smooth' }); }}
-          className={`flex flex-col items-center justify-center py-1 px-2.5 rounded-lg text-[10px] font-bold transition-all ${
+          className={`flex flex-col items-center justify-center py-1.5 px-3 min-w-[58px] rounded-xl text-[10px] font-bold transition-all cursor-pointer ${
             activeTab === 'courtroom'
-              ? 'text-[#ea580c] dark:text-[#f97316]'
+              ? 'text-[#ea580c] dark:text-[#f97316] bg-orange-500/10 dark:bg-orange-500/20 shadow-2xs'
               : 'text-gray-500 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white'
           }`}
         >
@@ -2988,9 +3005,9 @@ Between: Municipal Corporation of Greater Mumbai (Authority) AND TechCorp Soluti
 
         <button
           onClick={() => { setActiveTab('redline'); window.scrollTo({ top: 400, behavior: 'smooth' }); }}
-          className={`flex flex-col items-center justify-center py-1 px-2.5 rounded-lg text-[10px] font-bold transition-all ${
+          className={`flex flex-col items-center justify-center py-1.5 px-3 min-w-[58px] rounded-xl text-[10px] font-bold transition-all cursor-pointer ${
             activeTab === 'redline'
-              ? 'text-[#ea580c] dark:text-[#f97316]'
+              ? 'text-[#ea580c] dark:text-[#f97316] bg-orange-500/10 dark:bg-orange-500/20 shadow-2xs'
               : 'text-gray-500 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white'
           }`}
         >
@@ -3000,9 +3017,9 @@ Between: Municipal Corporation of Greater Mumbai (Authority) AND TechCorp Soluti
 
         <button
           onClick={() => { setActiveTab('schemes'); window.scrollTo({ top: 400, behavior: 'smooth' }); }}
-          className={`flex flex-col items-center justify-center py-1 px-2.5 rounded-lg text-[10px] font-bold transition-all ${
+          className={`flex flex-col items-center justify-center py-1.5 px-3 min-w-[58px] rounded-xl text-[10px] font-bold transition-all cursor-pointer ${
             activeTab === 'schemes'
-              ? 'text-[#ea580c] dark:text-[#f97316]'
+              ? 'text-[#ea580c] dark:text-[#f97316] bg-orange-500/10 dark:bg-orange-500/20 shadow-2xs'
               : 'text-gray-500 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white'
           }`}
         >

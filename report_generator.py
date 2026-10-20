@@ -159,17 +159,17 @@ def generate_report(
         story.append(PageBreak())
         story.append(Paragraph("5. Scheme Eligibility Result", styles["SectionTitle"]))
         score = scheme_result.get("match_score", 0)
-        story.append(Paragraph(f"<b>Match Score: {score}%</b> | Eligible: {'Yes ✓' if scheme_result.get('eligible') else 'No ✗'}", styles["SubTitle"]))
+        story.append(Paragraph(f"<b>Match Score: {score}%</b> | Eligible: {'Yes' if scheme_result.get('eligible') else 'No'}", styles["SubTitle"]))
         story.append(Paragraph(scheme_result.get("recommendation", ""), styles["BodySmall"]))
         story.append(Spacer(1, 0.3*cm))
         if scheme_result.get("criteria_met"):
             story.append(Paragraph("Criteria Met:", styles["SubTitle"]))
             for c in scheme_result["criteria_met"]:
-                story.append(Paragraph(f"✅ {c.get('criterion', '')} — {c.get('evidence', '')}", styles["BodySmall"]))
+                story.append(Paragraph(f"[MET] {c.get('criterion', '')} — {c.get('evidence', '')}", styles["BodySmall"]))
         if scheme_result.get("criteria_failed"):
             story.append(Paragraph("Criteria Not Met:", styles["SubTitle"]))
             for c in scheme_result["criteria_failed"]:
-                story.append(Paragraph(f"❌ {c.get('criterion', '')} — {c.get('reason', '')}", styles["RiskHigh"]))
+                story.append(Paragraph(f"[NOT MET] {c.get('criterion', '')} — {c.get('reason', '')}", styles["RiskHigh"]))
 
     # ── Section 6: Q&A History ────────────────────────────────────────────────
     if qa_history:
