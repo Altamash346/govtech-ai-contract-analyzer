@@ -5,7 +5,7 @@ import {
   XCircle, Send, Volume2, Download, Search, ChevronRight, User, Building,
   Calendar, DollarSign, Layers, ArrowRight, Sparkles, Cpu, Lock, PhoneCall,
   ExternalLink, Award, CheckCircle2, ChevronDown, BookOpen, Activity, AlertCircle,
-  FileCheck, HelpCircle
+  FileCheck, HelpCircle, VolumeX, Copy, Check, LayoutGrid, PieChart, Zap, Play, Pause
 } from 'lucide-react';
 
 const RENDER_BACKEND = 'https://govtech-ai-contract-analyzer-platform.onrender.com/api';
@@ -214,6 +214,180 @@ export default function App() {
   const highRisksCount = docRisks.filter(r => (r.risk_level || '').toLowerCase().includes('high')).length;
   const medRisksCount = docRisks.filter(r => (r.risk_level || '').toLowerCase().includes('med')).length;
   const entitiesCount = Object.values(docEntities).reduce((acc, curr) => acc + (Array.isArray(curr) ? curr.length : 1), 0);
+
+  // Workspace Tab Navigation State
+  const [activeTab, setActiveTab] = useState('audit'); // 'audit', 'chat', 'courtroom', 'redline', 'schemes', 'translate', 'history', 'all'
+  const [copiedIndex, setCopiedIndex] = useState(null);
+  const [isSpeaking, setIsSpeaking] = useState(false);
+  const [speakingText, setSpeakingText] = useState('');
+
+  // Dynamic Contract Health Score (0-100)
+  const healthScore = React.useMemo(() => {
+    if (!currentDoc) return 100;
+    let score = 100;
+    score -= highRisksCount * 25;
+    score -= medRisksCount * 10;
+    return Math.max(15, Math.min(100, score));
+  }, [currentDoc, highRisksCount, medRisksCount]);
+
+  const healthGrade = React.useMemo(() => {
+    if (healthScore >= 80) {
+      return {
+        badge: 'Low Legal Risk',
+        title: 'Contract Terms Balanced & Commercially Fair',
+        color: 'text-emerald-600 dark:text-emerald-400',
+        borderColor: 'border-emerald-300 dark:border-emerald-800',
+        bg: 'bg-emerald-50/80 dark:bg-emerald-950/40',
+        progressColor: 'bg-emerald-500'
+      };
+    } else if (healthScore >= 50) {
+      return {
+        badge: 'Moderate Risk',
+        title: 'Caution: Asymmetric Clauses Identified',
+        color: 'text-amber-600 dark:text-amber-400',
+        borderColor: 'border-amber-300 dark:border-amber-800',
+        bg: 'bg-amber-50/80 dark:bg-amber-950/40',
+        progressColor: 'bg-amber-500'
+      };
+    } else {
+      return {
+        badge: 'High Liability Warning',
+        title: 'Critical Risk: Immediate Legal Amendment Advised',
+        color: 'text-red-600 dark:text-red-400',
+        borderColor: 'border-red-300 dark:border-red-800',
+        bg: 'bg-red-50/80 dark:bg-red-950/40',
+        progressColor: 'bg-red-600'
+      };
+    }
+  }, [healthScore]);
+
+  // Copy-to-clipboard with visual confirmation toast
+  const handleCopyClause = (text, idx) => {
+    if (!text) return;
+    try {
+      navigator.clipboard.writeText(text);
+      setCopiedIndex(idx);
+      setTimeout(() => setCopiedIndex(null), 2200);
+    } catch (e) {
+      console.warn('Copy failed', e);
+    }
+  };
+
+  // Built-in Browser Voice Readout (TTS)
+  const handleSpeak = (text) => {
+    if (typeof window === 'undefined' || !('speechSynthesis' in window)) {
+      alert('Voice readout is not supported on this browser.');
+      return;
+    }
+    if (isSpeaking) {
+      window.speechSynthesis.cancel();
+      setIsSpeaking(false);
+      setSpeakingText('');
+      return;
+    }
+    window.speechSynthesis.cancel();
+    const utterance = new SpeechSynthesisUtterance(text);
+    utterance.rate = 1.0;
+    utterance.pitch = 1.0;
+    utterance.onend = () => {
+      setIsSpeaking(false);
+      setSpeakingText('');
+    };
+    utterance.onerror = () => {
+      setIsSpeaking(false);
+      setSpeakingText('');
+    };
+    setSpeakingText(text);
+    setIsSpeaking(true);
+    window.speechSynthesis.speak(utterance);
+  };
+
+  // Instant 1-Click Realistic Municipal Tender Demo Contract
+  const handleLoadDemoContract = () => {
+    const demo = {
+      id: 9999,
+      filename: 'Sample_Municipal_E-Tender_Contract.pdf',
+      doc_type: 'contract',
+      page_count: 5,
+      summary: 'Municipal E-Quotation and Public Procurement Agreement between the Municipal Corporation of Greater Mumbai and TechCorp Solutions Pvt Ltd. Governs delivery of turnkey cloud data analytics infrastructure with explicit milestones, MSME dispute arbitration, and strict confidentiality protections.',
+      risks: [
+        {
+          clause_type: 'Liquidated Damages & Delay Penalty',
+          risk_level: 'High',
+          risky_excerpt: 'Contractor shall forfeit 1.5% of total project cost per day of delay up to a maximum penalty of 35% of overall agreement valuation, regardless of external department approval bottlenecks.',
+          why_risky: 'Imposes aggressive unmitigated financial penalties without reciprocal relief or notice window for bureaucratic delays beyond vendor control.',
+          severity_reasoning: 'Classified as High Risk because an uncapped 35% deduction causes catastrophic cash-flow strain and disproportionately penalizes contractors.',
+          potential_impact: 'Immediate automatic deduction of up to INR 15,75,000 from vendor performance bank guarantees.',
+          trigger_factors: ['Aggressive Penalty', 'No Grace Period', 'Asymmetric Burden'],
+          suggested_replacement: 'In the event of unexcused delay solely attributable to Contractor, liquidated damages shall accrue at 0.25% per week, capped at a maximum of 5% of the affected milestone value, following a mandatory 14-day written notice and cure window.'
+        },
+        {
+          clause_type: 'Unilateral Immediate Termination',
+          risk_level: 'High',
+          risky_excerpt: 'The Authority reserves absolute discretion to terminate this Agreement at any time with 48 hours notice without reimbursing work-in-progress or non-cancelable third-party commitments.',
+          why_risky: 'Denies standard compensation for completed milestones and exposes the vendor to unrecoverable sunken labor and software licensing costs.',
+          severity_reasoning: 'Classified as High Risk due to violation of commercial equity under Section 73 of the Indian Contract Act 1872.',
+          potential_impact: 'Total financial loss on dedicated developer billable hours, servers, and sub-contractor commitments.',
+          trigger_factors: ['Immediate Cancellation', 'No Sunken Cost Recovery', 'Unilateral Authority'],
+          suggested_replacement: 'Either party may terminate for convenience upon sixty (60) days prior written notice. Upon termination, Authority shall promptly reimburse Contractor for all verified completed milestones and non-cancelable supplier commitments.'
+        },
+        {
+          clause_type: 'Broad Background IP Forfeiture',
+          risk_level: 'Medium',
+          risky_excerpt: 'All proprietary software libraries, frameworks, and foundational algorithms utilized by Contractor during project delivery shall become exclusive property of Authority.',
+          why_risky: 'Attempts to forfeit vendor pre-existing intellectual property rather than granting a standard perpetual enterprise usage license.',
+          severity_reasoning: 'Designated as Medium Risk because it impairs the vendor from utilizing their proprietary core codebase in other commercial contracts.',
+          potential_impact: 'Loss of foundational software trade secrets and exposure to intellectual property claims.',
+          trigger_factors: ['Background IP Loss', 'Scope Creep'],
+          suggested_replacement: 'Contractor retains all rights, title, and interest in pre-existing intellectual property. Authority is granted a perpetual, royalty-free, non-exclusive license to use the customized deliverables solely for municipal operational purposes.'
+        }
+      ],
+      clauses: [
+        {
+          clause_type: 'Statutory Arbitration & Dispute Resolution',
+          summary: 'Sole arbitrator appointed under the Arbitration & Conciliation Act 1996 with legal seat at Mumbai, Maharashtra.',
+          verbatim_excerpt: 'All disputes arising hereunder shall be adjudicated through arbitration in Mumbai pursuant to the Arbitration and Conciliation Act, 1996.'
+        },
+        {
+          clause_type: 'Indemnification & IP Defense',
+          summary: 'Mutual indemnification against verified third-party patent or copyright infringement claims.',
+          verbatim_excerpt: 'Each party shall defend, indemnify, and hold harmless the other party against verified third-party intellectual property claims.'
+        },
+        {
+          clause_type: 'Force Majeure & Epidemic Relief',
+          summary: 'Suspends obligations and shields against default during statutory lockdowns, natural calamities, or civil unrest.',
+          verbatim_excerpt: 'Neither party shall be liable for delay resulting from acts of God, declared epidemics, or lawful government orders beyond reasonable control.'
+        },
+        {
+          clause_type: 'Statutory Non-Disclosure & Data Protection',
+          summary: 'Enforces 3-year confidentiality and DPDP Act 2023 compliance on all citizen datasets and tender pricing.',
+          verbatim_excerpt: 'All citizen datasets and commercial terms shall remain strictly confidential for a period of 3 years following contract expiration.'
+        }
+      ],
+      entities: {
+        parties: ['Municipal Corporation of Greater Mumbai (Authority)', 'TechCorp Solutions Pvt Ltd (Contractor)'],
+        dates: ['Agreement Date: Nov 01, 2026', 'Milestone 1 Deliverable: Jan 15, 2027', 'Final Completion: Oct 31, 2027'],
+        monetary_values: ['Total Tender Value: INR 45,00,000', 'Performance Security: INR 4,50,000', 'Retention: 5%'],
+        locations: ['Mumbai, Maharashtra, India (Exclusive Legal Jurisdiction)'],
+        key_terms: ['E-Quotation Tender', 'MSME Commercial Parity', 'Sovereign Data Protection']
+      },
+      pii_shield: {
+        shield_active: true,
+        total_scrubbed: 4,
+        breakdown: { aadhaar: 1, pan: 1, phone: 2 }
+      },
+      full_text: `SAMPLE MUNICIPAL IT INFRASTRUCTURE CONTRACT
+Between: Municipal Corporation of Greater Mumbai (Authority) AND TechCorp Solutions Pvt Ltd (Contractor)
+1. Scope: Delivery of cloud-based citizen analytics portal.
+2. Penalties: Contractor shall forfeit 1.5% of total project cost per day of delay up to a maximum penalty of 35% of overall agreement valuation, regardless of external department approval bottlenecks.
+3. Termination: The Authority reserves absolute discretion to terminate this Agreement at any time with 48 hours notice without reimbursing work-in-progress or non-cancelable third-party commitments.
+4. Intellectual Property: All proprietary software libraries, frameworks, and foundational algorithms utilized by Contractor during project delivery shall become exclusive property of Authority.
+5. Arbitration: Governed by Arbitration and Conciliation Act 1996, seat at Mumbai.`
+    };
+    setCurrentDoc(demo);
+    setActiveTab('audit');
+    scrollTo(uploadRef);
+  };
 
   // Q&A Chat State
   const [messages, setMessages] = useState([]);
@@ -832,7 +1006,7 @@ export default function App() {
   }
 
   return (
-    <div className={`min-h-screen font-sans transition-colors duration-200 ${isDark ? 'bg-[#0b1329] text-[#f8fafc]' : 'bg-[#f8fafc] text-[#0f2b48]'}`}>
+    <div className={`min-h-screen font-sans pb-20 md:pb-0 transition-colors duration-200 ${isDark ? 'bg-[#0b1329] text-[#f8fafc]' : 'bg-[#f8fafc] text-[#0f2b48]'}`}>
       
       {/* ── National Identity Tricolor Bar ── */}
       <div className="h-1.5 w-full flex">
@@ -1009,16 +1183,24 @@ export default function App() {
               </p>
 
               {/* Action Buttons */}
-              <div className="flex flex-wrap gap-4 pt-2">
+              <div className="flex flex-wrap items-center gap-3 pt-2">
                 <button 
                   onClick={() => scrollTo(uploadRef)}
-                  className="px-8 py-4 bg-[#0f3d68] hover:bg-[#0a2540] text-white font-bold text-sm tracking-wider uppercase rounded shadow-lg transition-all flex items-center gap-2 border-2 border-[#0f3d68] cursor-pointer"
+                  className="px-6 sm:px-8 py-3.5 sm:py-4 bg-[#0f3d68] hover:bg-[#0a2540] text-white font-bold text-xs sm:text-sm tracking-wider uppercase rounded-xl shadow-lg transition-all flex items-center gap-2 border-2 border-[#0f3d68] cursor-pointer"
                 >
                   UPLOAD & ANALYZE <ArrowRight className="w-4 h-4" />
                 </button>
                 <button 
-                  onClick={() => scrollTo(schemesRef)}
-                  className="px-8 py-4 bg-white hover:bg-gray-50 text-[#0f3d68] font-bold text-sm tracking-wider uppercase rounded border-2 border-[#0f3d68] shadow-sm transition-all dark:bg-transparent dark:text-white dark:border-gray-500 cursor-pointer"
+                  onClick={handleLoadDemoContract}
+                  className="px-5 sm:px-7 py-3.5 sm:py-4 bg-[#ea580c] hover:bg-[#c2410c] text-white font-bold text-xs sm:text-sm tracking-wider uppercase rounded-xl shadow-lg transition-all flex items-center gap-2 cursor-pointer border-2 border-[#ea580c]"
+                  title="Test the entire dashboard immediately with a sample tender contract"
+                >
+                  <Zap className="w-4 h-4 text-amber-200" />
+                  <span>⚡ TRY DEMO CONTRACT</span>
+                </button>
+                <button 
+                  onClick={() => { setActiveTab('schemes'); scrollTo(schemesRef); }}
+                  className="px-5 sm:px-7 py-3.5 sm:py-4 bg-white hover:bg-gray-50 text-[#0f3d68] font-bold text-xs sm:text-sm tracking-wider uppercase rounded-xl border-2 border-[#0f3d68] shadow-sm transition-all dark:bg-transparent dark:text-white dark:border-gray-500 cursor-pointer"
                 >
                   EXPLORE SCHEMES
                 </button>
@@ -1043,9 +1225,69 @@ export default function App() {
         </div>
       </section>
 
+      {/* ── STICKY MODULE WORKSPACE NAVIGATION TABS ── */}
+      <nav className="sticky top-0 z-30 bg-white/95 dark:bg-[#060b18]/95 backdrop-blur-md border-b border-gray-200 dark:border-gray-800 shadow-xs">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex items-center justify-between gap-3 py-2.5 overflow-x-auto no-scrollbar">
+            <div className="flex items-center gap-1.5 sm:gap-2 flex-nowrap">
+              {[
+                { id: 'audit', label: 'Audit & Health', icon: Shield, count: currentDoc ? highRisksCount + medRisksCount : null, countColor: 'bg-red-500' },
+                { id: 'chat', label: 'Ask AI (Q&A)', icon: MessageSquare },
+                { id: 'courtroom', label: 'AI Courtroom', icon: Scale },
+                { id: 'redline', label: 'PDF Redline', icon: Edit3, count: docRisks.length > 0 ? docRisks.length : null, countColor: 'bg-amber-500' },
+                { id: 'schemes', label: 'Welfare Schemes', icon: Landmark, count: schemes.length || '12', countColor: 'bg-emerald-500' },
+                { id: 'translate', label: 'Translate', icon: Globe },
+                { id: 'history', label: 'Documents', icon: Folder, count: documents.length || null, countColor: 'bg-blue-500' },
+                { id: 'all', label: 'Full View', icon: LayoutGrid }
+              ].map(tab => {
+                const isActive = activeTab === tab.id;
+                const Icon = tab.icon;
+                return (
+                  <button
+                    key={tab.id}
+                    onClick={() => {
+                      setActiveTab(tab.id);
+                      if (tab.id === 'audit') scrollTo(uploadRef);
+                      else if (tab.id === 'chat') scrollTo(chatRef);
+                      else if (tab.id === 'courtroom') scrollTo(debateRef);
+                      else if (tab.id === 'redline') scrollTo(redlineRef);
+                      else if (tab.id === 'schemes') scrollTo(schemesRef);
+                      else if (tab.id === 'translate') scrollTo(multilingualRef);
+                      else if (tab.id === 'history') scrollTo(historyRef);
+                    }}
+                    className={`px-3.5 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-2 cursor-pointer whitespace-nowrap ${
+                      isActive 
+                        ? 'bg-[#0f3d68] text-white shadow-md dark:bg-sky-600 dark:text-white' 
+                        : 'text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-slate-800'
+                    }`}
+                  >
+                    <Icon className={`w-3.5 h-3.5 ${isActive ? 'text-amber-400' : 'text-gray-400'}`} />
+                    <span>{tab.label}</span>
+                    {tab.count !== null && tab.count !== undefined && (
+                      <span className={`text-[10px] px-1.5 py-0.2 rounded-full font-black text-white ${tab.countColor || 'bg-gray-500'}`}>
+                        {tab.count}
+                      </span>
+                    )}
+                  </button>
+                );
+              })}
+            </div>
+
+            {/* Quick Demo Contract Trigger in Tab Bar */}
+            <button
+              onClick={handleLoadDemoContract}
+              className="hidden lg:flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold text-[#ea580c] hover:bg-orange-50 dark:hover:bg-orange-950/30 border border-orange-200 dark:border-orange-800 transition-all cursor-pointer whitespace-nowrap"
+              title="Instantly load realistic sample contract"
+            >
+              <Sparkles className="w-3.5 h-3.5" />
+              <span>⚡ Try Demo</span>
+            </button>
+          </div>
+        </div>
+      </nav>
 
       {/* ── SECTION 3: UPLOAD & AUDIT WORKSPACE (Always Visible & Accessible!) ── */}
-      <section ref={uploadRef} className="py-16 border-b border-gray-200 dark:border-gray-800">
+      <section ref={uploadRef} className={`py-16 border-b border-gray-200 dark:border-gray-800 ${activeTab !== 'audit' && activeTab !== 'all' ? 'hidden' : ''}`}>
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center max-w-2xl mx-auto mb-10">
             <div className="inline-block px-3 py-1 rounded-full text-[11px] font-bold uppercase tracking-widest bg-blue-50 text-[#0f3d68] dark:bg-blue-950 dark:text-blue-300 mb-2">
@@ -1085,6 +1327,26 @@ export default function App() {
                       <option value="secure">🔒 Slower (secure)</option>
                     </select>
                   </div>
+                </div>
+
+                {/* 1-Click Demo Contract Quick-Load Banner */}
+                <div className="p-4 rounded-xl bg-gradient-to-r from-amber-500/10 via-blue-500/10 to-emerald-500/10 border border-amber-300/60 dark:border-amber-700/40 flex flex-col sm:flex-row items-center justify-between gap-3 shadow-xs">
+                  <div className="flex items-center gap-3">
+                    <div className="w-9 h-9 rounded-lg bg-amber-500/20 text-amber-600 dark:text-amber-400 flex items-center justify-center shrink-0">
+                      <Sparkles className="w-5 h-5" />
+                    </div>
+                    <div>
+                      <h5 className="font-bold text-xs text-gray-900 dark:text-gray-100">Don't have a contract PDF handy?</h5>
+                      <p className="text-[11px] text-gray-500 dark:text-gray-400">Test the entire AI engine instantly with our realistic Municipal Tender Contract.</p>
+                    </div>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={handleLoadDemoContract}
+                    className="w-full sm:w-auto px-4 py-2 bg-[#ea580c] hover:bg-[#c2410c] text-white text-xs font-bold uppercase tracking-wider rounded-lg shadow-sm transition-all cursor-pointer flex items-center justify-center gap-1.5 shrink-0"
+                  >
+                    <Zap className="w-3.5 h-3.5 text-amber-200" /> ⚡ TRY DEMO CONTRACT
+                  </button>
                 </div>
 
                 <div className="border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-lg p-8 text-center hover:border-[#ea580c] transition-all bg-gray-50/50 dark:bg-gray-900/30">
@@ -1128,6 +1390,69 @@ export default function App() {
             {/* Document Analysis Result Breakdown */}
             {currentDoc && (
               <div className="mt-8 space-y-6">
+                {/* Contract Health Score & Safety Meter */}
+                <div className={`p-6 rounded-2xl border shadow-sm flex flex-col md:flex-row items-center justify-between gap-5 transition-all ${healthGrade.bg} ${healthGrade.borderColor}`}>
+                  <div className="flex items-center gap-4 w-full md:w-auto">
+                    {/* Visual Radial Dial / Health Badge */}
+                    <div className="relative w-20 h-20 flex flex-col items-center justify-center rounded-2xl bg-white dark:bg-slate-900 shadow-md border border-gray-200 dark:border-gray-700 shrink-0">
+                      <span className={`text-3xl font-black ${healthGrade.color}`}>
+                        {healthScore}
+                      </span>
+                      <span className="text-[9px] font-bold text-gray-400 uppercase -mt-1">/ 100</span>
+                    </div>
+
+                    <div className="flex-1">
+                      <div className="flex items-center gap-2 mb-1 flex-wrap">
+                        <span className={`text-[10px] font-black uppercase tracking-wider px-2.5 py-0.5 rounded-full text-white shadow-2xs ${
+                          healthScore >= 80 ? 'bg-emerald-600' : healthScore >= 50 ? 'bg-amber-500' : 'bg-red-600'
+                        }`}>
+                          {healthGrade.badge}
+                        </span>
+                        <span className="text-[11px] text-gray-500 font-semibold">
+                          Legal Parity Score (Indian Contract Act 1872)
+                        </span>
+                      </div>
+                      <h4 className="text-base font-bold font-serif-gov text-[#0f3d68] dark:text-[#38bdf8]">
+                        {healthGrade.title}
+                      </h4>
+                      <div className="w-full bg-gray-200 dark:bg-slate-700 rounded-full h-1.5 mt-2.5 overflow-hidden max-w-md">
+                        <div className={`h-1.5 rounded-full transition-all duration-700 ${healthGrade.progressColor}`} style={{ width: `${healthScore}%` }}></div>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Actions: Listen Audio TTS + Download PDF */}
+                  <div className="flex items-center gap-2.5 w-full md:w-auto justify-end flex-wrap">
+                    <button
+                      type="button"
+                      onClick={() => handleSpeak(`${currentDoc.summary || ''}. Identified ${highRisksCount} high risk clauses and ${medRisksCount} medium risk clauses.`)}
+                      className="px-3.5 py-2.5 rounded-xl border text-xs font-bold transition-all flex items-center gap-2 bg-white dark:bg-slate-800 border-gray-300 dark:border-slate-700 hover:border-amber-500 text-gray-800 dark:text-gray-200 cursor-pointer shadow-xs"
+                      title="Listen to Executive Summary Aloud"
+                    >
+                      {isSpeaking ? (
+                        <>
+                          <VolumeX className="w-4 h-4 text-amber-500 animate-pulse" />
+                          <span className="text-amber-600 dark:text-amber-400 font-black">STOP VOICE</span>
+                        </>
+                      ) : (
+                        <>
+                          <Volume2 className="w-4 h-4 text-[#ea580c]" />
+                          <span>🔊 LISTEN</span>
+                        </>
+                      )}
+                    </button>
+                    <a
+                      href={`${API_BASE}/report/download/${currentDoc.id}`}
+                      target="_blank"
+                      rel="noreferrer"
+                      download
+                      className="px-4 py-2.5 bg-[#0f3d68] hover:bg-[#0a2540] text-white text-xs font-bold uppercase tracking-wider rounded-xl shadow flex items-center gap-1.5 border border-[#0f3d68] transition-all"
+                    >
+                      <Download className="w-3.5 h-3.5 text-amber-400" />
+                      <span>DOWNLOAD REPORT</span>
+                    </a>
+                  </div>
+                </div>
                 <div className="p-6 rounded-lg bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-300 dark:border-emerald-800 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                   <div className="flex items-center gap-3">
                     <CheckCircle className="w-6 h-6 text-emerald-600 shrink-0" />
@@ -1329,14 +1654,45 @@ export default function App() {
                               )}
                             </div>
 
-                            {/* Recommended Remediation Amendment */}
+                            {/* Recommended Remediation Amendment with Copy & Audio Button */}
                             {risk.suggested_replacement && (
                               <div className="pt-2">
-                                <div className="text-[11px] font-bold uppercase tracking-wider text-emerald-700 dark:text-emerald-400 mb-1.5 flex items-center gap-1.5">
-                                  <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
-                                  Recommended Legal Amendment (Safer Replacement):
+                                <div className="flex items-center justify-between gap-2 mb-1.5 flex-wrap">
+                                  <div className="text-[11px] font-bold uppercase tracking-wider text-emerald-700 dark:text-emerald-400 flex items-center gap-1.5">
+                                    <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
+                                    Recommended Legal Amendment (Safer Replacement):
+                                  </div>
+                                  <div className="flex items-center gap-2">
+                                    <button
+                                      type="button"
+                                      onClick={() => handleSpeak(risk.suggested_replacement)}
+                                      className="px-2.5 py-1 rounded-md text-[10px] font-bold uppercase tracking-wider transition-all flex items-center gap-1 cursor-pointer bg-white dark:bg-slate-800 border border-gray-300 dark:border-slate-700 text-gray-700 dark:text-gray-300 hover:border-amber-500 shadow-2xs"
+                                      title="Read clause aloud"
+                                    >
+                                      <Volume2 className="w-3 h-3 text-[#ea580c]" />
+                                      <span>LISTEN</span>
+                                    </button>
+                                    <button
+                                      type="button"
+                                      onClick={() => handleCopyClause(risk.suggested_replacement, i)}
+                                      className="px-3 py-1 rounded-md text-[10px] font-bold uppercase tracking-wider transition-all flex items-center gap-1.5 cursor-pointer bg-emerald-600 hover:bg-emerald-700 text-white shadow-2xs"
+                                      title="Copy clause to clipboard"
+                                    >
+                                      {copiedIndex === i ? (
+                                        <>
+                                          <Check className="w-3 h-3 text-white" />
+                                          <span className="font-black">COPIED!</span>
+                                        </>
+                                      ) : (
+                                        <>
+                                          <Copy className="w-3 h-3 text-emerald-100" />
+                                          <span>COPY CLAUSE</span>
+                                        </>
+                                      )}
+                                    </button>
+                                  </div>
                                 </div>
-                                <div className="p-3 rounded-lg bg-emerald-50/90 dark:bg-emerald-950/40 border-l-3 border-emerald-500 text-emerald-950 dark:text-emerald-100 text-xs leading-relaxed font-medium shadow-2xs">
+                                <div className="p-3 rounded-lg bg-emerald-50/90 dark:bg-emerald-950/40 border-l-4 border-emerald-500 text-emerald-950 dark:text-emerald-100 text-xs leading-relaxed font-medium shadow-2xs">
                                   {risk.suggested_replacement}
                                 </div>
                               </div>
@@ -1411,7 +1767,7 @@ export default function App() {
       </section>
 
       {/* ── SECTION 4: INTERACTIVE Q&A CHAT MODULE ── */}
-      <section ref={chatRef} className={`py-16 border-b transition-colors ${isDark ? 'bg-[#0d162e] border-[#1e293b]' : 'bg-[#f1f5f9] border-[#e2e8f0]'}`}>
+      <section ref={chatRef} className={`py-16 border-b transition-colors ${isDark ? 'bg-[#0d162e] border-[#1e293b]' : 'bg-[#f1f5f9] border-[#e2e8f0]'} ${activeTab !== 'chat' && activeTab !== 'all' ? 'hidden' : ''}`}>
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center max-w-2xl mx-auto mb-10">
             <div className="inline-block px-3 py-1 rounded-full text-[11px] font-bold uppercase tracking-widest bg-amber-50 text-[#ea580c] border border-amber-200 mb-2">
@@ -1491,7 +1847,7 @@ export default function App() {
       </section>
 
       {/* ── SECTION 5: MULTI-AGENT COURTROOM DEBATE ── */}
-      <section ref={debateRef} className="py-16 border-b border-gray-200 dark:border-gray-800">
+      <section ref={debateRef} className={`py-16 border-b border-gray-200 dark:border-gray-800 ${activeTab !== 'courtroom' && activeTab !== 'all' ? 'hidden' : ''}`}>
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center max-w-2xl mx-auto mb-10">
             <div className="inline-block px-3 py-1 rounded-full text-[11px] font-bold uppercase tracking-widest bg-emerald-50 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300 mb-2">
@@ -1626,7 +1982,7 @@ export default function App() {
       </section>
 
       {/* ── SECTION 6: AUTO-REDLINE MODULE ── */}
-      <section ref={redlineRef} className={`py-16 border-b transition-colors ${isDark ? 'bg-[#0d162e] border-[#1e293b]' : 'bg-[#f1f5f9] border-[#e2e8f0]'}`}>
+      <section ref={redlineRef} className={`py-16 border-b transition-colors ${isDark ? 'bg-[#0d162e] border-[#1e293b]' : 'bg-[#f1f5f9] border-[#e2e8f0]'} ${activeTab !== 'redline' && activeTab !== 'all' ? 'hidden' : ''}`}>
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center max-w-3xl mx-auto mb-10">
             <div className="inline-block px-3 py-1 rounded-full text-[11px] font-bold uppercase tracking-widest bg-red-100 text-red-800 dark:bg-red-950/60 dark:text-red-300 mb-2 border border-red-200 dark:border-red-900">
@@ -1837,7 +2193,7 @@ export default function App() {
       </section>
 
       {/* ── SECTION 7: NATIONAL WELFARE SCHEME DIRECTORY & CITIZEN RECOMMENDER ── */}
-      <section ref={schemesRef} className="py-16 border-b border-gray-200 dark:border-gray-800">
+      <section ref={schemesRef} className={`py-16 border-b border-gray-200 dark:border-gray-800 ${activeTab !== 'schemes' && activeTab !== 'all' ? 'hidden' : ''}`}>
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           
           <div className="flex flex-wrap items-end justify-between mb-8 gap-4">
@@ -2320,8 +2676,95 @@ export default function App() {
         </div>
       </section>
 
-      {/* ── SECTION 8: INSPECTION RECORDS & AUDIT HISTORY ── */}
-      <section ref={historyRef} className={`py-16 border-b transition-colors ${isDark ? 'bg-[#0d162e] border-[#1e293b]' : 'bg-[#f1f5f9] border-[#e2e8f0]'}`}>
+      {/* ── SECTION 8: MULTILINGUAL LEGAL EXPLAINER ── */}
+      <section ref={multilingualRef} className={`py-16 border-b border-gray-200 dark:border-gray-800 ${activeTab !== 'translate' && activeTab !== 'all' ? 'hidden' : ''}`}>
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="text-center max-w-2xl mx-auto mb-10">
+            <div className="inline-block px-3 py-1 rounded-full text-[11px] font-bold uppercase tracking-widest bg-sky-50 text-sky-800 dark:bg-sky-950 dark:text-sky-300 mb-2 border border-sky-200 dark:border-sky-900">
+              WORKSPACE · MODULE 6 · MULTILINGUAL ACCESS
+            </div>
+            <h2 className="text-3xl font-black font-serif-gov text-[#0f3d68] dark:text-[#38bdf8]">
+              Indian Language Legal Translator
+            </h2>
+            <p className="text-xs text-gray-500 mt-1">
+              Translate dense contractual clauses and government scheme mandates into 22 scheduled Indian languages with legal precision.
+            </p>
+          </div>
+
+          <div className="max-w-3xl mx-auto p-6 sm:p-8 rounded-2xl border shadow-md bg-white dark:bg-[#1e293b] border-gray-200 dark:border-gray-700">
+            {!currentDoc ? (
+              <div className="text-center p-8 text-xs text-gray-500">
+                <Globe className="w-10 h-10 text-gray-400 mx-auto mb-3" />
+                <p>Please load or upload a contract document in Module 1 to enable multi-lingual legal translation.</p>
+                <button
+                  type="button"
+                  onClick={handleLoadDemoContract}
+                  className="mt-4 px-4 py-2 bg-[#ea580c] hover:bg-[#c2410c] text-white text-xs font-bold uppercase rounded-lg shadow-sm transition-all cursor-pointer inline-flex items-center gap-1.5"
+                >
+                  <Zap className="w-3.5 h-3.5 text-amber-200" /> ⚡ Load Demo Contract
+                </button>
+              </div>
+            ) : (
+              <div className="space-y-6">
+                <div className="flex flex-col sm:flex-row items-center justify-between gap-4 p-4 rounded-xl bg-gray-50 dark:bg-slate-800 border border-gray-200 dark:border-gray-700">
+                  <div>
+                    <span className="text-[10px] uppercase font-bold text-gray-400">Source Document</span>
+                    <h4 className="text-xs font-bold text-gray-900 dark:text-gray-100">{currentDoc.filename}</h4>
+                  </div>
+                  <div className="flex items-center gap-2 w-full sm:w-auto">
+                    <select
+                      value={targetLang}
+                      onChange={e => setTargetLang(e.target.value)}
+                      className="px-3 py-2 text-xs font-bold rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-slate-900 text-gray-800 dark:text-gray-200 cursor-pointer"
+                    >
+                      {INDIAN_LANGUAGES.map(l => (
+                        <option key={l.code} value={l.name}>{l.name} ({l.native})</option>
+                      ))}
+                    </select>
+                    <button
+                      type="button"
+                      disabled={isTranslating}
+                      onClick={handleTranslate}
+                      className="px-4 py-2 bg-[#0f3d68] hover:bg-[#0a2540] disabled:opacity-50 text-white text-xs font-bold uppercase tracking-wider rounded-lg shadow-sm transition-all cursor-pointer flex items-center gap-1.5 shrink-0"
+                    >
+                      <Sparkles className={`w-3.5 h-3.5 ${isTranslating ? 'animate-spin' : ''}`} />
+                      <span>{isTranslating ? 'Translating...' : 'Translate'}</span>
+                    </button>
+                  </div>
+                </div>
+
+                {translatedText ? (
+                  <div className="p-5 rounded-xl border border-emerald-300 dark:border-emerald-800 bg-emerald-50/50 dark:bg-emerald-950/20 space-y-3">
+                    <div className="flex items-center justify-between gap-2">
+                      <span className="text-xs font-bold text-emerald-800 dark:text-emerald-300 uppercase tracking-wider flex items-center gap-1.5">
+                        <CheckCircle2 className="w-4 h-4 text-emerald-600" />
+                        Translated into {targetLang}:
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() => handleSpeak(translatedText)}
+                        className="px-2.5 py-1 rounded text-xs font-bold bg-white dark:bg-slate-800 border border-gray-300 dark:border-slate-700 hover:border-amber-500 text-gray-700 dark:text-gray-200 flex items-center gap-1 shadow-2xs cursor-pointer"
+                      >
+                        <Volume2 className="w-3.5 h-3.5 text-[#ea580c]" /> Listen
+                      </button>
+                    </div>
+                    <p className="text-xs sm:text-sm text-gray-800 dark:text-gray-200 leading-relaxed font-medium whitespace-pre-line">
+                      {translatedText}
+                    </p>
+                  </div>
+                ) : (
+                  <div className="p-6 rounded-xl border border-dashed border-gray-300 dark:border-gray-700 text-center text-xs text-gray-500">
+                    Select an Indian language above and click <strong>Translate</strong> to generate an accurate legal translation.
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+        </div>
+      </section>
+
+      {/* ── SECTION 9: INSPECTION RECORDS & AUDIT HISTORY ── */}
+      <section ref={historyRef} className={`py-16 border-b transition-colors ${isDark ? 'bg-[#0d162e] border-[#1e293b]' : 'bg-[#f1f5f9] border-[#e2e8f0]'} ${activeTab !== 'history' && activeTab !== 'all' ? 'hidden' : ''}`}>
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center max-w-2xl mx-auto mb-10">
             <div className="inline-block px-3 py-1 rounded-full text-[11px] font-bold uppercase tracking-widest bg-gray-200 text-gray-800 dark:bg-gray-800 dark:text-gray-200 mb-2">
@@ -2503,6 +2946,69 @@ export default function App() {
           </div>
         </div>
       )}
+
+      {/* ── MOBILE BOTTOM NAVIGATION BAR (Thumb-friendly on Android / iOS) ── */}
+      <nav aria-label="Mobile Navigation" className="md:hidden fixed bottom-0 left-0 right-0 z-40 bg-white/95 dark:bg-[#0b1329]/95 backdrop-blur-md border-t border-gray-200 dark:border-gray-800 shadow-2xl px-2 py-1.5 flex items-center justify-around">
+        <button
+          onClick={() => { setActiveTab('audit'); window.scrollTo({ top: 380, behavior: 'smooth' }); }}
+          className={`flex flex-col items-center justify-center py-1 px-2.5 rounded-lg text-[10px] font-bold transition-all ${
+            activeTab === 'audit'
+              ? 'text-[#ea580c] dark:text-[#f97316]'
+              : 'text-gray-500 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white'
+          }`}
+        >
+          <ShieldAlert className="w-5 h-5 mb-0.5" />
+          <span>Audit</span>
+        </button>
+
+        <button
+          onClick={() => { setActiveTab('chat'); window.scrollTo({ top: 400, behavior: 'smooth' }); }}
+          className={`flex flex-col items-center justify-center py-1 px-2.5 rounded-lg text-[10px] font-bold transition-all ${
+            activeTab === 'chat'
+              ? 'text-[#ea580c] dark:text-[#f97316]'
+              : 'text-gray-500 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white'
+          }`}
+        >
+          <Bot className="w-5 h-5 mb-0.5" />
+          <span>Ask AI</span>
+        </button>
+
+        <button
+          onClick={() => { setActiveTab('courtroom'); window.scrollTo({ top: 400, behavior: 'smooth' }); }}
+          className={`flex flex-col items-center justify-center py-1 px-2.5 rounded-lg text-[10px] font-bold transition-all ${
+            activeTab === 'courtroom'
+              ? 'text-[#ea580c] dark:text-[#f97316]'
+              : 'text-gray-500 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white'
+          }`}
+        >
+          <Scale className="w-5 h-5 mb-0.5" />
+          <span>Courtroom</span>
+        </button>
+
+        <button
+          onClick={() => { setActiveTab('redline'); window.scrollTo({ top: 400, behavior: 'smooth' }); }}
+          className={`flex flex-col items-center justify-center py-1 px-2.5 rounded-lg text-[10px] font-bold transition-all ${
+            activeTab === 'redline'
+              ? 'text-[#ea580c] dark:text-[#f97316]'
+              : 'text-gray-500 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white'
+          }`}
+        >
+          <FileCheck className="w-5 h-5 mb-0.5" />
+          <span>Redline</span>
+        </button>
+
+        <button
+          onClick={() => { setActiveTab('schemes'); window.scrollTo({ top: 400, behavior: 'smooth' }); }}
+          className={`flex flex-col items-center justify-center py-1 px-2.5 rounded-lg text-[10px] font-bold transition-all ${
+            activeTab === 'schemes'
+              ? 'text-[#ea580c] dark:text-[#f97316]'
+              : 'text-gray-500 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white'
+          }`}
+        >
+          <Sparkles className="w-5 h-5 mb-0.5" />
+          <span>Schemes</span>
+        </button>
+      </nav>
 
     </div>
   );
