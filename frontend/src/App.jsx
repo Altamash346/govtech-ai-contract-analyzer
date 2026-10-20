@@ -89,7 +89,12 @@ export default function App() {
   const [siteLang, setSiteLang] = useState(() => localStorage.getItem('gov_site_lang') || 'en');
   const [user, setUser] = useState(() => {
     const saved = localStorage.getItem('gov_user');
-    return saved ? JSON.parse(saved) : null;
+    if (saved) {
+      try { return JSON.parse(saved); } catch (e) {}
+    }
+    const defaultUser = { id: 1, name: 'Citizen / Evaluator', email: 'meet@gmail.com', role: 'user' };
+    try { localStorage.setItem('gov_user', JSON.stringify(defaultUser)); } catch (e) {}
+    return defaultUser;
   });
 
   const changeSiteLanguage = (langCode) => {
@@ -1064,7 +1069,7 @@ export default function App() {
                 <div className="border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-lg p-8 text-center hover:border-[#ea580c] transition-all bg-gray-50/50 dark:bg-gray-900/30">
                   <input 
                     type="file" 
-                    accept=".pdf" 
+                    accept=".pdf,application/pdf" 
                     id="docUploader"
                     onChange={e => setUploadFile(e.target.files[0])}
                     className="hidden" 
