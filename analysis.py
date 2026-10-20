@@ -29,13 +29,16 @@ def _call_llm(prompt: str, mode: str = None) -> str:
 
 
 def _call_gemini(prompt: str) -> str:
-    """Send prompt to fast cloud engine with seamless fallback."""
+    """Send prompt to fast cloud engine with Layer 1 PII sanitization and seamless fallback."""
     try:
+        from ingestion import anonymize_pii
+        sanitized_prompt, _ = anonymize_pii(prompt)
+
         import google.generativeai as genai
         genai.configure(api_key=config.GEMINI_API_KEY)
         model = genai.GenerativeModel(config.GEMINI_MODEL)
         response = model.generate_content(
-            prompt,
+            sanitized_prompt,
             generation_config={"temperature": 0.1},
             request_options={"timeout": 45}
         )

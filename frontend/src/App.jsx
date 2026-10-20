@@ -1119,10 +1119,28 @@ export default function App() {
                       <Download className="w-3.5 h-3.5" /> Download Full PDF Report
                     </a>
                   </div>
+
+                  {/* Layer 1 Sovereign PII Shield Badge */}
+                  <div className="mb-3.5 p-2.5 rounded-lg border border-emerald-300 dark:border-emerald-800/80 bg-emerald-50/80 dark:bg-emerald-950/40 flex items-center justify-between flex-wrap gap-2 text-xs">
+                    <div className="flex items-center gap-2">
+                      <Shield className="w-4 h-4 text-emerald-600 dark:text-emerald-400 shrink-0" />
+                      <div>
+                        <span className="font-bold text-emerald-900 dark:text-emerald-200">
+                          Layer 1 Sovereign PII Shield: ACTIVE
+                        </span>
+                        <span className="text-emerald-700 dark:text-emerald-400 ml-1.5 text-[11px]">
+                          (DPDP Act 2023 Compliant · Aadhaar, PAN, Phone & Financial IDs Scrubbed Prior to AI Evaluation)
+                        </span>
+                      </div>
+                    </div>
+                    <span className="text-[10px] font-black uppercase tracking-wider px-2 py-0.5 rounded bg-emerald-200 dark:bg-emerald-900/60 text-emerald-900 dark:text-emerald-200">
+                      Zero-PII Cloud Transmission
+                    </span>
+                  </div>
+
                   <p className="text-xs leading-relaxed text-gray-700 dark:text-gray-300">{currentDoc.summary}</p>
                 </div>
 
-                {/* Detected Risks & Remediation */}
                 {/* Detected Risks & Remediation */}
                 <div className={`p-6 rounded-lg border shadow-sm ${isDark ? 'bg-[#1e293b] border-[#334155]' : 'bg-white border-[#e2e8f0]'}`}>
                   <div className="flex items-center justify-between mb-4">

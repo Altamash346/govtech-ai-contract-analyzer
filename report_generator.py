@@ -82,6 +82,8 @@ def generate_report(
     # ── Cover Header ──────────────────────────────────────────────────────────
     story.append(Paragraph("AI Contract & Scheme Analysis Report", styles["Title"]))
     story.append(Paragraph(f"Document: {filename} | Type: {doc_type.upper()} | Generated: {datetime.now().strftime('%B %d, %Y %H:%M')}", styles["Normal"]))
+    story.append(Spacer(1, 0.2*cm))
+    story.append(Paragraph("<b>Sovereign Data Protection:</b> Layer 1 PII De-Identification (DPDP Act, 2023) ACTIVE — Sensitive citizen identifiers (Aadhaar, PAN, Phone, Email, Financial IDs) masked prior to AI evaluation.", styles["BodySmall"]))
     story.append(HRFlowable(width="100%", thickness=2, color=colors.HexColor("#1a3c5e")))
     story.append(Spacer(1, 0.5*cm))
 

@@ -125,12 +125,20 @@ async def upload_document(
         pages = ingestion.extract_text_from_pdf(tmp_path)
         full_text = "\n".join([ingestion.preprocess_text(p["text"]) for p in pages])
 
-        # Unified AI Analysis Call (1 single API request for summary, clauses, risks & entities)
-        audit = analysis.analyze_document_complete(full_text, mode=ai_mode)
+        # Layer 1: Sovereign Client-Side PII De-Identification (DPDP Act 2023)
+        sanitized_text, pii_meta = ingestion.anonymize_pii(full_text)
+
+        # Unified AI Analysis Call (uses sanitized text so cloud never sees real citizen PII)
+        audit = analysis.analyze_document_complete(sanitized_text, mode=ai_mode)
         summary = audit.get("summary", "")
         clauses = audit.get("clauses", [])
         risks = audit.get("risks", [])
         entities = audit.get("entities", {})
+        entities["pii_shield"] = {
+            "shield_active": True,
+            "total_scrubbed": pii_meta.get("total_scrubbed", 0),
+            "breakdown": pii_meta.get("breakdown", {})
+        }
 
         new_doc.page_count = result["page_count"]
         new_doc.summary = summary
@@ -153,6 +161,7 @@ async def upload_document(
                 "risks": risks,
                 "clauses": clauses,
                 "entities": entities,
+                "pii_shield": entities["pii_shield"],
                 "full_text": full_text
             }
         }
@@ -368,7 +377,13 @@ def reanalyze_document(doc_id: int, req: ReanalyzeRequest):
     if not full_text:
         full_text = doc.summary or "Standard Contract Agreement"
 
-    audit = analysis.analyze_document_complete(full_text, mode=req.ai_mode)
+    sanitized_text, pii_meta = ingestion.anonymize_pii(full_text)
+    audit = analysis.analyze_document_complete(sanitized_text, mode=req.ai_mode)
+    audit["entities"]["pii_shield"] = {
+        "shield_active": True,
+        "total_scrubbed": pii_meta.get("total_scrubbed", 0),
+        "breakdown": pii_meta.get("breakdown", {})
+    }
     doc.summary = audit["summary"]
     doc.clauses = json.dumps(audit["clauses"])
     doc.risks = json.dumps(audit["risks"])
@@ -384,6 +399,7 @@ def reanalyze_document(doc_id: int, req: ReanalyzeRequest):
         "risks": audit["risks"],
         "clauses": audit["clauses"],
         "entities": audit["entities"],
+        "pii_shield": audit["entities"]["pii_shield"],
         "index_dir": doc.faiss_index_path,
         "full_text": full_text
     }

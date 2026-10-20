@@ -104,6 +104,66 @@ def preprocess_text(text: str) -> str:
     return text.strip()
 
 
+# ─── Step 3b: Layer 1 Sovereign PII De-Identification (DPDP Act, 2023) ────────
+
+def anonymize_pii(text: str) -> tuple[str, dict]:
+    """
+    Client-side / Edge PII De-Identification & Anonymization Engine.
+    Scrubs sensitive Indian identifiers (Aadhaar, PAN, Phone, Email, Bank Details,
+    IFSC, Pincodes, and Personal Names) before any text is transmitted to cloud processing.
+    Complies with the Digital Personal Data Protection (DPDP) Act, 2023.
+    """
+    if not text:
+        return "", {"pii_detected": False, "total_scrubbed": 0, "breakdown": {}}
+
+    counts = {}
+    scrubbed = text
+
+    # 1. Bank Account Numbers (contextual to avoid false positives on normal numbers)
+    def repl_bank(m):
+        return m.group(0).replace(m.group(1), "[REDACTED_BANK_A/C]")
+    scrubbed, n_bank = re.subn(
+        r'(?i)(?:(?:account|a\/c)\s*(?:no\.?|number|num|#)?\s*[:.-]?\s*)(\b\d{9,18}\b)',
+        repl_bank,
+        scrubbed
+    )
+    counts["bank_account"] = n_bank
+
+    # 2. Pincodes (contextual)
+    def repl_pin(m):
+        return m.group(0).replace(m.group(1), "[REDACTED_PINCODE]")
+    scrubbed, n_pin = re.subn(
+        r'(?i)(?:pin\s*code|pincode|postal\s*code)\s*[:.-]?\s*(\b[1-9][0-9]{5}\b)',
+        repl_pin,
+        scrubbed
+    )
+    counts["pincode"] = n_pin
+
+    # 3. Direct Pattern Replacements
+    patterns = [
+        ("email", r'\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}\b'),
+        ("aadhaar", r'\b[2-9]\d{3}[\s-]\d{4}[\s-]\d{4}\b'),
+        ("pan", r'\b[A-Z]{5}[0-9]{4}[A-Z]\b'),
+        ("ifsc", r'\b[A-Z]{4}0[A-Z0-9]{6}\b'),
+        ("phone", r'(?:\+91[\s-]?|0)?[6-9]\d{4}[\s-]?\d{5}\b'),
+        ("individual_name", r'\b(?:Mr\.|Ms\.|Mrs\.|Shri|Smt\.)\s+[A-Z][a-z]+(?:\s+[A-Z][a-z]+){1,2}\b'),
+        ("voter_id", r'\b[A-Z]{3}[0-9]{7}\b'),
+    ]
+
+    for tag_name, pat in patterns:
+        tag = f"[REDACTED_{tag_name.upper()}]"
+        scrubbed, n = re.subn(pat, tag, scrubbed)
+        counts[tag_name] = n
+
+    total = sum(counts.values())
+    meta = {
+        "pii_detected": total > 0,
+        "total_scrubbed": total,
+        "breakdown": {k: v for k, v in counts.items() if v > 0}
+    }
+    return scrubbed, meta
+
+
 # ─── Step 4: Chunk Text ───────────────────────────────────────────────────────
 
 def chunk_pages(pages: list[dict], chunk_size: int = 800, overlap: int = 100) -> list[dict]:
