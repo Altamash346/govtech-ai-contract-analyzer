@@ -10,11 +10,34 @@ import {
 
 const RENDER_BACKEND = 'https://govtech-ai-contract-analyzer-platform.onrender.com/api';
 
-const API_BASE = import.meta.env.VITE_API_BASE || (
-  typeof window !== 'undefined' && (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')
-    ? '/api'
-    : RENDER_BACKEND
+// Detect if running inside native Android / iOS Capacitor wrapper
+const isNativePlatform = typeof window !== 'undefined' && (
+  Boolean(window.Capacitor?.isNativePlatform?.()) ||
+  window.location.protocol === 'capacitor:' ||
+  (window.location.hostname === 'localhost' && (!window.location.port || window.location.port === '80' || window.location.port === '443'))
 );
+
+const API_BASE = import.meta.env.VITE_API_BASE || (
+  isNativePlatform
+    ? RENDER_BACKEND
+    : (typeof window !== 'undefined' && (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') && window.location.port !== ''
+        ? '/api'
+        : RENDER_BACKEND)
+);
+
+// Safe parsing helper for JSON fields stored or returned as strings
+function safeParse(val, fallback) {
+  if (val === null || val === undefined) return fallback;
+  if (typeof val === 'string') {
+    try {
+      const parsed = JSON.parse(val);
+      return parsed !== null && parsed !== undefined ? parsed : fallback;
+    } catch {
+      return fallback;
+    }
+  }
+  return val;
+}
 
 // Safe fetch helper — prevents "Unexpected end of JSON input" when backend is unreachable
 async function safeFetch(url, options = {}) {
@@ -132,6 +155,39 @@ export default function App() {
   const [isUploading, setIsUploading] = useState(false);
   const [uploadStage, setUploadStage] = useState('');
   const [isReanalyzing, setIsReanalyzing] = useState(false);
+
+  // Derived Safe Document Analysis Data (Guarantees zero-crash rendering)
+  const docRisks = React.useMemo(() => {
+    const raw = safeParse(currentDoc?.risks, []);
+    return Array.isArray(raw) ? raw.filter(r => r && typeof r === 'object') : [];
+  }, [currentDoc]);
+
+  const docClauses = React.useMemo(() => {
+    const raw = safeParse(currentDoc?.clauses, []);
+    return Array.isArray(raw) ? raw.filter(c => c && typeof c === 'object') : [];
+  }, [currentDoc]);
+
+  const docEntities = React.useMemo(() => {
+    const raw = safeParse(currentDoc?.entities, {});
+    if (!raw || typeof raw !== 'object' || Array.isArray(raw)) return {};
+    const clean = {};
+    for (const [key, val] of Object.entries(raw)) {
+      if (key === 'pii_shield') continue;
+      if (Array.isArray(val)) {
+        if (val.length > 0) clean[key] = val;
+      } else if (val && typeof val === 'object') {
+        const subVals = Object.values(val).filter(Boolean);
+        if (subVals.length > 0) clean[key] = subVals;
+      } else if (val) {
+        clean[key] = [String(val)];
+      }
+    }
+    return clean;
+  }, [currentDoc]);
+
+  const highRisksCount = docRisks.filter(r => (r.risk_level || '').toLowerCase().includes('high')).length;
+  const medRisksCount = docRisks.filter(r => (r.risk_level || '').toLowerCase().includes('med')).length;
+  const entitiesCount = Object.values(docEntities).reduce((acc, curr) => acc + (Array.isArray(curr) ? curr.length : 1), 0);
 
   // Q&A Chat State
   const [messages, setMessages] = useState([]);
@@ -291,7 +347,8 @@ export default function App() {
     e.preventDefault();
     if (!uploadFile) return;
     if (!user?.id) {
-      alert('Authentication required. Please log in before uploading documents.');
+      setShowAuthModal(true);
+      setAuthError('Authentication required. Please log in or select a demo account before uploading documents.');
       return;
     }
 
@@ -1084,23 +1141,19 @@ export default function App() {
                 {/* Metrics */}
                 <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
                   <div className={`p-4 rounded border text-center ${isDark ? 'bg-[#1e293b] border-[#334155]' : 'bg-white border-[#e2e8f0]'}`}>
-                    <div className="text-2xl font-black text-red-600">{(currentDoc.risks || []).filter(r => r.risk_level === 'High').length}</div>
+                    <div className="text-2xl font-black text-red-600">{highRisksCount}</div>
                     <div className="text-xs text-gray-500 uppercase font-semibold mt-1">High Risks</div>
                   </div>
                   <div className={`p-4 rounded border text-center ${isDark ? 'bg-[#1e293b] border-[#334155]' : 'bg-white border-[#e2e8f0]'}`}>
-                    <div className="text-2xl font-black text-amber-500">{(currentDoc.risks || []).filter(r => r.risk_level === 'Medium').length}</div>
+                    <div className="text-2xl font-black text-amber-500">{medRisksCount}</div>
                     <div className="text-xs text-gray-500 uppercase font-semibold mt-1">Medium Risks</div>
                   </div>
                   <div className={`p-4 rounded border text-center ${isDark ? 'bg-[#1e293b] border-[#334155]' : 'bg-white border-[#e2e8f0]'}`}>
-                    <div className="text-2xl font-black text-[#0f3d68] dark:text-[#38bdf8]">{(currentDoc.clauses || []).length}</div>
+                    <div className="text-2xl font-black text-[#0f3d68] dark:text-[#38bdf8]">{docClauses.length}</div>
                     <div className="text-xs text-gray-500 uppercase font-semibold mt-1">Clauses Classified</div>
                   </div>
                   <div className={`p-4 rounded border text-center ${isDark ? 'bg-[#1e293b] border-[#334155]' : 'bg-white border-[#e2e8f0]'}`}>
-                    <div className="text-2xl font-black text-emerald-600">
-                      {Object.values(currentDoc.entities || {}).flat().length > 0 
-                        ? Object.values(currentDoc.entities || {}).flat().length 
-                        : Object.keys(currentDoc.entities || {}).length}
-                    </div>
+                    <div className="text-2xl font-black text-emerald-600">{entitiesCount}</div>
                     <div className="text-xs text-gray-500 uppercase font-semibold mt-1">Extracted Entities</div>
                   </div>
                 </div>
@@ -1146,17 +1199,17 @@ export default function App() {
                   <div className="flex items-center justify-between mb-4">
                     <h3 className="text-base font-bold font-serif-gov text-[#0f3d68] dark:text-[#38bdf8] flex items-center gap-2">
                       <AlertTriangle className="w-5 h-5 text-amber-500" />
-                      Detected Risks, Severity Rationale & Remediation ({(currentDoc.risks || []).length})
+                      Detected Risks, Severity Rationale & Remediation ({docRisks.length})
                     </h3>
                     <span className="text-xs text-gray-500">
                       Evaluated against Indian legal standards & commercial parity
                     </span>
                   </div>
                   <div className="space-y-4">
-                    {(currentDoc.risks || []).length === 0 ? (
+                    {docRisks.length === 0 ? (
                       <p className="text-xs text-gray-500 italic">No significant legal liabilities or one-sided terms detected.</p>
                     ) : (
-                      (currentDoc.risks || []).map((risk, i) => {
+                      docRisks.map((risk, i) => {
                         const isHigh = (risk.risk_level || '').toLowerCase().includes('high');
                         const isMed = (risk.risk_level || '').toLowerCase().includes('med');
                         const rationale = risk.severity_reasoning || (isHigh
@@ -1270,14 +1323,14 @@ export default function App() {
                 </div>
 
                 {/* Classified Legal Clauses */}
-                {(currentDoc.clauses || []).length > 0 && (
+                {docClauses.length > 0 && (
                   <div className={`p-6 rounded-lg border shadow-sm ${isDark ? 'bg-[#1e293b] border-[#334155]' : 'bg-white border-[#e2e8f0]'}`}>
                     <h3 className="text-base font-bold font-serif-gov text-[#0f3d68] dark:text-[#38bdf8] mb-4 flex items-center gap-2">
                       <FileText className="w-4 h-4 text-[#ea580c]" />
-                      Classified Legal Clauses ({(currentDoc.clauses || []).length})
+                      Classified Legal Clauses ({docClauses.length})
                     </h3>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5">
-                      {(currentDoc.clauses || []).map((clause, idx) => (
+                      {docClauses.map((clause, idx) => (
                         <div key={idx} className={`p-4 rounded border text-xs space-y-1.5 ${isDark ? 'bg-slate-800/70 border-slate-700' : 'bg-gray-50/80 border-gray-200'}`}>
                           <div className="font-bold text-[#0f3d68] dark:text-[#38bdf8] uppercase text-[11px] flex items-center gap-1.5">
                             <span className="w-1.5 h-1.5 rounded-full bg-[#ea580c]"></span>
@@ -1296,22 +1349,23 @@ export default function App() {
                 )}
 
                 {/* Key Entities & Contract Metadata */}
-                {currentDoc.entities && Object.keys(currentDoc.entities).some(k => (currentDoc.entities[k] || []).length > 0) && (
+                {Object.keys(docEntities).length > 0 && (
                   <div className={`p-6 rounded-lg border shadow-sm ${isDark ? 'bg-[#1e293b] border-[#334155]' : 'bg-white border-[#e2e8f0]'}`}>
                     <h3 className="text-base font-bold font-serif-gov text-[#0f3d68] dark:text-[#38bdf8] mb-4 flex items-center gap-2">
                       <Layers className="w-4 h-4 text-[#ea580c]" />
                       Extracted Entities & Metadata
                     </h3>
                     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 text-xs">
-                      {Object.entries(currentDoc.entities).map(([category, items]) => {
-                        if (!items || items.length === 0) return null;
+                      {Object.entries(docEntities).map(([category, items]) => {
+                        const list = Array.isArray(items) ? items : [String(items)];
+                        if (list.length === 0) return null;
                         return (
                           <div key={category} className={`p-3.5 rounded border ${isDark ? 'bg-slate-800/50 border-slate-700' : 'bg-gray-50/70 border-gray-200'}`}>
                             <div className="font-bold uppercase tracking-wider text-[10px] text-[#ea580c] mb-2">
                               {category.replace('_', ' ')}
                             </div>
                             <ul className="space-y-1">
-                              {items.map((item, i) => (
+                              {list.map((item, i) => (
                                 <li key={i} className="text-gray-800 dark:text-gray-200 font-medium flex items-start gap-1.5">
                                   <span className="text-gray-400">•</span>
                                   <span>{typeof item === 'string' ? item : item.name || JSON.stringify(item)}</span>
@@ -1593,10 +1647,7 @@ export default function App() {
                         {currentDoc.filename}
                       </span>
                       <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-red-100 text-red-700 dark:bg-red-900/60 dark:text-red-300">
-                        {(() => {
-                          const rList = typeof currentDoc.risks === 'string' ? JSON.parse(currentDoc.risks || '[]') : (currentDoc.risks || []);
-                          return `${rList.length} Risky Clauses Red-Marked`;
-                        })()}
+                        {`${docRisks.length} Risky Clauses Red-Marked`}
                       </span>
                     </div>
                     <p className="text-[11px] text-gray-500 dark:text-gray-400 mt-0.5">
@@ -1667,17 +1718,13 @@ export default function App() {
                     </div>
 
                     <div className="flex-1 overflow-y-auto max-h-[640px] pr-1 space-y-4">
-                      {(() => {
-                        const rList = typeof currentDoc.risks === 'string' ? JSON.parse(currentDoc.risks || '[]') : (currentDoc.risks || []);
-                        if (rList.length === 0) {
-                          return (
-                            <div className="p-6 text-center text-xs text-gray-500">
-                              <CheckCircle2 className="w-8 h-8 text-emerald-500 mx-auto mb-2" />
-                              No high or medium risks detected in this document.
-                            </div>
-                          );
-                        }
-                        return rList.map((risk, idx) => (
+                      {docRisks.length === 0 ? (
+                        <div className="p-6 text-center text-xs text-gray-500">
+                          <CheckCircle2 className="w-8 h-8 text-emerald-500 mx-auto mb-2" />
+                          No high or medium risks detected in this document.
+                        </div>
+                      ) : (
+                        docRisks.map((risk, idx) => (
                           <div
                             key={idx}
                             className={`p-4 rounded-lg border text-xs space-y-2.5 transition-all ${
@@ -1752,8 +1799,8 @@ export default function App() {
                               </div>
                             )}
                           </div>
-                        ));
-                      })()}
+                        ))
+                      )}
                     </div>
                   </div>
                 </div>

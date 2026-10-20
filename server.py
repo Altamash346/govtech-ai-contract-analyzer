@@ -134,7 +134,9 @@ async def upload_document(
         clauses = audit.get("clauses", [])
         risks = audit.get("risks", [])
         entities = audit.get("entities", {})
-        entities["pii_shield"] = {
+        # Keep pure entities dict separate from security shield telemetry
+        entities.pop("pii_shield", None)
+        pii_shield_data = {
             "shield_active": True,
             "total_scrubbed": pii_meta.get("total_scrubbed", 0),
             "breakdown": pii_meta.get("breakdown", {})
@@ -161,7 +163,7 @@ async def upload_document(
                 "risks": risks,
                 "clauses": clauses,
                 "entities": entities,
-                "pii_shield": entities["pii_shield"],
+                "pii_shield": pii_shield_data,
                 "full_text": full_text
             }
         }
@@ -379,7 +381,9 @@ def reanalyze_document(doc_id: int, req: ReanalyzeRequest):
 
     sanitized_text, pii_meta = ingestion.anonymize_pii(full_text)
     audit = analysis.analyze_document_complete(sanitized_text, mode=req.ai_mode)
-    audit["entities"]["pii_shield"] = {
+    entities = audit.get("entities", {})
+    entities.pop("pii_shield", None)
+    pii_shield_data = {
         "shield_active": True,
         "total_scrubbed": pii_meta.get("total_scrubbed", 0),
         "breakdown": pii_meta.get("breakdown", {})
@@ -387,7 +391,7 @@ def reanalyze_document(doc_id: int, req: ReanalyzeRequest):
     doc.summary = audit["summary"]
     doc.clauses = json.dumps(audit["clauses"])
     doc.risks = json.dumps(audit["risks"])
-    doc.entities = json.dumps(audit["entities"])
+    doc.entities = json.dumps(entities)
     session.commit()
 
     updated_doc = {
@@ -398,8 +402,8 @@ def reanalyze_document(doc_id: int, req: ReanalyzeRequest):
         "summary": audit["summary"],
         "risks": audit["risks"],
         "clauses": audit["clauses"],
-        "entities": audit["entities"],
-        "pii_shield": audit["entities"]["pii_shield"],
+        "entities": entities,
+        "pii_shield": pii_shield_data,
         "index_dir": doc.faiss_index_path,
         "full_text": full_text
     }
