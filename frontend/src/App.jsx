@@ -5,7 +5,8 @@ import {
   XCircle, Send, Volume2, Download, Search, ChevronRight, User, Building,
   Calendar, DollarSign, Layers, ArrowRight, Sparkles, Cpu, Lock, PhoneCall,
   ExternalLink, Award, CheckCircle2, ChevronDown, BookOpen, Activity, AlertCircle,
-  FileCheck, HelpCircle, VolumeX, Copy, Check, LayoutGrid, PieChart, Zap, Play, Pause
+  FileCheck, HelpCircle, VolumeX, Copy, Check, LayoutGrid, PieChart, Zap, Play, Pause,
+  ShieldAlert, Bot
 } from 'lucide-react';
 
 const RENDER_BACKEND = 'https://govtech-ai-contract-analyzer-platform.onrender.com/api';
