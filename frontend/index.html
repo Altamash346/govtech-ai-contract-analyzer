@@ -27,24 +27,38 @@
     </style>
     <script type="text/javascript">
       function googleTranslateElementInit() {
-        new google.translate.TranslateElement({
-          pageLanguage: 'en',
-          includedLanguages: 'en,hi,mr,bn,ta,te,gu,kn,ml,pa,or,as,ur,sa,ne,sd,mai,kok,doi,mni,sat,bho',
-          autoDisplay: false
-        }, 'google_translate_element');
+        try {
+          if (window.google && window.google.translate && window.google.translate.TranslateElement) {
+            new google.translate.TranslateElement({
+              pageLanguage: 'en',
+              includedLanguages: 'en,hi,mr,bn,ta,te,gu,kn,ml,pa,or,as,ur,sa,ne,sd,mai,kok,doi,mni,sat,bho',
+              autoDisplay: false
+            }, 'google_translate_element');
+          }
+        } catch (e) {
+          console.warn('Translate element init bypassed:', e);
+        }
       }
     </script>
-    <script type="text/javascript" src="https://translate.google.com/translate_a/element.js?cb=googleTranslateElementInit"></script>
+    <script async defer type="text/javascript" src="https://translate.google.com/translate_a/element.js?cb=googleTranslateElementInit"></script>
   </head>
   <body>
     <div id="google_translate_element"></div>
     <div id="root"></div>
     <script type="module" src="/src/main.jsx"></script>
     <script>
-      if ('serviceWorker' in navigator) {
+      // Service worker is for web browser (PWA) only — never register inside native mobile apps
+      const isMobileNative = Boolean(window.Capacitor?.isNativePlatform?.()) || 
+                             window.location.protocol === 'capacitor:' || 
+                             (window.location.hostname === 'localhost' && !window.location.port);
+      if (!isMobileNative && 'serviceWorker' in navigator) {
         window.addEventListener('load', () => {
           navigator.serviceWorker.register('/sw.js').catch(() => {});
         });
+      } else if (isMobileNative && 'serviceWorker' in navigator) {
+        navigator.serviceWorker.getRegistrations().then(regs => {
+          for (const reg of regs) reg.unregister();
+        }).catch(() => {});
       }
     </script>
   </body>

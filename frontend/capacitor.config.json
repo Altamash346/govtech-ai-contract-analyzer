@@ -4,6 +4,13 @@
   "webDir": "dist",
   "server": {
     "androidScheme": "https",
-    "cleartext": true
+    "cleartext": true,
+    "allowNavigation": [
+      "govtech-ai-contract-analyzer-platform.onrender.com",
+      "translate.google.com",
+      "translate.googleapis.com",
+      "fonts.googleapis.com",
+      "fonts.gstatic.com"
+    ]
   }
 }

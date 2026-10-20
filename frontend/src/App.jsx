@@ -83,23 +83,44 @@ export const INDIAN_LANGUAGES = [
   { code: 'bho', name: 'Bhojpuri', native: 'भोजपुरी' },
 ];
 
+function getSafeStorage(key, fallback) {
+  try {
+    const val = localStorage.getItem(key);
+    return val !== null && val !== undefined ? val : fallback;
+  } catch (e) {
+    return fallback;
+  }
+}
+
+function setSafeStorage(key, val) {
+  try {
+    localStorage.setItem(key, val);
+  } catch (e) {}
+}
+
+function removeSafeStorage(key) {
+  try {
+    localStorage.removeItem(key);
+  } catch (e) {}
+}
+
 export default function App() {
-  const [theme, setTheme] = useState(() => localStorage.getItem('gov_theme') || 'bright');
-  const [aiMode, setAiMode] = useState(() => localStorage.getItem('gov_aimode') || 'fast');
-  const [siteLang, setSiteLang] = useState(() => localStorage.getItem('gov_site_lang') || 'en');
+  const [theme, setTheme] = useState(() => getSafeStorage('gov_theme', 'bright'));
+  const [aiMode, setAiMode] = useState(() => getSafeStorage('gov_aimode', 'fast'));
+  const [siteLang, setSiteLang] = useState(() => getSafeStorage('gov_site_lang', 'en'));
   const [user, setUser] = useState(() => {
-    const saved = localStorage.getItem('gov_user');
-    if (saved) {
-      try { return JSON.parse(saved); } catch (e) {}
-    }
+    try {
+      const saved = localStorage.getItem('gov_user');
+      if (saved) return JSON.parse(saved);
+    } catch (e) {}
     const defaultUser = { id: 1, name: 'Citizen / Evaluator', email: 'meet@gmail.com', role: 'user' };
-    try { localStorage.setItem('gov_user', JSON.stringify(defaultUser)); } catch (e) {}
+    setSafeStorage('gov_user', JSON.stringify(defaultUser));
     return defaultUser;
   });
 
   const changeSiteLanguage = (langCode) => {
     setSiteLang(langCode);
-    localStorage.setItem('gov_site_lang', langCode);
+    setSafeStorage('gov_site_lang', langCode);
 
     const host = window.location.hostname;
     if (langCode === 'en') {
@@ -251,7 +272,7 @@ export default function App() {
   };
 
   useEffect(() => {
-    localStorage.setItem('gov_theme', theme);
+    setSafeStorage('gov_theme', theme);
     if (theme === 'dark') {
       document.documentElement.classList.add('dark');
     } else {
@@ -260,7 +281,7 @@ export default function App() {
   }, [theme]);
 
   useEffect(() => {
-    localStorage.setItem('gov_aimode', aiMode);
+    setSafeStorage('gov_aimode', aiMode);
   }, [aiMode]);
 
   const fetchUserDocuments = (userId) => {
@@ -304,7 +325,7 @@ export default function App() {
       
       if (authMode === 'login') {
         setUser(data.user);
-        localStorage.setItem('gov_user', JSON.stringify(data.user));
+        setSafeStorage('gov_user', JSON.stringify(data.user));
         setShowAuthModal(false);
         fetchUserDocuments(data.user.id);
       } else {
@@ -318,7 +339,7 @@ export default function App() {
 
   const handleLogout = () => {
     setUser(null);
-    localStorage.removeItem('gov_user');
+    removeSafeStorage('gov_user');
     setCurrentDoc(null);
     setDocuments([]);
     setMessages([]);
