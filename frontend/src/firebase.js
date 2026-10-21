@@ -27,10 +27,22 @@ export const auth = getAuth(app);
 export const googleProvider = new GoogleAuthProvider();
 googleProvider.setCustomParameters({ prompt: 'select_account' });
 
+export function isFirebaseConfigured() {
+  const key = import.meta.env.VITE_FIREBASE_API_KEY || '';
+  return Boolean(key && !key.includes('Dummy') && key.startsWith('AIzaSy'));
+}
+
 /**
  * Sign in using Google OAuth Popup
  */
 export async function signInWithGoogle() {
+  if (!isFirebaseConfigured()) {
+    return {
+      success: false,
+      code: 'auth/api-key-not-valid',
+      error: 'Google Sign-In requires your Firebase project API key in .env. You can sign in or register with email and password below.'
+    };
+  }
   try {
     const result = await signInWithPopup(auth, googleProvider);
     return {
@@ -44,14 +56,13 @@ export async function signInWithGoogle() {
     };
   } catch (error) {
     console.error('Google Sign-In Error:', error);
-    // Provide user-friendly error messages
     let msg = error.message;
     if (error.code === 'auth/popup-closed-by-user') {
       msg = 'Sign-in cancelled. Popup was closed before completing.';
     } else if (error.code === 'auth/popup-blocked') {
       msg = 'Sign-in popup was blocked by your browser. Please allow popups for this site.';
-    } else if (error.code === 'auth/invalid-api-key' || error.code === 'auth/configuration-not-found') {
-      msg = 'Firebase Authentication API key is invalid or not yet configured.';
+    } else if (error.code?.includes('api-key') || error.message?.includes('api-key')) {
+      msg = 'Google Sign-In requires your Firebase project API key in .env. You can sign in or register with email and password below.';
     }
     return { success: false, error: msg, code: error.code };
   }
@@ -61,6 +72,9 @@ export async function signInWithGoogle() {
  * Sign in with Email and Password
  */
 export async function loginWithEmail(email, password) {
+  if (!isFirebaseConfigured()) {
+    return { success: false, isFallback: true, code: 'auth/api-key-not-valid' };
+  }
   try {
     const userCredential = await signInWithEmailAndPassword(auth, email, password);
     return {
@@ -73,6 +87,9 @@ export async function loginWithEmail(email, password) {
       }
     };
   } catch (error) {
+    if (error.code?.includes('api-key') || error.message?.includes('api-key')) {
+      return { success: false, isFallback: true, code: 'auth/api-key-not-valid' };
+    }
     let msg = error.message;
     if (error.code === 'auth/user-not-found' || error.code === 'auth/wrong-password' || error.code === 'auth/invalid-credential') {
       msg = 'Invalid email or password.';
@@ -89,6 +106,9 @@ export async function loginWithEmail(email, password) {
  * Register a new user with strong password
  */
 export async function registerWithEmail(name, email, password) {
+  if (!isFirebaseConfigured()) {
+    return { success: false, isFallback: true, code: 'auth/api-key-not-valid' };
+  }
   try {
     const userCredential = await createUserWithEmailAndPassword(auth, email, password);
     if (name && auth.currentUser) {
@@ -104,6 +124,9 @@ export async function registerWithEmail(name, email, password) {
       }
     };
   } catch (error) {
+    if (error.code?.includes('api-key') || error.message?.includes('api-key')) {
+      return { success: false, isFallback: true, code: 'auth/api-key-not-valid' };
+    }
     let msg = error.message;
     if (error.code === 'auth/email-already-in-use') {
       msg = 'An account with this email address already exists.';

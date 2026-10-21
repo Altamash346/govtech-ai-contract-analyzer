@@ -608,68 +608,115 @@ Between: Municipal Corporation of Greater Mumbai (Authority) AND TechCorp Soluti
           setAuthLoading(false);
           return;
         }
+
+        let appUser = null;
         const res = await registerWithEmail(authName, authEmail, authPassword);
-        if (!res.success) {
+
+        if (res.success) {
+          // Firebase registration succeeded, sync with backend
+          try {
+            const syncRes = await safeFetch(`${API_BASE}/auth/firebase`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                uid: res.user.uid,
+                email: res.user.email,
+                name: authName
+              })
+            });
+            appUser = syncRes?.user;
+          } catch {}
+          if (!appUser) {
+            appUser = {
+              id: Math.abs(res.user.uid.split('').reduce((acc, c) => acc + c.charCodeAt(0), 0)),
+              name: authName,
+              email: res.user.email,
+              role: 'user'
+            };
+          }
+        } else if (res.isFallback || res.code?.includes('api-key') || res.error?.includes('api-key')) {
+          // Seamless fallback: register directly in backend database
+          const regRes = await safeFetch(`${API_BASE}/auth/register`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              name: authName,
+              email: authEmail,
+              password: authPassword
+            })
+          });
+          if (regRes && regRes.user) {
+            appUser = regRes.user;
+          } else if (regRes && regRes.user_id) {
+            appUser = {
+              id: regRes.user_id,
+              name: authName,
+              email: authEmail,
+              role: 'user'
+            };
+          }
+        } else {
           setAuthError(res.error || 'Registration failed.');
           setAuthLoading(false);
           return;
         }
 
-        // Sync with backend
-        try {
-          const syncRes = await safeFetch(`${API_BASE}/auth/firebase`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              uid: res.user.uid,
-              email: res.user.email,
-              name: authName
-            })
-          });
-          const appUser = syncRes?.user || {
-            id: Math.abs(res.user.uid.split('').reduce((acc, c) => acc + c.charCodeAt(0), 0)),
-            name: authName,
-            email: res.user.email,
-            role: 'user'
-          };
+        if (appUser) {
           setUser(appUser);
           setSafeStorage('gov_user', JSON.stringify(appUser));
           setShowAuthModal(false);
           fetchUserDocuments(appUser.id);
-        } catch {
-          setShowAuthModal(false);
         }
       } else if (authMode === 'login') {
+        let appUser = null;
         const res = await loginWithEmail(authEmail, authPassword);
-        if (!res.success) {
+
+        if (res.success) {
+          // Firebase login succeeded, sync with backend
+          try {
+            const syncRes = await safeFetch(`${API_BASE}/auth/firebase`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                uid: res.user.uid,
+                email: res.user.email,
+                name: res.user.name
+              })
+            });
+            appUser = syncRes?.user;
+          } catch {}
+          if (!appUser) {
+            appUser = {
+              id: Math.abs(res.user.uid.split('').reduce((acc, c) => acc + c.charCodeAt(0), 0)),
+              name: res.user.name,
+              email: res.user.email,
+              role: 'user'
+            };
+          }
+        } else if (res.isFallback || res.code?.includes('api-key') || res.error?.includes('api-key')) {
+          // Seamless fallback: log in directly via backend database
+          const logRes = await safeFetch(`${API_BASE}/auth/login`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              email: authEmail,
+              password: authPassword
+            })
+          });
+          if (logRes && logRes.user) {
+            appUser = logRes.user;
+          }
+        } else {
           setAuthError(res.error || 'Invalid email or password.');
           setAuthLoading(false);
           return;
         }
 
-        // Sync with backend
-        try {
-          const syncRes = await safeFetch(`${API_BASE}/auth/firebase`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              uid: res.user.uid,
-              email: res.user.email,
-              name: res.user.name
-            })
-          });
-          const appUser = syncRes?.user || {
-            id: Math.abs(res.user.uid.split('').reduce((acc, c) => acc + c.charCodeAt(0), 0)),
-            name: res.user.name,
-            email: res.user.email,
-            role: 'user'
-          };
+        if (appUser) {
           setUser(appUser);
           setSafeStorage('gov_user', JSON.stringify(appUser));
           setShowAuthModal(false);
           fetchUserDocuments(appUser.id);
-        } catch {
-          setShowAuthModal(false);
         }
       } else if (authMode === 'reset') {
         const res = await resetUserPassword(authEmail);

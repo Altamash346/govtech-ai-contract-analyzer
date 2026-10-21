@@ -120,8 +120,14 @@ def register(req: RegisterRequest):
     session.add(new_user)
     session.commit()
     user_id = new_user.id
+    user_data = {
+        "id": new_user.id,
+        "name": new_user.name,
+        "email": new_user.email,
+        "role": new_user.role
+    }
     session.close()
-    return {"success": True, "message": "Account created successfully.", "user_id": user_id}
+    return {"success": True, "message": "Account created successfully.", "user_id": user_id, "user": user_data}
 
 # ─── Document Processing / Upload ─────────────────────────────────────────────
 @app.post("/api/upload")
