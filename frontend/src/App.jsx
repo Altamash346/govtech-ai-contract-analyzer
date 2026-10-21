@@ -6,8 +6,15 @@ import {
   Calendar, DollarSign, Layers, ArrowRight, Sparkles, Cpu, Lock, PhoneCall,
   ExternalLink, Award, CheckCircle2, ChevronDown, BookOpen, Activity, AlertCircle,
   FileCheck, HelpCircle, VolumeX, Copy, Check, LayoutGrid, PieChart, Zap, Play, Pause,
-  ShieldAlert, Bot, X
+  ShieldAlert, Bot, X, Menu
 } from 'lucide-react';
+import { 
+  signInWithGoogle, 
+  loginWithEmail, 
+  registerWithEmail, 
+  resetUserPassword, 
+  logoutFirebase 
+} from './firebase';
 
 const RENDER_BACKEND = 'https://govtech-ai-contract-analyzer-platform.onrender.com/api';
 
@@ -84,6 +91,26 @@ export const INDIAN_LANGUAGES = [
   { code: 'bho', name: 'Bhojpuri', native: 'भोजपुरी' },
 ];
 
+export const INDIAN_LANG_CODES = {
+  'Hindi': 'hi-IN',
+  'Marathi': 'mr-IN',
+  'Tamil': 'ta-IN',
+  'Telugu': 'te-IN',
+  'Bengali': 'bn-IN',
+  'Gujarati': 'gu-IN',
+  'Kannada': 'kn-IN',
+  'Malayalam': 'ml-IN',
+  'Punjabi': 'pa-IN',
+  'Urdu': 'ur-IN',
+  'Odia': 'or-IN',
+  'Assamese': 'as-IN',
+  'Sanskrit': 'sa-IN',
+  'Nepali': 'ne-NP',
+  'Konkani': 'kok-IN',
+  'Bhojpuri': 'bho-IN',
+  'English': 'en-IN'
+};
+
 function getSafeStorage(key, fallback) {
   try {
     const val = localStorage.getItem(key);
@@ -109,14 +136,14 @@ export default function App() {
   const [theme, setTheme] = useState(() => getSafeStorage('gov_theme', 'bright'));
   const [aiMode, setAiMode] = useState(() => getSafeStorage('gov_aimode', 'fast'));
   const [siteLang, setSiteLang] = useState(() => getSafeStorage('gov_site_lang', 'en'));
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [authLoading, setAuthLoading] = useState(false);
   const [user, setUser] = useState(() => {
     try {
       const saved = localStorage.getItem('gov_user');
       if (saved) return JSON.parse(saved);
     } catch (e) {}
-    const defaultUser = { id: 1, name: 'Citizen / Evaluator', email: 'meet@gmail.com', role: 'user' };
-    setSafeStorage('gov_user', JSON.stringify(defaultUser));
-    return defaultUser;
+    return null;
   });
 
   const changeSiteLanguage = (langCode) => {
@@ -274,8 +301,18 @@ export default function App() {
     }
   };
 
-  // Built-in Browser Voice Readout (TTS)
-  const handleSpeak = (text) => {
+  // Pre-load Browser Speech Voices for Indian Regional Languages
+  useEffect(() => {
+    if (typeof window !== 'undefined' && 'speechSynthesis' in window) {
+      window.speechSynthesis.getVoices();
+      window.speechSynthesis.onvoiceschanged = () => {
+        window.speechSynthesis.getVoices();
+      };
+    }
+  }, []);
+
+  // Built-in Browser Voice Readout (TTS) with Indian Regional Language Support
+  const handleSpeak = (text, langName = 'English') => {
     if (typeof window === 'undefined' || !('speechSynthesis' in window)) {
       alert('Voice readout is not supported on this browser.');
       return;
@@ -286,15 +323,39 @@ export default function App() {
       setSpeakingText('');
       return;
     }
+    if (!text || !text.trim()) return;
+
     window.speechSynthesis.cancel();
+    window.speechSynthesis.resume();
+
     const utterance = new SpeechSynthesisUtterance(text);
-    utterance.rate = 1.0;
+    const bcp47 = INDIAN_LANG_CODES[langName] || 'en-IN';
+    utterance.lang = bcp47;
+    utterance.rate = 0.95;
     utterance.pitch = 1.0;
+
+    // Pick matching voice if available
+    let voices = window.speechSynthesis.getVoices();
+    if (voices && voices.length > 0) {
+      const prefix = bcp47.split('-')[0].toLowerCase();
+      const matched = voices.find(v => v.lang.toLowerCase().replace('_', '-') === bcp47.toLowerCase()) ||
+                      voices.find(v => v.lang.toLowerCase().startsWith(prefix)) ||
+                      voices.find(v => v.name.toLowerCase().includes(langName.toLowerCase()));
+      if (matched) {
+        utterance.voice = matched;
+      }
+    }
+
+    utterance.onstart = () => {
+      setIsSpeaking(true);
+      setSpeakingText(text);
+    };
     utterance.onend = () => {
       setIsSpeaking(false);
       setSpeakingText('');
     };
-    utterance.onerror = () => {
+    utterance.onerror = (e) => {
+      console.warn('SpeechSynthesis event:', e);
       setIsSpeaking(false);
       setSpeakingText('');
     };
@@ -482,37 +543,153 @@ Between: Municipal Corporation of Greater Mumbai (Authority) AND TechCorp Soluti
     }
   }, [user]);
 
-  // Auth Submit
-  const handleAuth = async (e) => {
-    e.preventDefault();
+  // Google Firebase Authentication Handlers
+  const handleGoogleSignIn = async () => {
+    setAuthLoading(true);
     setAuthError('');
-    const endpoint = authMode === 'login' ? '/auth/login' : '/auth/register';
-    const payload = authMode === 'login' 
-      ? { email: authEmail, password: authPassword }
-      : { name: authName, email: authEmail, password: authPassword };
-    
     try {
-      const data = await safeFetch(`${API_BASE}${endpoint}`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload)
-      });
-      
-      if (authMode === 'login') {
-        setUser(data.user);
-        setSafeStorage('gov_user', JSON.stringify(data.user));
-        setShowAuthModal(false);
-        fetchUserDocuments(data.user.id);
-      } else {
-        setAuthMode('login');
-        setAuthError('Account registered successfully! Please log in.');
+      const res = await signInWithGoogle();
+      if (!res.success) {
+        setAuthError(res.error || 'Google Sign-In was unsuccessful.');
+        setAuthLoading(false);
+        return;
       }
+
+      // Sync with backend database
+      try {
+        const syncRes = await safeFetch(`${API_BASE}/auth/firebase`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            uid: res.user.uid,
+            email: res.user.email,
+            name: res.user.name
+          })
+        });
+        if (syncRes && syncRes.user) {
+          setUser(syncRes.user);
+          setSafeStorage('gov_user', JSON.stringify(syncRes.user));
+          setShowAuthModal(false);
+          fetchUserDocuments(syncRes.user.id);
+          return;
+        }
+      } catch (syncErr) {
+        console.warn('Backend sync warning, using Firebase user profile:', syncErr);
+      }
+
+      const appUser = {
+        id: Math.abs(res.user.uid.split('').reduce((acc, c) => acc + c.charCodeAt(0), 0)),
+        name: res.user.name,
+        email: res.user.email,
+        role: 'user',
+        firebase_uid: res.user.uid
+      };
+      setUser(appUser);
+      setSafeStorage('gov_user', JSON.stringify(appUser));
+      setShowAuthModal(false);
+      fetchUserDocuments(appUser.id);
     } catch (err) {
-      setAuthError(err.message);
+      setAuthError(err.message || 'Google authentication failed.');
+    } finally {
+      setAuthLoading(false);
     }
   };
 
-  const handleLogout = () => {
+  // Auth Submit (Firebase Email/Password & Reset)
+  const handleAuth = async (e) => {
+    e.preventDefault();
+    setAuthError('');
+    setAuthLoading(true);
+
+    try {
+      if (authMode === 'register') {
+        if (authPassword.length < 6) {
+          setAuthError('Strong password required: minimum 6 characters.');
+          setAuthLoading(false);
+          return;
+        }
+        const res = await registerWithEmail(authName, authEmail, authPassword);
+        if (!res.success) {
+          setAuthError(res.error || 'Registration failed.');
+          setAuthLoading(false);
+          return;
+        }
+
+        // Sync with backend
+        try {
+          const syncRes = await safeFetch(`${API_BASE}/auth/firebase`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              uid: res.user.uid,
+              email: res.user.email,
+              name: authName
+            })
+          });
+          const appUser = syncRes?.user || {
+            id: Math.abs(res.user.uid.split('').reduce((acc, c) => acc + c.charCodeAt(0), 0)),
+            name: authName,
+            email: res.user.email,
+            role: 'user'
+          };
+          setUser(appUser);
+          setSafeStorage('gov_user', JSON.stringify(appUser));
+          setShowAuthModal(false);
+          fetchUserDocuments(appUser.id);
+        } catch {
+          setShowAuthModal(false);
+        }
+      } else if (authMode === 'login') {
+        const res = await loginWithEmail(authEmail, authPassword);
+        if (!res.success) {
+          setAuthError(res.error || 'Invalid email or password.');
+          setAuthLoading(false);
+          return;
+        }
+
+        // Sync with backend
+        try {
+          const syncRes = await safeFetch(`${API_BASE}/auth/firebase`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              uid: res.user.uid,
+              email: res.user.email,
+              name: res.user.name
+            })
+          });
+          const appUser = syncRes?.user || {
+            id: Math.abs(res.user.uid.split('').reduce((acc, c) => acc + c.charCodeAt(0), 0)),
+            name: res.user.name,
+            email: res.user.email,
+            role: 'user'
+          };
+          setUser(appUser);
+          setSafeStorage('gov_user', JSON.stringify(appUser));
+          setShowAuthModal(false);
+          fetchUserDocuments(appUser.id);
+        } catch {
+          setShowAuthModal(false);
+        }
+      } else if (authMode === 'reset') {
+        const res = await resetUserPassword(authEmail);
+        if (res.success) {
+          setAuthError('Password reset link sent to your email.');
+        } else {
+          setAuthError(res.error || 'Could not send reset email.');
+        }
+      }
+    } catch (err) {
+      setAuthError(err.message || 'Authentication error.');
+    } finally {
+      setAuthLoading(false);
+    }
+  };
+
+  const handleLogout = async () => {
+    try {
+      await logoutFirebase();
+    } catch {}
     setUser(null);
     removeSafeStorage('gov_user');
     setCurrentDoc(null);
@@ -774,238 +951,6 @@ Between: Municipal Corporation of Greater Mumbai (Authority) AND TechCorp Soluti
 
   const isDark = theme === 'dark';
 
-  // ─── AUTHENTICATION GATEWAY (Access blocked before login) ───
-  if (!user) {
-    return (
-      <div className={`min-h-screen font-sans flex flex-col transition-colors duration-200 ${isDark ? 'bg-[#0b1329] text-[#f8fafc]' : 'bg-[#f8fafc] text-[#0f2b48]'}`}>
-        {/* National Identity Tricolor Bar */}
-        <div className="h-1.5 w-full flex">
-          <div className="h-full w-1/3 bg-[#FF9933]"></div>
-          <div className="h-full w-1/3 bg-white"></div>
-          <div className="h-full w-1/3 bg-[#138808]"></div>
-        </div>
-
-        {/* Top Utility Header */}
-        <header className={`border-b py-3 px-4 sm:px-8 flex items-center justify-between transition-colors ${isDark ? 'bg-[#0f172a] border-[#1e293b]' : 'bg-white border-[#e2e8f0]'}`}>
-          <div className="flex items-center space-x-3">
-            <div className="relative">
-              <img
-                src="/logo.jpg"
-                alt="NyayaMitra AI Logo"
-                className="w-11 h-11 rounded-lg object-cover shadow-md border border-amber-500/50 ring-1 ring-amber-400/30"
-              />
-            </div>
-            <div>
-              <div className="text-[10px] font-bold tracking-widest uppercase text-[#ea580c]">
-                भारत सरकार · GOVERNMENT OF INDIA
-              </div>
-              <div className="text-lg font-black font-serif-gov text-[#0f3d68] dark:text-[#38bdf8]">
-                NyayaMitra AI
-              </div>
-            </div>
-          </div>
-          <div className="flex items-center space-x-2.5">
-            {/* Indian Language Selector */}
-            <div className={`flex items-center gap-1.5 px-2.5 py-1 rounded border text-xs font-semibold ${
-              isDark ? 'bg-[#1e293b] border-[#334155] text-slate-200' : 'bg-white border-[#cbd5e1] text-gray-700 shadow-xs'
-            }`}>
-              <Globe className="w-3.5 h-3.5 text-[#ea580c] shrink-0" />
-              <select
-                value={siteLang}
-                onChange={(e) => changeSiteLanguage(e.target.value)}
-                aria-label="Select Indian Language"
-                className="bg-transparent border-none text-xs font-semibold focus:outline-none cursor-pointer pr-1 text-inherit"
-              >
-                {INDIAN_LANGUAGES.map((l) => (
-                  <option key={l.code} value={l.code} className={isDark ? 'bg-[#1e293b] text-white' : 'bg-white text-gray-900'}>
-                    {l.native} ({l.name})
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            <button
-              onClick={() => setTheme(isDark ? 'bright' : 'dark')}
-              className={`p-1.5 rounded border transition-all cursor-pointer ${isDark ? 'bg-[#1e293b] border-[#334155] text-amber-400' : 'bg-white border-[#cbd5e1] text-gray-700'}`}
-              title="Toggle Bright/Dark mode"
-            >
-              {isDark ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
-            </button>
-          </div>
-        </header>
-
-        {/* Authentication Gateway Main Container */}
-        <main className="flex-1 flex items-center justify-center p-4 sm:p-6 lg:p-8">
-          <div className="max-w-md w-full">
-            {/* National Crest Logo */}
-            <div className="flex justify-center mb-5">
-              <div className="relative group">
-                <div className="absolute -inset-1 rounded-2xl bg-gradient-to-r from-[#ea580c] via-cyan-500 to-emerald-500 opacity-60 blur-md group-hover:opacity-85 transition duration-300"></div>
-                <img
-                  src="/logo.jpg"
-                  alt="NyayaMitra AI Sovereign Crest"
-                  className="relative w-24 h-24 rounded-2xl object-cover shadow-2xl border-2 border-white/40 dark:border-slate-700"
-                />
-              </div>
-            </div>
-
-            {/* National Seal Badge */}
-            <div className="text-center mb-6">
-              <div className="inline-block px-3.5 py-1 rounded-full text-[11px] font-bold uppercase tracking-widest bg-amber-50 text-[#c2410c] border border-amber-200 dark:bg-amber-950/60 dark:text-amber-300 dark:border-amber-900 mb-3 shadow-xs">
-                OFFICIAL GOVERNMENT GATEWAY · SECURE AUTHENTICATION
-              </div>
-              <h1 className="text-2xl sm:text-3xl font-black font-serif-gov text-[#0f3d68] dark:text-[#38bdf8]">
-                NyayaMitra AI
-              </h1>
-              <p className="text-xs text-gray-500 dark:text-gray-400 mt-1 max-w-sm mx-auto">
-                Sign in to access your private legal contract audit workspace, automated visual PDF redlines, and citizen welfare scheme recommendations.
-              </p>
-            </div>
-
-            {/* Auth Card */}
-            <div className={`p-6 sm:p-8 rounded-2xl shadow-xl border-t-4 border-t-[#0f3d68] border transition-colors ${isDark ? 'bg-[#1e293b] border-[#334155]' : 'bg-white border-[#e2e8f0]'}`}>
-              {/* Tab Selector */}
-              <div className={`p-1 rounded-lg border flex items-center mb-6 ${isDark ? 'bg-slate-800 border-slate-700' : 'bg-gray-100 border-gray-200'}`}>
-                <button
-                  type="button"
-                  onClick={() => { setAuthMode('login'); setAuthError(''); }}
-                  className={`flex-1 py-2 text-xs font-bold uppercase tracking-wider rounded transition-all cursor-pointer ${
-                    authMode === 'login'
-                      ? 'bg-[#0f3d68] text-white shadow-xs'
-                      : 'text-gray-500 hover:text-gray-800 dark:text-gray-400 dark:hover:text-white'
-                  }`}
-                >
-                  Sign In
-                </button>
-                <button
-                  type="button"
-                  onClick={() => { setAuthMode('register'); setAuthError(''); }}
-                  className={`flex-1 py-2 text-xs font-bold uppercase tracking-wider rounded transition-all cursor-pointer ${
-                    authMode === 'register'
-                      ? 'bg-[#0f3d68] text-white shadow-xs'
-                      : 'text-gray-500 hover:text-gray-800 dark:text-gray-400 dark:hover:text-white'
-                  }`}
-                >
-                  Create Account
-                </button>
-              </div>
-
-              {authError && (
-                <div className={`mb-5 p-3 rounded text-xs font-semibold border ${
-                  authError.includes('successfully')
-                    ? 'bg-emerald-50 text-emerald-800 border-emerald-200 dark:bg-emerald-950/50 dark:text-emerald-300 dark:border-emerald-800'
-                    : 'bg-red-50 text-red-800 border-red-200 dark:bg-red-950/50 dark:text-red-300 dark:border-red-800'
-                }`}>
-                  {authError}
-                </div>
-              )}
-
-              <form onSubmit={handleAuth} className="space-y-4">
-                {authMode === 'register' && (
-                  <div>
-                    <label className="block text-xs font-bold uppercase mb-1.5 text-gray-700 dark:text-gray-200">
-                      Full Legal Name
-                    </label>
-                    <input
-                      type="text"
-                      required
-                      value={authName}
-                      onChange={e => setAuthName(e.target.value)}
-                      placeholder="e.g. Aarav Sharma"
-                      className="w-full px-3.5 py-2.5 text-xs rounded border border-gray-300 dark:border-gray-600 bg-white dark:bg-slate-800 text-gray-900 dark:text-gray-100 placeholder-gray-400 focus:outline-hidden focus:ring-2 focus:ring-[#0f3d68]"
-                    />
-                  </div>
-                )}
-
-                <div>
-                  <label className="block text-xs font-bold uppercase mb-1.5 text-gray-700 dark:text-gray-200">
-                    Official Email Address
-                  </label>
-                  <input
-                    type="email"
-                    required
-                    value={authEmail}
-                    onChange={e => setAuthEmail(e.target.value)}
-                    placeholder="e.g. officer@gov.in or user@gmail.com"
-                    className="w-full px-3.5 py-2.5 text-xs rounded border border-gray-300 dark:border-gray-600 bg-white dark:bg-slate-800 text-gray-900 dark:text-gray-100 placeholder-gray-400 focus:outline-hidden focus:ring-2 focus:ring-[#0f3d68]"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-xs font-bold uppercase mb-1.5 text-gray-700 dark:text-gray-200">
-                    Password
-                  </label>
-                  <input
-                    type="password"
-                    required
-                    value={authPassword}
-                    onChange={e => setAuthPassword(e.target.value)}
-                    placeholder="••••••••"
-                    className="w-full px-3.5 py-2.5 text-xs rounded border border-gray-300 dark:border-gray-600 bg-white dark:bg-slate-800 text-gray-900 dark:text-gray-100 placeholder-gray-400 focus:outline-hidden focus:ring-2 focus:ring-[#0f3d68]"
-                  />
-                </div>
-
-                <button
-                  type="submit"
-                  className="w-full py-3 bg-[#ea580c] hover:bg-[#c2410c] text-white font-bold text-xs uppercase tracking-wider rounded shadow-md transition-all cursor-pointer flex items-center justify-center gap-2 mt-2"
-                >
-                  <Shield className="w-4 h-4" />
-                  {authMode === 'login' ? 'SIGN IN TO WORKSPACE' : 'CREATE OFFICIAL ACCOUNT'}
-                </button>
-              </form>
-
-              {/* Quick Demo Switcher / Login Shortcut for testing */}
-              {authMode === 'login' && (
-                <div className="mt-6 pt-5 border-t border-gray-200 dark:border-gray-700">
-                  <div className="text-[11px] font-bold text-gray-500 uppercase tracking-wider mb-2">
-                    Quick Test Sign-In (Select User Account):
-                  </div>
-                  <div className="grid grid-cols-3 gap-2">
-                    {[
-                      { name: 'meet', email: 'meet@gmail.com' },
-                      { name: 'bbb', email: 'bbb@gmail.com' },
-                      { name: 'aaa', email: 'aaa@gmail.com' }
-                    ].map(u => (
-                      <button
-                        key={u.email}
-                        type="button"
-                        onClick={() => {
-                          setAuthEmail(u.email);
-                          setAuthPassword('123');
-                        }}
-                        className={`p-2 rounded border text-center transition-all cursor-pointer text-[11px] font-semibold ${
-                          authEmail === u.email
-                            ? 'bg-[#0f3d68] text-white border-[#0f3d68]'
-                            : 'bg-gray-50 dark:bg-slate-800 text-gray-700 dark:text-gray-300 border-gray-300 dark:border-gray-600 hover:border-gray-400'
-                        }`}
-                      >
-                        <User className="w-3.5 h-3.5 mx-auto mb-0.5 opacity-70" />
-                        {u.name}
-                      </button>
-                    ))}
-                  </div>
-                  <div className="text-[10px] text-gray-400 mt-2 text-center">
-                    Each user account has its own isolated audit history.
-                  </div>
-                </div>
-              )}
-            </div>
-
-            {/* Bottom Security Highlights */}
-            <div className="mt-6 text-center space-y-1">
-              <div className="flex items-center justify-center gap-2 text-[11px] font-semibold text-gray-500 dark:text-gray-400">
-                <Lock className="w-3.5 h-3.5 text-[#138808]" /> 100% In-Country Sovereign Data Security & DPDP Compliance
-              </div>
-              <p className="text-[10px] text-gray-400">
-                Documents and audit history are strictly segregated and only accessible by the authenticated user.
-              </p>
-            </div>
-          </div>
-        </main>
-      </div>
-    );
-  }
-
   return (
     <div className={`min-h-screen font-sans pb-20 md:pb-0 transition-colors duration-200 ${isDark ? 'bg-[#0b1329] text-[#f8fafc]' : 'bg-[#f8fafc] text-[#0f2b48]'}`}>
       
@@ -1125,40 +1070,146 @@ Between: Municipal Corporation of Greater Mumbai (Authority) AND TechCorp Soluti
             </button>
           </nav>
 
-          {/* Auth Button */}
-          <div>
+          {/* Auth Button & Hamburger Menu (=) */}
+          <div className="flex items-center gap-2 sm:gap-3">
             {user ? (
-              <div className="flex items-center space-x-3">
+              <div className="flex items-center space-x-2">
                 <div className="text-right hidden sm:block">
-                  <div className="text-xs font-bold text-[#0f3d68] dark:text-[#38bdf8]">{user.name}</div>
-                  <div className="text-[10px] text-gray-500">{user.email}</div>
+                  <div className="text-xs font-bold text-[#0f3d68] dark:text-[#38bdf8] truncate max-w-[130px]">{user.name}</div>
+                  <div className="text-[10px] text-gray-500 truncate max-w-[130px]">{user.email}</div>
                 </div>
                 <button
+                  type="button"
                   onClick={handleLogout}
-                  className="p-2 rounded text-red-600 hover:bg-red-50 dark:hover:bg-red-950/30"
+                  className="p-2 rounded-lg text-red-600 hover:bg-red-50 dark:hover:bg-red-950/30 transition-all cursor-pointer"
                   title="Logout"
                 >
                   <LogOut className="w-4 h-4" />
                 </button>
               </div>
             ) : (
-              <div className="flex items-center gap-2">
-                <button
-                  onClick={() => { setAuthMode('login'); setShowAuthModal(true); }}
-                  className="px-4 py-2 bg-[#0f3d68] hover:bg-[#0a2540] text-white text-xs font-bold uppercase tracking-wider rounded shadow-sm transition-all"
-                >
-                  Login
-                </button>
-                <button
-                  onClick={() => { setAuthMode('register'); setShowAuthModal(true); }}
-                  className="px-4 py-2 border border-[#0f3d68] text-[#0f3d68] dark:border-gray-500 dark:text-white text-xs font-bold uppercase tracking-wider rounded hover:bg-gray-50 dark:hover:bg-gray-800 transition-all"
-                >
-                  Register
-                </button>
-              </div>
+              <button
+                type="button"
+                onClick={() => { setAuthMode('login'); setShowAuthModal(true); }}
+                className="px-3.5 py-2 bg-[#0f3d68] hover:bg-[#0a2540] text-white text-xs font-bold uppercase tracking-wider rounded-lg shadow-sm transition-all cursor-pointer"
+              >
+                Sign In
+              </button>
             )}
+
+            {/* Hamburger (=) Workspace Modules Menu Button */}
+            <button
+              type="button"
+              onClick={() => setIsMenuOpen(prev => !prev)}
+              className="p-2 sm:p-2.5 rounded-lg border border-gray-300 dark:border-gray-700 bg-gray-50 dark:bg-slate-800 hover:bg-gray-100 dark:hover:bg-slate-700 text-[#0f3d68] dark:text-sky-300 transition-all cursor-pointer flex items-center justify-center shadow-xs"
+              title="Workspace Modules Menu (=)"
+              aria-label="Toggle navigation menu"
+            >
+              {isMenuOpen ? <X className="w-5 h-5 text-red-500" /> : <Menu className="w-5 h-5" />}
+            </button>
           </div>
         </div>
+
+        {/* ── Slide-Down Workspace Modules Menu (=) ── */}
+        {isMenuOpen && (
+          <div className="border-t border-gray-200 dark:border-gray-800 bg-white/98 dark:bg-[#0b1222]/98 backdrop-blur-xl shadow-2xl transition-all">
+            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+              <div className="flex items-center justify-between pb-4 mb-4 border-b border-gray-100 dark:border-gray-800">
+                <div className="flex items-center gap-2">
+                  <div className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse"></div>
+                  <span className="text-xs font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400">
+                    NyayaMitra AI · Workspace Modules
+                  </span>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setIsMenuOpen(false)}
+                  className="p-1 rounded text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-slate-800 transition-all cursor-pointer"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+                {[
+                  { id: 'audit', label: 'Audit & Health', ref: uploadRef, icon: Shield, desc: 'Clause risk assessment & compliance health score', count: currentDoc ? highRisksCount + medRisksCount : null, countColor: 'bg-red-500' },
+                  { id: 'chat', label: 'Ask AI (Q&A)', ref: chatRef, icon: MessageSquare, desc: 'Interactive legal assistant & RAG intelligence' },
+                  { id: 'courtroom', label: 'AI Courtroom', ref: debateRef, icon: Scale, desc: '3-Agent legal debate (Critic, Defender, Judge)' },
+                  { id: 'redline', label: 'PDF Redline', ref: redlineRef, icon: Edit3, desc: 'Track changes, clause revisions & Word export', count: docRisks.length > 0 ? docRisks.length : null, countColor: 'bg-amber-500' },
+                  { id: 'schemes', label: 'Welfare Schemes', ref: schemesRef, icon: Landmark, desc: 'Social security & citizen entitlement discovery', count: schemes.length || '12', countColor: 'bg-emerald-500' },
+                  { id: 'translate', label: 'Indian Translator', ref: multilingualRef, icon: Globe, desc: '17 Indian languages with native voice readout' },
+                  { id: 'history', label: 'Documents & Records', ref: historyRef, icon: Folder, desc: 'Inspection history & verified compliance records', count: documents.length || null, countColor: 'bg-blue-500' },
+                  { id: 'all', label: 'Full Dashboard View', ref: uploadRef, icon: LayoutGrid, desc: 'Display all modules unified on a single screen' },
+                ].map(module => {
+                  const Icon = module.icon;
+                  const isActive = activeTab === module.id;
+                  return (
+                    <button
+                      key={module.id}
+                      type="button"
+                      onClick={() => {
+                        setActiveTab(module.id);
+                        setIsMenuOpen(false);
+                        setTimeout(() => {
+                          if (module.ref?.current) {
+                            module.ref.current.scrollIntoView({ behavior: 'smooth' });
+                          }
+                        }, 50);
+                      }}
+                      className={`text-left p-3.5 rounded-xl border transition-all cursor-pointer flex flex-col justify-between group ${
+                        isActive
+                          ? 'border-[#0f3d68] bg-sky-50/80 dark:bg-sky-950/30 dark:border-sky-500 ring-1 ring-sky-500/20'
+                          : 'border-gray-200 dark:border-gray-800 bg-white dark:bg-slate-900/60 hover:border-amber-500/60 hover:shadow-md'
+                      }`}
+                    >
+                      <div className="flex items-center justify-between mb-2">
+                        <div className={`p-2 rounded-lg ${isActive ? 'bg-[#0f3d68] text-white' : 'bg-gray-100 dark:bg-slate-800 text-gray-700 dark:text-gray-300 group-hover:bg-amber-500/10 group-hover:text-amber-600'}`}>
+                          <Icon className="w-4 h-4" />
+                        </div>
+                        {module.count !== null && module.count !== undefined && (
+                          <span className={`text-[10px] px-2 py-0.5 rounded-full font-black text-white ${module.countColor || 'bg-gray-500'}`}>
+                            {module.count}
+                          </span>
+                        )}
+                      </div>
+                      <div>
+                        <div className="font-bold text-xs text-gray-900 dark:text-gray-100 group-hover:text-[#ea580c] transition-colors">
+                          {module.label}
+                        </div>
+                        <div className="text-[11px] text-gray-500 dark:text-gray-400 mt-0.5 leading-snug line-clamp-2">
+                          {module.desc}
+                        </div>
+                      </div>
+                    </button>
+                  );
+                })}
+              </div>
+
+              {/* Quick Actions Footer inside (=) Menu */}
+              <div className="mt-4 pt-3 border-t border-gray-100 dark:border-gray-800 flex flex-wrap items-center justify-between gap-3">
+                <button
+                  type="button"
+                  onClick={() => {
+                    handleLoadDemoContract();
+                    setIsMenuOpen(false);
+                  }}
+                  className="px-4 py-2 rounded-lg bg-[#ea580c] hover:bg-[#c2410c] text-white text-xs font-bold uppercase tracking-wider transition-all flex items-center gap-2 cursor-pointer shadow-xs"
+                >
+                  <Zap className="w-3.5 h-3.5 text-amber-200" />
+                  <span>Try Demo Tender Contract</span>
+                </button>
+
+                <div className="text-xs text-gray-500">
+                  {user ? (
+                    <span>Logged in as <strong>{user.name}</strong></span>
+                  ) : (
+                    <span>Guest Mode · Sign in with Google to save audit records</span>
+                  )}
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
       </header>
 
       {/* ── SECTION 1: HERO SECTION ── */}
@@ -1225,67 +1276,6 @@ Between: Municipal Corporation of Greater Mumbai (Authority) AND TechCorp Soluti
           </div>
         </div>
       </section>
-
-      {/* ── STICKY MODULE WORKSPACE NAVIGATION TABS ── */}
-      <nav className="sticky top-0 z-30 bg-white/95 dark:bg-[#060b18]/95 backdrop-blur-md border-b border-gray-200 dark:border-gray-800 shadow-xs">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex items-center justify-between gap-3 py-2.5 overflow-x-auto no-scrollbar">
-            <div className="flex items-center gap-1.5 sm:gap-2 flex-nowrap">
-              {[
-                { id: 'audit', label: 'Audit & Health', icon: Shield, count: currentDoc ? highRisksCount + medRisksCount : null, countColor: 'bg-red-500' },
-                { id: 'chat', label: 'Ask AI (Q&A)', icon: MessageSquare },
-                { id: 'courtroom', label: 'AI Courtroom', icon: Scale },
-                { id: 'redline', label: 'PDF Redline', icon: Edit3, count: docRisks.length > 0 ? docRisks.length : null, countColor: 'bg-amber-500' },
-                { id: 'schemes', label: 'Welfare Schemes', icon: Landmark, count: schemes.length || '12', countColor: 'bg-emerald-500' },
-                { id: 'translate', label: 'Translate', icon: Globe },
-                { id: 'history', label: 'Documents', icon: Folder, count: documents.length || null, countColor: 'bg-blue-500' },
-                { id: 'all', label: 'Full View', icon: LayoutGrid }
-              ].map(tab => {
-                const isActive = activeTab === tab.id;
-                const Icon = tab.icon;
-                return (
-                  <button
-                    key={tab.id}
-                    onClick={() => {
-                      setActiveTab(tab.id);
-                      if (tab.id === 'audit') scrollTo(uploadRef);
-                      else if (tab.id === 'chat') scrollTo(chatRef);
-                      else if (tab.id === 'courtroom') scrollTo(debateRef);
-                      else if (tab.id === 'redline') scrollTo(redlineRef);
-                      else if (tab.id === 'schemes') scrollTo(schemesRef);
-                      else if (tab.id === 'translate') scrollTo(multilingualRef);
-                      else if (tab.id === 'history') scrollTo(historyRef);
-                    }}
-                    className={`px-3.5 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-2 cursor-pointer whitespace-nowrap ${
-                      isActive 
-                        ? 'bg-[#0f3d68] text-white shadow-md dark:bg-sky-600 dark:text-white' 
-                        : 'text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-slate-800'
-                    }`}
-                  >
-                    <Icon className={`w-3.5 h-3.5 ${isActive ? 'text-amber-400' : 'text-gray-400'}`} />
-                    <span>{tab.label}</span>
-                    {tab.count !== null && tab.count !== undefined && (
-                      <span className={`text-[10px] px-1.5 py-0.2 rounded-full font-black text-white ${tab.countColor || 'bg-gray-500'}`}>
-                        {tab.count}
-                      </span>
-                    )}
-                  </button>
-                );
-              })}
-            </div>
-
-            {/* Quick Demo Contract Trigger in Tab Bar */}
-            <button
-              onClick={handleLoadDemoContract}
-              className="hidden lg:flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold text-[#ea580c] hover:bg-orange-50 dark:hover:bg-orange-950/30 border border-orange-200 dark:border-orange-800 transition-all cursor-pointer whitespace-nowrap"
-              title="Instantly load realistic sample contract"
-            >
-              <Zap className="w-3.5 h-3.5" />
-              <span>Try Demo Contract</span>
-            </button>
-          </div>
-        </div>
-      </nav>
 
       {/* ── SECTION 3: UPLOAD & AUDIT WORKSPACE (Always Visible & Accessible!) ── */}
       <section ref={uploadRef} className={`py-16 border-b border-gray-200 dark:border-gray-800 ${activeTab !== 'audit' && activeTab !== 'all' ? 'hidden' : ''}`}>
@@ -2759,10 +2749,25 @@ Between: Municipal Corporation of Greater Mumbai (Authority) AND TechCorp Soluti
                       </span>
                       <button
                         type="button"
-                        onClick={() => handleSpeak(translatedText)}
-                        className="px-2.5 py-1 rounded text-xs font-bold bg-white dark:bg-slate-800 border border-gray-300 dark:border-slate-700 hover:border-amber-500 text-gray-700 dark:text-gray-200 flex items-center gap-1 shadow-2xs cursor-pointer"
+                        onClick={() => handleSpeak(translatedText, targetLang)}
+                        className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 shadow-2xs cursor-pointer ${
+                          isSpeaking && speakingText === translatedText
+                            ? 'bg-red-600 hover:bg-red-700 text-white animate-pulse'
+                            : 'bg-white dark:bg-slate-800 border border-gray-300 dark:border-slate-700 hover:border-amber-500 text-gray-700 dark:text-gray-200'
+                        }`}
+                        title={isSpeaking && speakingText === translatedText ? "Stop Audio Playback" : `Listen to ${targetLang} Translation Aloud`}
                       >
-                        <Volume2 className="w-3.5 h-3.5 text-[#ea580c]" /> Listen
+                        {isSpeaking && speakingText === translatedText ? (
+                          <>
+                            <VolumeX className="w-3.5 h-3.5" />
+                            <span>Stop Audio</span>
+                          </>
+                        ) : (
+                          <>
+                            <Volume2 className="w-3.5 h-3.5 text-[#ea580c]" />
+                            <span>Listen in {targetLang}</span>
+                          </>
+                        )}
                       </button>
                     </div>
                     <p className="text-xs sm:text-sm text-gray-800 dark:text-gray-200 leading-relaxed font-medium whitespace-pre-line">
@@ -2882,83 +2887,163 @@ Between: Municipal Corporation of Greater Mumbai (Authority) AND TechCorp Soluti
         </div>
       </footer>
 
-      {/* ── SIMPLE LOGIN & REGISTER MODAL ── */}
+      {/* ── STRONG AUTHENTICATION MODAL (GOOGLE FIREBASE + EMAIL/PASSWORD) ── */}
       {showAuthModal && (
-        <div className="fixed inset-0 bg-black/70 z-50 flex items-center justify-center p-4">
-          <div className={`max-w-md w-full rounded-lg p-6 shadow-2xl border-t-4 border-t-[#0f3d68] border relative ${isDark ? 'bg-[#1e293b] border-[#334155]' : 'bg-white border-[#e2e8f0]'}`}>
+        <div className="fixed inset-0 bg-black/75 backdrop-blur-xs z-50 flex items-center justify-center p-4">
+          <div className={`max-w-md w-full rounded-2xl p-6 sm:p-7 shadow-2xl border relative transition-all ${isDark ? 'bg-[#0f172a] border-[#334155]' : 'bg-white border-[#e2e8f0]'}`}>
             <button 
-              onClick={() => setShowAuthModal(false)}
-              className="absolute right-4 top-4 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 p-1 rounded-lg hover:bg-gray-100 dark:hover:bg-slate-800 transition-all cursor-pointer"
+              type="button"
+              onClick={() => { setShowAuthModal(false); setAuthError(''); }}
+              className="absolute right-4 top-4 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 p-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-slate-800 transition-all cursor-pointer"
               aria-label="Close modal"
             >
               <X className="w-5 h-5" />
             </button>
 
-            <div className="flex items-center gap-2.5 mb-4">
-              <img src="/logo.jpg" alt="NyayaMitra AI Logo" className="w-8 h-8 rounded-lg object-cover border border-amber-500/50" />
-              <h3 className="font-bold text-lg font-serif-gov text-[#0f3d68] dark:text-[#38bdf8]">
-                {authMode === 'login' ? 'Sign In' : 'Create Account'}
-              </h3>
+            <div className="flex items-center gap-3 mb-5">
+              <img src="/logo.jpg" alt="NyayaMitra AI Logo" className="w-9 h-9 rounded-xl object-cover border border-amber-500/50 shadow-xs" />
+              <div>
+                <h3 className="font-bold text-lg font-serif-gov text-[#0f3d68] dark:text-[#38bdf8] leading-tight">
+                  {authMode === 'login' ? 'Sign In to NyayaMitra' : authMode === 'register' ? 'Create GovTech Account' : 'Reset Password'}
+                </h3>
+                <p className="text-[11px] text-gray-500 dark:text-gray-400">
+                  {authMode === 'login' 
+                    ? 'Access your private legal audits & inspection history' 
+                    : authMode === 'register' 
+                      ? 'Secure, encrypted citizen authentication' 
+                      : 'Enter your email to receive a password reset link'}
+                </p>
+              </div>
             </div>
 
             {authError && (
-              <div className="mb-4 p-2.5 rounded bg-amber-50 text-amber-900 border border-amber-200 text-xs">
-                {authError}
+              <div className="mb-4 p-3 rounded-xl bg-amber-50 dark:bg-amber-950/40 text-amber-900 dark:text-amber-200 border border-amber-200 dark:border-amber-800 text-xs flex items-center gap-2">
+                <AlertCircle className="w-4 h-4 text-amber-600 shrink-0" />
+                <span>{authError}</span>
               </div>
             )}
 
-            <form onSubmit={handleAuth} className="space-y-4">
+            {/* Google OAuth Firebase Sign-In Button */}
+            {authMode !== 'reset' && (
+              <>
+                <button
+                  type="button"
+                  disabled={authLoading}
+                  onClick={handleGoogleSignIn}
+                  className="w-full py-2.5 px-4 rounded-xl border border-gray-300 dark:border-gray-600 bg-white dark:bg-slate-800 hover:bg-gray-50 dark:hover:bg-slate-700 text-gray-800 dark:text-gray-100 font-bold text-xs uppercase tracking-wider transition-all flex items-center justify-center gap-2.5 cursor-pointer shadow-xs disabled:opacity-50"
+                >
+                  <svg className="w-4 h-4 shrink-0" viewBox="0 0 24 24">
+                    <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
+                    <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
+                    <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z"/>
+                    <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z"/>
+                  </svg>
+                  <span>{authLoading ? 'Signing in with Google...' : 'Continue with Google'}</span>
+                </button>
+
+                <div className="relative flex items-center justify-center my-4">
+                  <div className="border-t border-gray-200 dark:border-gray-700 w-full"></div>
+                  <span className="bg-white dark:bg-[#0f172a] px-3 text-[10px] text-gray-500 uppercase tracking-widest font-bold">
+                    OR EMAIL
+                  </span>
+                </div>
+              </>
+            )}
+
+            <form onSubmit={handleAuth} className="space-y-3.5">
               {authMode === 'register' && (
                 <div>
-                  <label className="block text-xs font-bold uppercase mb-1 text-gray-700 dark:text-gray-200">Full Name</label>
+                  <label className="block text-[11px] font-bold uppercase tracking-wider mb-1 text-gray-700 dark:text-gray-300">
+                    Full Name
+                  </label>
                   <input 
                     type="text" 
                     required 
                     value={authName}
                     onChange={e => setAuthName(e.target.value)}
                     placeholder="e.g. Aarav Sharma"
-                    className="w-full px-3 py-2 text-xs rounded border border-gray-300 dark:border-gray-600 bg-white dark:bg-slate-800 text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500"
+                    className="w-full px-3.5 py-2.5 text-xs rounded-xl border border-gray-300 dark:border-gray-600 bg-white dark:bg-slate-800 text-gray-900 dark:text-gray-100 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#0f3d68]"
                   />
                 </div>
               )}
 
               <div>
-                <label className="block text-xs font-bold uppercase mb-1 text-gray-700 dark:text-gray-200">Email Address</label>
+                <label className="block text-[11px] font-bold uppercase tracking-wider mb-1 text-gray-700 dark:text-gray-300">
+                  Email Address
+                </label>
                 <input 
                   type="email" 
                   required 
                   value={authEmail}
                   onChange={e => setAuthEmail(e.target.value)}
                   placeholder="name@domain.com"
-                  className="w-full px-3 py-2 text-xs rounded border border-gray-300 dark:border-gray-600 bg-white dark:bg-slate-800 text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500"
+                  className="w-full px-3.5 py-2.5 text-xs rounded-xl border border-gray-300 dark:border-gray-600 bg-white dark:bg-slate-800 text-gray-900 dark:text-gray-100 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#0f3d68]"
                 />
               </div>
 
-              <div>
-                <label className="block text-xs font-bold uppercase mb-1 text-gray-700 dark:text-gray-200">Password</label>
-                <input 
-                  type="password" 
-                  required 
-                  value={authPassword}
-                  onChange={e => setAuthPassword(e.target.value)}
-                  placeholder="••••••••••••"
-                  className="w-full px-3 py-2 text-xs rounded border border-gray-300 dark:border-gray-600 bg-white dark:bg-slate-800 text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500"
-                />
-              </div>
+              {authMode !== 'reset' && (
+                <div>
+                  <div className="flex items-center justify-between mb-1">
+                    <label className="text-[11px] font-bold uppercase tracking-wider text-gray-700 dark:text-gray-300">
+                      Password
+                    </label>
+                    {authMode === 'login' && (
+                      <button
+                        type="button"
+                        onClick={() => { setAuthMode('reset'); setAuthError(''); }}
+                        className="text-[11px] font-semibold text-[#ea580c] hover:underline cursor-pointer"
+                      >
+                        Forgot password?
+                      </button>
+                    )}
+                  </div>
+                  <input 
+                    type="password" 
+                    required 
+                    value={authPassword}
+                    onChange={e => setAuthPassword(e.target.value)}
+                    placeholder={authMode === 'register' ? 'Minimum 6 characters' : '••••••••••••'}
+                    className="w-full px-3.5 py-2.5 text-xs rounded-xl border border-gray-300 dark:border-gray-600 bg-white dark:bg-slate-800 text-gray-900 dark:text-gray-100 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#0f3d68]"
+                  />
+                </div>
+              )}
 
               <button
                 type="submit"
-                className="w-full py-3 bg-[#0f3d68] hover:bg-[#0a2540] text-white font-bold text-xs uppercase tracking-wider rounded shadow transition-all"
+                disabled={authLoading}
+                className="w-full py-3 bg-[#0f3d68] hover:bg-[#0a2540] disabled:opacity-50 text-white font-bold text-xs uppercase tracking-wider rounded-xl shadow-md transition-all cursor-pointer flex items-center justify-center gap-2 mt-2"
               >
-                {authMode === 'login' ? 'SIGN IN' : 'CREATE ACCOUNT'}
+                {authLoading ? (
+                  <span>Processing...</span>
+                ) : authMode === 'login' ? (
+                  'Sign In'
+                ) : authMode === 'register' ? (
+                  'Create Account'
+                ) : (
+                  'Send Reset Link'
+                )}
               </button>
             </form>
 
-            <div className="mt-4 text-center text-xs text-gray-500">
+            <div className="mt-4 pt-3 border-t border-gray-100 dark:border-gray-800 text-center text-xs text-gray-500">
               {authMode === 'login' ? (
-                <span>Don't have an account? <button onClick={() => setAuthMode('register')} className="text-[#ea580c] font-bold">Register here</button></span>
+                <span>
+                  Don't have an account?{' '}
+                  <button type="button" onClick={() => { setAuthMode('register'); setAuthError(''); }} className="text-[#ea580c] font-bold hover:underline cursor-pointer">
+                    Register here
+                  </button>
+                </span>
+              ) : authMode === 'register' ? (
+                <span>
+                  Already have an account?{' '}
+                  <button type="button" onClick={() => { setAuthMode('login'); setAuthError(''); }} className="text-[#ea580c] font-bold hover:underline cursor-pointer">
+                    Sign in
+                  </button>
+                </span>
               ) : (
-                <span>Already have an account? <button onClick={() => setAuthMode('login')} className="text-[#ea580c] font-bold">Sign in</button></span>
+                <button type="button" onClick={() => { setAuthMode('login'); setAuthError(''); }} className="text-[#0f3d68] dark:text-sky-400 font-bold hover:underline cursor-pointer">
+                  ← Back to Sign In
+                </button>
               )}
             </div>
           </div>

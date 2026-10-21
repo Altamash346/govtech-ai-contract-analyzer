@@ -55,6 +55,36 @@ class RegisterRequest(BaseModel):
     email: str
     password: str
 
+class FirebaseAuthRequest(BaseModel):
+    uid: str
+    email: str
+    name: Optional[str] = "Citizen User"
+
+@app.post("/api/auth/firebase")
+def firebase_auth(req: FirebaseAuthRequest):
+    if not req.email:
+        raise HTTPException(status_code=400, detail="Email is required.")
+    session = db.SessionLocal()
+    user = session.query(db.User).filter_by(email=req.email).first()
+    if not user:
+        user = db.User(
+            name=req.name or req.email.split("@")[0].title(),
+            email=req.email,
+            password_hash=db.hash_password(f"firebase_{req.uid}"),
+            role="user"
+        )
+        session.add(user)
+        session.commit()
+    user_data = {
+        "id": user.id,
+        "name": user.name,
+        "email": user.email,
+        "role": user.role,
+        "firebase_uid": req.uid
+    }
+    session.close()
+    return {"success": True, "user": user_data}
+
 @app.post("/api/auth/login")
 def login(req: LoginRequest):
     session = db.SessionLocal()
