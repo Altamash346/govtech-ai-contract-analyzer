@@ -998,294 +998,122 @@ Between: Municipal Corporation of Greater Mumbai (Authority) AND TechCorp Soluti
 
   const isDark = theme === 'dark';
 
-  // ── MANDATORY LOGIN GATEWAY FOR NEW USERS ──
-  if (!user) {
-    return (
-      <div className={`min-h-screen font-sans flex flex-col justify-between transition-colors duration-200 ${isDark ? 'bg-[#0b1329] text-[#f8fafc]' : 'bg-[#f8fafc] text-[#0f2b48]'}`}>
-        <div>
-          {/* National Identity Tricolor Bar */}
-          <div className="h-1.5 w-full flex">
-            <div className="h-full w-1/3 bg-[#FF9933]"></div>
-            <div className="h-full w-1/3 bg-white"></div>
-            <div className="h-full w-1/3 bg-[#138808]"></div>
-          </div>
+  // ── Rotating Hero Headline State & Animation ──
+  const ROTATING_WORDS = [
+    { text: 'tenders', color: '#ea580c' },
+    { text: 'agreements', color: '#0891b2' },
+    { text: 'NDAs', color: '#7c3aed' },
+    { text: 'leases', color: '#059669' },
+    { text: 'welfare schemes', color: '#0284c7' },
+  ];
+  const [rotatingWordIdx, setRotatingWordIdx] = useState(0);
+  const [wordVisible, setWordVisible] = useState(true);
 
-          {/* Top Navbar */}
-          <header className={`border-b backdrop-blur-md px-4 sm:px-8 py-3.5 flex items-center justify-between ${isDark ? 'bg-[#0f172a]/95 border-[#334155]' : 'bg-white/95 border-[#e2e8f0]'}`}>
-            <div className="flex items-center space-x-3">
-              <img
-                src="/logo.jpg"
-                alt="NyayaMitra AI Logo"
-                className="w-10 h-10 rounded-lg object-cover shadow-md border border-amber-500/50"
-              />
-              <div>
-                <div className="text-[10px] font-bold tracking-widest uppercase text-[#ea580c]">
-                  LEGAL & WELFARE INTELLIGENCE
-                </div>
-                <div className="text-lg font-black font-serif-gov tracking-tight text-[#0f3d68] dark:text-[#38bdf8]">
-                  NyayaMitra AI
-                </div>
-              </div>
-            </div>
+  useEffect(() => {
+    const prefersReducedMotion = typeof window !== 'undefined' && window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    if (prefersReducedMotion) return;
+    const interval = setInterval(() => {
+      setWordVisible(false);
+      setTimeout(() => {
+        setRotatingWordIdx(prev => (prev + 1) % ROTATING_WORDS.length);
+        setWordVisible(true);
+      }, 380);
+    }, 2600);
+    return () => clearInterval(interval);
+  }, []);
 
-            <div className="flex items-center gap-3">
-              <button
-                type="button"
-                onClick={() => setTheme(isDark ? 'bright' : 'dark')}
-                className={`p-2 rounded-lg border transition-all cursor-pointer ${isDark ? 'bg-[#1e293b] border-[#334155] text-amber-400' : 'bg-white border-[#cbd5e1] text-gray-700'}`}
-                title="Toggle Bright/Dark mode"
-              >
-                {isDark ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
-              </button>
-            </div>
-          </header>
+  // ── Animated Health Score Ring for Floating Mock Preview ──
+  const [previewScore, setPreviewScore] = useState(0);
+  const previewScoreTarget = 82;
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      let current = 0;
+      const step = setInterval(() => {
+        current += 2;
+        if (current >= previewScoreTarget) {
+          setPreviewScore(previewScoreTarget);
+          clearInterval(step);
+        } else {
+          setPreviewScore(current);
+        }
+      }, 25);
+      return () => clearInterval(step);
+    }, 400);
+    return () => clearTimeout(timer);
+  }, []);
 
-          {/* Main Auth Hero & Card Container */}
-          <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-16">
-            <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-12 items-center">
-              
-              {/* Left Column: Official GovTech Platform Overview */}
-              <div className="lg:col-span-7 space-y-6">
-                <div className="inline-block px-3.5 py-1 rounded-full text-[11px] font-bold tracking-widest uppercase bg-[#fff7ed] text-[#c2410c] border border-[#fed7aa] shadow-2xs">
-                  OFFICIAL SOVEREIGN PORTAL · GOVERNMENT OF INDIA
-                </div>
+  // ── Scroll Reveal via IntersectionObserver ──
+  useEffect(() => {
+    if (typeof window === 'undefined' || !('IntersectionObserver' in window)) return;
+    const elements = document.querySelectorAll('.reveal-hidden');
+    const observer = new IntersectionObserver((entries) => {
+      entries.forEach(entry => {
+        if (entry.isIntersecting) {
+          entry.target.classList.remove('reveal-hidden');
+          entry.target.classList.add('reveal-visible');
+          observer.unobserve(entry.target);
+        }
+      });
+    }, { threshold: 0.1, rootMargin: '0px 0px -40px 0px' });
+    elements.forEach(el => observer.observe(el));
+    return () => observer.disconnect();
+  }, [activeTab]);
 
-                <h1 className="text-3xl sm:text-4xl lg:text-5xl font-black font-serif-gov leading-tight tracking-tight text-[#0f3d68] dark:text-[#38bdf8]">
-                  Automated Legal & Entitlement Verification
-                </h1>
+  // ── Feature Modules Filter Chips State ──
+  const [featureFilter, setFeatureFilter] = useState('All');
 
-                <p className="text-sm sm:text-base text-gray-600 dark:text-gray-300 leading-relaxed max-w-xl">
-                  Sign in to access India's sovereign platform for automated legal contract review, statutory compliance health checks, and citizen welfare scheme discovery.
-                </p>
+  // ── FAQ Accordion State ──
+  const [openFaqIdx, setOpenFaqIdx] = useState(null);
+  const toggleFaq = (idx) => setOpenFaqIdx(prev => prev === idx ? null : idx);
 
-                {/* 4 Feature Highlights */}
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5 pt-2">
-                  <div className={`p-4 rounded-xl border ${isDark ? 'bg-slate-900/60 border-slate-800' : 'bg-white border-gray-200'} shadow-2xs`}>
-                    <Shield className="w-5 h-5 text-emerald-600 dark:text-emerald-400 mb-2" />
-                    <div className="font-bold text-xs text-gray-900 dark:text-gray-100">Contract Risk Audit</div>
-                    <div className="text-[11px] text-gray-500 dark:text-gray-400 mt-0.5">Automated clause risk assessment and compliance scoring.</div>
-                  </div>
+  // ── Auto-Playing Explainer Video Player State ──
+  const [isVideoMuted, setIsVideoMuted] = useState(true);
+  const [isVideoPlaying, setIsVideoPlaying] = useState(true);
+  const videoRef = useRef(null);
 
-                  <div className={`p-4 rounded-xl border ${isDark ? 'bg-slate-900/60 border-slate-800' : 'bg-white border-gray-200'} shadow-2xs`}>
-                    <Scale className="w-5 h-5 text-amber-600 dark:text-amber-400 mb-2" />
-                    <div className="font-bold text-xs text-gray-900 dark:text-gray-100">AI Courtroom Debate</div>
-                    <div className="text-[11px] text-gray-500 dark:text-gray-400 mt-0.5">3-Agent debate between Critic, Defender, and Judge.</div>
-                  </div>
+  const toggleMute = () => {
+    if (videoRef.current) {
+      videoRef.current.muted = !isVideoMuted;
+      setIsVideoMuted(!isVideoMuted);
+    }
+  };
 
-                  <div className={`p-4 rounded-xl border ${isDark ? 'bg-slate-900/60 border-slate-800' : 'bg-white border-gray-200'} shadow-2xs`}>
-                    <Globe className="w-5 h-5 text-sky-600 dark:text-sky-400 mb-2" />
-                    <div className="font-bold text-xs text-gray-900 dark:text-gray-100">17 Indian Languages</div>
-                    <div className="text-[11px] text-gray-500 dark:text-gray-400 mt-0.5">Regional translation with legal accuracy & precision.</div>
-                  </div>
-
-                  <div className={`p-4 rounded-xl border ${isDark ? 'bg-slate-900/60 border-slate-800' : 'bg-white border-gray-200'} shadow-2xs`}>
-                    <Landmark className="w-5 h-5 text-orange-600 dark:text-orange-400 mb-2" />
-                    <div className="font-bold text-xs text-gray-900 dark:text-gray-100">Welfare Schemes</div>
-                    <div className="text-[11px] text-gray-500 dark:text-gray-400 mt-0.5">Discover entitled central & state citizen benefits.</div>
-                  </div>
-                </div>
-
-                <div className="flex items-center gap-2 pt-2 text-[11px] text-gray-500 dark:text-gray-400">
-                  <Lock className="w-3.5 h-3.5 text-emerald-600" />
-                  <span>DPDP Act 2023 Compliant · 100% In-Country Data Processing · End-to-End Encryption</span>
-                </div>
-              </div>
-
-              {/* Right Column: Login & Register Form Card */}
-              <div className="lg:col-span-5 flex justify-center">
-                <div className={`w-full max-w-md rounded-2xl p-6 sm:p-8 shadow-2xl border transition-all ${isDark ? 'bg-[#0f172a] border-[#334155]' : 'bg-white border-[#e2e8f0]'}`}>
-                  
-                  {/* Card Header & Tab Switcher */}
-                  <div className="flex items-center justify-between mb-6">
-                    <div className="flex items-center gap-2.5">
-                      <img src="/logo.jpg" alt="Logo" className="w-8 h-8 rounded-lg object-cover border border-amber-500/50 shadow-2xs" />
-                      <div>
-                        <div className="font-bold text-base font-serif-gov text-[#0f3d68] dark:text-[#38bdf8]">
-                          {authMode === 'login' ? 'Sign In to Portal' : authMode === 'register' ? 'Create GovTech Account' : 'Reset Password'}
-                        </div>
-                        <div className="text-[10px] text-gray-500">Authorized Citizen Access</div>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Tabs: Sign In / Create Account */}
-                  {authMode !== 'reset' && (
-                    <div className="grid grid-cols-2 p-1 rounded-xl bg-gray-100 dark:bg-slate-800 mb-5">
-                      <button
-                        type="button"
-                        onClick={() => { setAuthMode('login'); setAuthError(''); }}
-                        className={`py-2 text-xs font-bold rounded-lg transition-all cursor-pointer ${
-                          authMode === 'login'
-                            ? 'bg-[#0f3d68] text-white shadow-xs dark:bg-sky-600'
-                            : 'text-gray-600 dark:text-gray-300 hover:text-gray-900'
-                        }`}
-                      >
-                        Sign In
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => { setAuthMode('register'); setAuthError(''); }}
-                        className={`py-2 text-xs font-bold rounded-lg transition-all cursor-pointer ${
-                          authMode === 'register'
-                            ? 'bg-[#0f3d68] text-white shadow-xs dark:bg-sky-600'
-                            : 'text-gray-600 dark:text-gray-300 hover:text-gray-900'
-                        }`}
-                      >
-                        Create Account
-                      </button>
-                    </div>
-                  )}
-
-                  {authError && (
-                    <div className="mb-4 p-3 rounded-xl bg-amber-50 dark:bg-amber-950/40 text-amber-900 dark:text-amber-200 border border-amber-200 dark:border-amber-800 text-xs flex items-center gap-2">
-                      <AlertCircle className="w-4 h-4 text-amber-600 shrink-0" />
-                      <span>{authError}</span>
-                    </div>
-                  )}
-
-                  {/* Form */}
-                  <form onSubmit={handleAuth} className="space-y-3.5">
-                    {authMode === 'register' && (
-                      <div>
-                        <label className="block text-[11px] font-bold uppercase tracking-wider mb-1 text-gray-700 dark:text-gray-300">
-                          Full Name
-                        </label>
-                        <input 
-                          type="text" 
-                          required 
-                          value={authName}
-                          onChange={e => setAuthName(e.target.value)}
-                          placeholder="e.g. Aarav Sharma"
-                          className="w-full px-3.5 py-2.5 text-xs rounded-xl border border-gray-300 dark:border-gray-600 bg-white dark:bg-slate-800 text-gray-900 dark:text-gray-100 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#0f3d68]"
-                        />
-                      </div>
-                    )}
-
-                    <div>
-                      <label className="block text-[11px] font-bold uppercase tracking-wider mb-1 text-gray-700 dark:text-gray-300">
-                        Email Address
-                      </label>
-                      <input 
-                        type="email" 
-                        required 
-                        value={authEmail}
-                        onChange={e => setAuthEmail(e.target.value)}
-                        placeholder="name@domain.com"
-                        className="w-full px-3.5 py-2.5 text-xs rounded-xl border border-gray-300 dark:border-gray-600 bg-white dark:bg-slate-800 text-gray-900 dark:text-gray-100 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#0f3d68]"
-                      />
-                    </div>
-
-                    {authMode !== 'reset' && (
-                      <div>
-                        <div className="flex items-center justify-between mb-1">
-                          <label className="text-[11px] font-bold uppercase tracking-wider text-gray-700 dark:text-gray-300">
-                            Password
-                          </label>
-                          {authMode === 'login' && (
-                            <button
-                              type="button"
-                              onClick={() => { setAuthMode('reset'); setAuthError(''); }}
-                              className="text-[11px] font-semibold text-[#ea580c] hover:underline cursor-pointer"
-                            >
-                              Forgot password?
-                            </button>
-                          )}
-                        </div>
-                        <input 
-                          type="password" 
-                          required 
-                          value={authPassword}
-                          onChange={e => setAuthPassword(e.target.value)}
-                          placeholder={authMode === 'register' ? 'Minimum 6 characters' : '••••••••••••'}
-                          className="w-full px-3.5 py-2.5 text-xs rounded-xl border border-gray-300 dark:border-gray-600 bg-white dark:bg-slate-800 text-gray-900 dark:text-gray-100 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#0f3d68]"
-                        />
-                      </div>
-                    )}
-
-                    <button
-                      type="submit"
-                      disabled={authLoading}
-                      className="w-full py-3 bg-[#0f3d68] hover:bg-[#0a2540] disabled:opacity-50 text-white font-bold text-xs uppercase tracking-wider rounded-xl shadow-md transition-all cursor-pointer flex items-center justify-center gap-2 mt-2"
-                    >
-                      {authLoading ? (
-                        <span>Processing...</span>
-                      ) : authMode === 'login' ? (
-                        'Sign In to Dashboard'
-                      ) : authMode === 'register' ? (
-                        'Create Account & Enter'
-                      ) : (
-                        'Send Reset Link'
-                      )}
-                    </button>
-                  </form>
-
-                  {authMode === 'reset' && (
-                    <div className="mt-4 text-center">
-                      <button
-                        type="button"
-                        onClick={() => { setAuthMode('login'); setAuthError(''); }}
-                        className="text-xs text-[#0f3d68] dark:text-sky-400 font-bold hover:underline cursor-pointer"
-                      >
-                        ← Back to Sign In
-                      </button>
-                    </div>
-                  )}
-
-                  <div className="mt-6 pt-4 border-t border-gray-100 dark:border-gray-800 text-center text-xs text-gray-500">
-                    {authMode === 'login' ? (
-                      <span>
-                        New citizen or advocate?{' '}
-                        <button type="button" onClick={() => { setAuthMode('register'); setAuthError(''); }} className="text-[#ea580c] font-bold hover:underline cursor-pointer">
-                          Register here
-                        </button>
-                      </span>
-                    ) : authMode === 'register' ? (
-                      <span>
-                        Already registered?{' '}
-                        <button type="button" onClick={() => { setAuthMode('login'); setAuthError(''); }} className="text-[#ea580c] font-bold hover:underline cursor-pointer">
-                          Sign in here
-                        </button>
-                      </span>
-                    ) : null}
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* Gateway Footer */}
-        <footer className={`border-t py-4 text-center text-xs text-gray-500 ${isDark ? 'bg-[#090d1a] border-slate-800' : 'bg-gray-100 border-gray-200'}`}>
-          © 2026 NyayaMitra AI · Sovereign Legal & Welfare Intelligence Platform · Ministry of Law & Justice Standards
-        </footer>
-      </div>
-    );
-  }
+  const togglePlay = () => {
+    if (videoRef.current) {
+      if (videoRef.current.paused) {
+        videoRef.current.play();
+        setIsVideoPlaying(true);
+      } else {
+        videoRef.current.pause();
+        setIsVideoPlaying(false);
+      }
+    }
+  };
 
   return (
-    <div className={`min-h-screen font-sans pb-20 md:pb-0 transition-colors duration-200 ${isDark ? 'bg-[#0b1329] text-[#f8fafc]' : 'bg-[#f8fafc] text-[#0f2b48]'}`}>
+    <div className={`min-h-screen font-sans pb-20 md:pb-0 transition-colors duration-200 ${isDark ? 'bg-[#090D16] text-slate-100' : 'bg-[#F8FAFC] text-slate-900'}`}>
       
       {/* ── National Identity Tricolor Bar ── */}
-      <div className="h-1.5 w-full flex">
+      <div className="h-1 w-full flex opacity-90">
         <div className="h-full w-1/3 bg-[#FF9933]"></div>
         <div className="h-full w-1/3 bg-white"></div>
         <div className="h-full w-1/3 bg-[#138808]"></div>
       </div>
 
       {/* ── Header Top Utility Bar ── */}
-      <div className={`border-b text-xs py-1.5 px-4 sm:px-8 transition-colors ${isDark ? 'bg-[#090d1a] border-[#1e293b] text-gray-400' : 'bg-[#f1f5f9] border-[#e2e8f0] text-gray-600'}`}>
+      <div className={`border-b text-xs py-1.5 px-4 sm:px-8 transition-colors ${isDark ? 'bg-[#070B14]/90 border-slate-800/80 text-slate-400' : 'bg-slate-50/90 border-slate-200/80 text-slate-600'}`}>
         <div className="max-w-7xl mx-auto flex flex-wrap items-center justify-between gap-2">
           <div className="flex items-center space-x-3">
-            <span className="font-semibold uppercase tracking-wider text-[#ea580c]">भारत सरकार · Government of India</span>
-            <span className="hidden md:inline text-gray-400">|</span>
-            <span className="hidden md:inline font-medium">AI Contract & Policy Analysis Platform</span>
+            <span className="font-bold uppercase tracking-wider text-xs text-blue-600 dark:text-blue-400">भारत सरकार · Government of India</span>
+            <span className="hidden md:inline text-slate-300 dark:text-slate-700">|</span>
+            <span className="hidden md:inline font-medium text-slate-500 dark:text-slate-400">Legal Metrology & Contract Intelligence Platform</span>
           </div>
-          <div className="flex items-center space-x-2.5 sm:space-x-3.5">
+          <div className="flex items-center space-x-2.5 sm:space-x-3">
             {/* Indian Language Selector */}
-            <div className={`flex items-center gap-1.5 px-2 py-0.5 rounded border text-[11px] font-semibold ${
-              isDark ? 'bg-[#1e293b] border-[#334155] text-slate-200' : 'bg-white border-[#cbd5e1] text-gray-700 shadow-xs'
+            <div className={`flex items-center gap-1.5 px-2.5 py-1 rounded-lg border text-[11px] font-semibold transition-all ${
+              isDark ? 'bg-slate-900 border-slate-800 text-slate-200' : 'bg-white border-slate-200 text-slate-700 shadow-2xs'
             }`}>
-              <Globe className="w-3.5 h-3.5 text-[#ea580c] shrink-0" />
+              <Globe className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400 shrink-0" />
               <select
                 value={siteLang}
                 onChange={(e) => changeSiteLanguage(e.target.value)}
@@ -1293,7 +1121,7 @@ Between: Municipal Corporation of Greater Mumbai (Authority) AND TechCorp Soluti
                 className="bg-transparent border-none text-[11px] font-semibold focus:outline-none cursor-pointer pr-1 text-inherit"
               >
                 {INDIAN_LANGUAGES.map((l) => (
-                  <option key={l.code} value={l.code} className={isDark ? 'bg-[#1e293b] text-white' : 'bg-white text-gray-900'}>
+                  <option key={l.code} value={l.code} className={isDark ? 'bg-slate-900 text-white' : 'bg-white text-slate-900'}>
                     {l.native} ({l.name})
                   </option>
                 ))}
@@ -1302,12 +1130,12 @@ Between: Municipal Corporation of Greater Mumbai (Authority) AND TechCorp Soluti
 
             {/* Processing Mode Switcher */}
             <div className="flex items-center gap-1.5">
-              <span className="text-[10px] uppercase font-bold text-gray-500 hidden sm:inline">AI Engine:</span>
-              <div className={`flex items-center rounded-lg p-0.5 border text-[11px] font-semibold ${isDark ? 'bg-[#1e293b] border-[#334155]' : 'bg-white border-[#cbd5e1]'}`}>
+              <span className="text-[10px] uppercase font-bold text-slate-400 hidden sm:inline">AI Engine:</span>
+              <div className={`flex items-center rounded-lg p-0.5 border text-[11px] font-semibold ${isDark ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200 shadow-2xs'}`}>
                 <button
                   type="button"
                   onClick={() => setAiMode('fast')}
-                  className={`flex items-center gap-1 px-2.5 py-1 rounded-md transition-all ${aiMode === 'fast' ? 'bg-[#ea580c] text-white shadow-xs' : 'text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200'}`}
+                  className={`flex items-center gap-1 px-2.5 py-1 rounded-md transition-all cursor-pointer ${aiMode === 'fast' ? 'bg-blue-600 text-white shadow-2xs font-bold' : 'text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-slate-200'}`}
                   title="Fast processing mode"
                 >
                   <Zap className="w-3 h-3" /> Fast
@@ -1315,7 +1143,7 @@ Between: Municipal Corporation of Greater Mumbai (Authority) AND TechCorp Soluti
                 <button
                   type="button"
                   onClick={() => setAiMode('secure')}
-                  className={`flex items-center gap-1 px-2.5 py-1 rounded-md transition-all ${aiMode === 'secure' ? 'bg-[#0f3d68] text-white shadow-xs' : 'text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200'}`}
+                  className={`flex items-center gap-1 px-2.5 py-1 rounded-md transition-all cursor-pointer ${aiMode === 'secure' ? 'bg-slate-800 text-white dark:bg-slate-700 shadow-2xs font-bold' : 'text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-slate-200'}`}
                   title="High security mode (local private inference)"
                 >
                   <Lock className="w-3 h-3" /> Secure
@@ -1326,7 +1154,7 @@ Between: Municipal Corporation of Greater Mumbai (Authority) AND TechCorp Soluti
             {/* Bright / Dark Mode */}
             <button
               onClick={() => setTheme(isDark ? 'bright' : 'dark')}
-              className={`p-1 rounded border transition-all ${isDark ? 'bg-[#1e293b] border-[#334155] text-amber-400' : 'bg-white border-[#cbd5e1] text-gray-700'}`}
+              className={`p-1.5 rounded-lg border transition-all cursor-pointer ${isDark ? 'bg-slate-900 border-slate-800 text-amber-400 hover:bg-slate-800' : 'bg-white border-slate-200 text-slate-700 hover:bg-slate-50 shadow-2xs'}`}
               title="Toggle Bright/Dark mode"
             >
               {isDark ? <Sun className="w-3.5 h-3.5" /> : <Moon className="w-3.5 h-3.5" />}
@@ -1336,47 +1164,47 @@ Between: Municipal Corporation of Greater Mumbai (Authority) AND TechCorp Soluti
       </div>
 
       {/* ── Main Navigation Header ── */}
-      <header className={`border-b sticky top-0 z-40 backdrop-blur-md transition-colors ${isDark ? 'bg-[#0f172a]/95 border-[#334155]' : 'bg-white/95 border-[#e2e8f0]'}`}>
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3.5 flex items-center justify-between">
+      <header className={`border-b sticky top-0 z-40 backdrop-blur-xl transition-colors ${isDark ? 'bg-[#090D16]/90 border-slate-800/80' : 'bg-white/90 border-slate-200/80 shadow-[0_1px_3px_rgba(0,0,0,0.03)]'}`}>
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3 flex items-center justify-between">
           <div className="flex items-center space-x-3.5">
             <div className="relative">
               <img
-                src="/logo.jpg"
-                alt="NyayaMitra AI Logo"
-                className="w-11 h-11 rounded-lg object-cover shadow-md border border-amber-500/50 ring-1 ring-amber-400/30"
+                src="/logo.png"
+                alt="JanDristi Logo"
+                className="w-10 h-10 rounded-xl object-contain bg-white shadow-sm border border-slate-200/80 dark:border-slate-700 p-0.5"
               />
             </div>
             <div>
-              <div className="text-[11px] font-bold tracking-widest uppercase text-[#ea580c]">
+              <div className="text-[10px] font-bold tracking-widest uppercase text-blue-600 dark:text-blue-400">
                 LEGAL & WELFARE INTELLIGENCE
               </div>
-              <div className="text-xl font-black font-serif-gov tracking-tight text-[#0f3d68] dark:text-[#38bdf8]">
-                NyayaMitra AI
+              <div className="text-xl font-extrabold font-display tracking-tight text-slate-900 dark:text-white">
+                JanDristi
               </div>
             </div>
           </div>
 
           {/* Quick Jump Links */}
-          <nav className="hidden lg:flex items-center space-x-5 text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-200">
-            <button onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })} className="hover:text-[#ea580c] dark:hover:text-[#ea580c] transition-colors">
+          <nav className="hidden lg:flex items-center space-x-6 text-xs font-semibold text-slate-600 dark:text-slate-300">
+            <button onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })} className="hover:text-blue-600 dark:hover:text-blue-400 transition-colors cursor-pointer">
               Home
             </button>
-            <button onClick={() => scrollTo(uploadRef)} className="hover:text-[#ea580c] dark:hover:text-[#ea580c] transition-colors">
+            <button onClick={() => scrollTo(uploadRef)} className="hover:text-blue-600 dark:hover:text-blue-400 transition-colors cursor-pointer">
               Upload & Audit
             </button>
-            <button onClick={() => scrollTo(chatRef)} className="hover:text-[#ea580c] dark:hover:text-[#ea580c] transition-colors">
+            <button onClick={() => scrollTo(chatRef)} className="hover:text-blue-600 dark:hover:text-blue-400 transition-colors cursor-pointer">
               Q&A Chat
             </button>
-            <button onClick={() => scrollTo(debateRef)} className="hover:text-[#ea580c] dark:hover:text-[#ea580c] transition-colors">
+            <button onClick={() => scrollTo(debateRef)} className="hover:text-blue-600 dark:hover:text-blue-400 transition-colors cursor-pointer">
               AI Debate
             </button>
-            <button onClick={() => scrollTo(redlineRef)} className="hover:text-[#ea580c] dark:hover:text-[#ea580c] transition-colors">
+            <button onClick={() => scrollTo(redlineRef)} className="hover:text-blue-600 dark:hover:text-blue-400 transition-colors cursor-pointer">
               Redline
             </button>
-            <button onClick={() => scrollTo(schemesRef)} className="hover:text-[#ea580c] dark:hover:text-[#ea580c] transition-colors">
+            <button onClick={() => scrollTo(schemesRef)} className="hover:text-blue-600 dark:hover:text-blue-400 transition-colors cursor-pointer">
               Schemes
             </button>
-            <button onClick={() => scrollTo(historyRef)} className="hover:text-[#ea580c] dark:hover:text-[#ea580c] transition-colors">
+            <button onClick={() => scrollTo(historyRef)} className="hover:text-blue-600 dark:hover:text-blue-400 transition-colors cursor-pointer">
               History
             </button>
           </nav>
@@ -1384,66 +1212,75 @@ Between: Municipal Corporation of Greater Mumbai (Authority) AND TechCorp Soluti
           {/* Auth Button & Hamburger Menu (=) */}
           <div className="flex items-center gap-2 sm:gap-3">
             {user ? (
-              <div className="flex items-center space-x-2">
+              <div className="flex items-center space-x-2.5">
                 <div className="text-right hidden sm:block">
-                  <div className="text-xs font-bold text-[#0f3d68] dark:text-[#38bdf8] truncate max-w-[130px]">{user.name}</div>
-                  <div className="text-[10px] text-gray-500 truncate max-w-[130px]">{user.email}</div>
+                  <div className="text-xs font-bold text-slate-900 dark:text-white truncate max-w-[130px]">{user.name}</div>
+                  <div className="text-[10px] text-slate-400 truncate max-w-[130px]">{user.email}</div>
                 </div>
                 <button
                   type="button"
                   onClick={handleLogout}
-                  className="p-2 rounded-lg text-red-600 hover:bg-red-50 dark:hover:bg-red-950/30 transition-all cursor-pointer"
+                  className="p-2 rounded-xl text-slate-500 hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/30 transition-all cursor-pointer border border-transparent hover:border-rose-200 dark:hover:border-rose-900/50"
                   title="Logout"
                 >
                   <LogOut className="w-4 h-4" />
                 </button>
               </div>
             ) : (
-              <button
-                type="button"
-                onClick={() => { setAuthMode('login'); setShowAuthModal(true); }}
-                className="px-3.5 py-2 bg-[#0f3d68] hover:bg-[#0a2540] text-white text-xs font-bold uppercase tracking-wider rounded-lg shadow-sm transition-all cursor-pointer"
-              >
-                Sign In
-              </button>
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => { setAuthMode('login'); setAuthError(''); setShowAuthModal(true); }}
+                  className="px-3.5 py-2 text-xs font-bold text-slate-700 dark:text-slate-200 hover:text-blue-600 dark:hover:text-blue-400 transition-colors cursor-pointer"
+                >
+                  Log in
+                </button>
+                <button
+                  type="button"
+                  onClick={() => { setAuthMode('register'); setAuthError(''); setShowAuthModal(true); }}
+                  className="px-4 py-2 bg-[#0f3d68] hover:bg-[#0a2744] text-white text-xs font-bold rounded-xl shadow-xs hover:shadow transition-all cursor-pointer"
+                >
+                  Get started
+                </button>
+              </div>
             )}
 
             {/* Hamburger (=) Workspace Modules Menu Button */}
             <button
               type="button"
               onClick={() => setIsMenuOpen(prev => !prev)}
-              className="p-2 sm:p-2.5 rounded-lg border border-gray-300 dark:border-gray-700 bg-gray-50 dark:bg-slate-800 hover:bg-gray-100 dark:hover:bg-slate-700 text-[#0f3d68] dark:text-sky-300 transition-all cursor-pointer flex items-center justify-center shadow-xs"
+              className="p-2 sm:p-2.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900 hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-800 dark:text-slate-200 transition-all cursor-pointer flex items-center justify-center shadow-2xs"
               title="Workspace Modules Menu (=)"
               aria-label="Toggle navigation menu"
             >
-              {isMenuOpen ? <X className="w-5 h-5 text-red-500" /> : <Menu className="w-5 h-5" />}
+              {isMenuOpen ? <X className="w-5 h-5 text-rose-500" /> : <Menu className="w-5 h-5" />}
             </button>
           </div>
         </div>
 
         {/* ── Slide-Down Workspace Modules Menu (=) ── */}
         {isMenuOpen && (
-          <div className="border-t border-gray-200 dark:border-gray-800 bg-white/98 dark:bg-[#0b1222]/98 backdrop-blur-xl shadow-2xl transition-all">
+          <div className="border-t border-slate-200 dark:border-slate-800 bg-white/95 dark:bg-[#090D16]/95 backdrop-blur-2xl shadow-xl transition-all">
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-              <div className="flex items-center justify-between pb-4 mb-4 border-b border-gray-100 dark:border-gray-800">
+              <div className="flex items-center justify-between pb-4 mb-4 border-b border-slate-100 dark:border-slate-800/80">
                 <div className="flex items-center gap-2">
-                  <div className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse"></div>
-                  <span className="text-xs font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400">
-                    NyayaMitra AI · Workspace Modules
+                  <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></div>
+                  <span className="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">
+                    JanDristi · Legal Workspace Suite
                   </span>
                 </div>
                 <button
                   type="button"
                   onClick={() => setIsMenuOpen(false)}
-                  className="p-1 rounded text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-slate-800 transition-all cursor-pointer"
+                  className="p-1.5 rounded-lg text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition-all cursor-pointer"
                 >
                   <X className="w-4 h-4" />
                 </button>
               </div>
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3.5">
                 {[
-                  { id: 'audit', label: 'Audit & Health', ref: uploadRef, icon: Shield, desc: 'Clause risk assessment & compliance health score', count: currentDoc ? highRisksCount + medRisksCount : null, countColor: 'bg-red-500' },
+                  { id: 'audit', label: 'Audit & Health', ref: uploadRef, icon: Shield, desc: 'Clause risk assessment & compliance health score', count: currentDoc ? highRisksCount + medRisksCount : null, countColor: 'bg-rose-500' },
                   { id: 'chat', label: 'Ask AI (Q&A)', ref: chatRef, icon: MessageSquare, desc: 'Interactive legal assistant & RAG intelligence' },
                   { id: 'courtroom', label: 'AI Courtroom', ref: debateRef, icon: Scale, desc: '3-Agent legal debate (Critic, Defender, Judge)' },
                   { id: 'redline', label: 'PDF Redline', ref: redlineRef, icon: Edit3, desc: 'Track changes, clause revisions & Word export', count: docRisks.length > 0 ? docRisks.length : null, countColor: 'bg-amber-500' },
@@ -1467,27 +1304,27 @@ Between: Municipal Corporation of Greater Mumbai (Authority) AND TechCorp Soluti
                           }
                         }, 50);
                       }}
-                      className={`text-left p-3.5 rounded-xl border transition-all cursor-pointer flex flex-col justify-between group ${
+                      className={`text-left p-4 rounded-xl border transition-all cursor-pointer flex flex-col justify-between group ${
                         isActive
-                          ? 'border-[#0f3d68] bg-sky-50/80 dark:bg-sky-950/30 dark:border-sky-500 ring-1 ring-sky-500/20'
-                          : 'border-gray-200 dark:border-gray-800 bg-white dark:bg-slate-900/60 hover:border-amber-500/60 hover:shadow-md'
+                          ? 'border-blue-500 bg-blue-50/70 dark:bg-blue-950/30 dark:border-blue-500/80 ring-1 ring-blue-500/30'
+                          : 'border-slate-200/90 dark:border-slate-800 bg-white dark:bg-slate-900/60 hover:border-blue-400 dark:hover:border-slate-700 hover:shadow-xs'
                       }`}
                     >
-                      <div className="flex items-center justify-between mb-2">
-                        <div className={`p-2 rounded-lg ${isActive ? 'bg-[#0f3d68] text-white' : 'bg-gray-100 dark:bg-slate-800 text-gray-700 dark:text-gray-300 group-hover:bg-amber-500/10 group-hover:text-amber-600'}`}>
+                      <div className="flex items-center justify-between mb-2.5">
+                        <div className={`p-2 rounded-lg ${isActive ? 'bg-blue-600 text-white' : 'bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 group-hover:bg-blue-50 dark:group-hover:bg-blue-950/50 group-hover:text-blue-600'}`}>
                           <Icon className="w-4 h-4" />
                         </div>
                         {module.count !== null && module.count !== undefined && (
-                          <span className={`text-[10px] px-2 py-0.5 rounded-full font-black text-white ${module.countColor || 'bg-gray-500'}`}>
+                          <span className={`text-[10px] px-2 py-0.5 rounded-full font-bold text-white ${module.countColor || 'bg-slate-500'}`}>
                             {module.count}
                           </span>
                         )}
                       </div>
                       <div>
-                        <div className="font-bold text-xs text-gray-900 dark:text-gray-100 group-hover:text-[#ea580c] transition-colors">
+                        <div className="font-bold text-xs text-slate-900 dark:text-slate-100 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">
                           {module.label}
                         </div>
-                        <div className="text-[11px] text-gray-500 dark:text-gray-400 mt-0.5 leading-snug line-clamp-2">
+                        <div className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5 leading-snug line-clamp-2">
                           {module.desc}
                         </div>
                       </div>
@@ -1497,22 +1334,22 @@ Between: Municipal Corporation of Greater Mumbai (Authority) AND TechCorp Soluti
               </div>
 
               {/* Quick Actions Footer inside (=) Menu */}
-              <div className="mt-4 pt-3 border-t border-gray-100 dark:border-gray-800 flex flex-wrap items-center justify-between gap-3">
+              <div className="mt-5 pt-4 border-t border-slate-100 dark:border-slate-800/80 flex flex-wrap items-center justify-between gap-3">
                 <button
                   type="button"
                   onClick={() => {
                     handleLoadDemoContract();
                     setIsMenuOpen(false);
                   }}
-                  className="px-4 py-2 rounded-lg bg-[#ea580c] hover:bg-[#c2410c] text-white text-xs font-bold uppercase tracking-wider transition-all flex items-center gap-2 cursor-pointer shadow-xs"
+                  className="px-4 py-2 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold transition-all flex items-center gap-2 cursor-pointer shadow-xs hover:shadow"
                 >
-                  <Zap className="w-3.5 h-3.5 text-amber-200" />
+                  <Zap className="w-3.5 h-3.5 text-amber-300" />
                   <span>Try Demo Tender Contract</span>
                 </button>
 
-                <div className="text-xs text-gray-500">
+                <div className="text-xs text-slate-500 dark:text-slate-400">
                   {user ? (
-                    <span>Logged in as <strong>{user.name}</strong></span>
+                    <span>Logged in as <strong className="text-slate-800 dark:text-slate-200">{user.name}</strong></span>
                   ) : (
                     <span>Authorized Citizen Mode</span>
                   )}
@@ -1523,107 +1360,357 @@ Between: Municipal Corporation of Greater Mumbai (Authority) AND TechCorp Soluti
         )}
       </header>
 
-      {/* ── SECTION 1: HERO SECTION ── */}
-      <section className="relative overflow-hidden py-16 sm:py-24 border-b border-gray-200 dark:border-gray-800">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 items-center">
-            {/* Left Column: Headlines & Actions */}
-            <div className="lg:col-span-7">
-              {/* Pill Badge */}
-              <div className="inline-block px-4 py-1 rounded-full text-xs font-bold tracking-widest uppercase bg-[#fff7ed] text-[#c2410c] border border-[#fed7aa] mb-6 shadow-xs">
-                OFFICIAL GOVERNMENT PORTAL
+      {/* ── SECTION 1: MODERN MINIMALIST HERO SECTION ── */}
+      <section className="relative overflow-hidden pt-16 pb-20 sm:pt-24 sm:pb-28 border-b border-slate-200/80 dark:border-slate-800/80 hero-mesh bg-white dark:bg-[#080D18]">
+        {/* Fine background grid with radial mask */}
+        <div className="absolute inset-0 hero-grid-pattern pointer-events-none" />
+        
+        {/* Soft atmospheric radial glows */}
+        <div className="absolute -top-24 left-1/2 -translate-x-1/2 w-[680px] h-[340px] bg-gradient-to-b from-blue-500/12 to-orange-500/8 dark:from-blue-500/15 dark:to-orange-500/10 rounded-full blur-3xl pointer-events-none" />
+
+        <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10 text-center">
+          
+          {/* Eyebrow Pill Badge */}
+          <div className="inline-flex items-center gap-2.5 px-4 py-1.5 rounded-full text-xs font-semibold tracking-wide bg-white/80 dark:bg-slate-900/80 text-slate-700 dark:text-slate-200 border border-slate-200/90 dark:border-slate-800 shadow-2xs backdrop-blur-md mb-8 hover:border-blue-400 dark:hover:border-blue-600 transition-all cursor-default">
+            <span className="relative flex h-2 w-2">
+              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-blue-500 opacity-75"></span>
+              <span className="relative inline-flex rounded-full h-2 w-2 bg-blue-600 dark:bg-blue-400"></span>
+            </span>
+            <span className="text-[11px] font-bold uppercase tracking-wider text-blue-700 dark:text-blue-300">
+              SOVEREIGN LEGAL METROLOGY & WELFARE PLATFORM
+            </span>
+            <span className="text-slate-300 dark:text-slate-700">|</span>
+            <span className="text-slate-500 dark:text-slate-400 text-[11px]">DPDP Act 2023 Compliant</span>
+          </div>
+
+          {/* Dynamic Minimalist Headline */}
+          <h1 className="font-display font-extrabold text-4xl sm:text-6xl lg:text-7xl leading-[1.08] tracking-tight text-slate-900 dark:text-white mb-6 max-w-4xl mx-auto">
+            <span className="block mb-1 sm:mb-2">Legal contracts,</span>
+            <span className="relative inline-block min-w-[240px] sm:min-w-[340px] h-[1.22em] overflow-hidden align-bottom">
+              <span
+                key={rotatingWordIdx}
+                className={`block absolute inset-0 ${wordVisible ? 'word-slide-in' : 'word-slide-out'}`}
+                style={{ color: ROTATING_WORDS[rotatingWordIdx].color }}
+              >
+                {ROTATING_WORDS[rotatingWordIdx].text}
+              </span>
+              {/* Dynamic SVG underline swoosh */}
+              <svg
+                className={`absolute bottom-0 left-0 w-full ${wordVisible ? 'swoosh-animate' : ''}`}
+                height="10"
+                viewBox="0 0 340 10"
+                fill="none"
+                aria-hidden="true"
+              >
+                <path
+                  className="swoosh-path"
+                  d="M4 7 C 60 2, 150 9, 230 4 S 310 2, 336 6"
+                  stroke={ROTATING_WORDS[rotatingWordIdx].color}
+                  strokeWidth="3.2"
+                  strokeLinecap="round"
+                />
+              </svg>
+            </span>
+            <span className="block mt-2 sm:mt-3 text-2xl sm:text-4xl lg:text-5xl font-bold text-slate-700 dark:text-slate-300">
+              analysed in seconds by sovereign AI.
+            </span>
+          </h1>
+
+          {/* Subheading */}
+          <p className="text-base sm:text-lg text-slate-600 dark:text-slate-300 leading-relaxed max-w-2xl mx-auto mb-9 font-normal">
+            Automated statutory risk auditing, multi-agent legal deliberation, and citizen entitlement discovery across India — in 17 Indian languages.
+          </p>
+
+          {/* CTA Action Buttons Cluster */}
+          <div className="flex flex-col sm:flex-row items-center justify-center gap-3.5 mb-12">
+            <button
+              type="button"
+              onClick={() => {
+                setActiveTab('audit');
+                if (!user) {
+                  setShowAuthModal(true);
+                  setAuthError('Sign in to upload documents and run deep compliance audits.');
+                } else {
+                  scrollTo(uploadRef);
+                }
+              }}
+              className="w-full sm:w-auto px-7 py-3.5 bg-[#0f3d68] hover:bg-[#0a2744] text-white font-bold text-xs sm:text-sm tracking-wide uppercase rounded-xl shadow-xs hover:shadow-md transition-all flex items-center justify-center gap-2.5 cursor-pointer active:scale-[0.99]"
+            >
+              <Upload className="w-4 h-4" />
+              <span>UPLOAD & ANALYZE</span>
+              <ArrowRight className="w-4 h-4" />
+            </button>
+            <button
+              type="button"
+              onClick={handleLoadDemoContract}
+              className="w-full sm:w-auto px-6 py-3.5 bg-[#ea580c] hover:bg-[#c2410c] text-white font-bold text-xs sm:text-sm tracking-wide uppercase rounded-xl shadow-xs hover:shadow transition-all flex items-center justify-center gap-2 cursor-pointer active:scale-[0.99]"
+              title="Test the entire dashboard immediately with a sample municipal tender"
+            >
+              <Zap className="w-4 h-4 text-amber-300" />
+              <span>TRY DEMO CONTRACT</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                const el = document.getElementById('features-section');
+                if (el) el.scrollIntoView({ behavior: 'smooth' });
+                else { setActiveTab('schemes'); scrollTo(schemesRef); }
+              }}
+              className="w-full sm:w-auto px-6 py-3.5 bg-white/90 hover:bg-slate-50 dark:bg-slate-900/80 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-200 font-bold text-xs sm:text-sm tracking-wide uppercase rounded-xl border border-slate-200 dark:border-slate-800 shadow-2xs hover:shadow-xs transition-all cursor-pointer flex items-center justify-center gap-2"
+            >
+              <LayoutGrid className="w-4 h-4 text-blue-600 dark:text-blue-400" />
+              <span>EXPLORE MODULES</span>
+            </button>
+          </div>
+
+          {/* ── ADVANCED MINIMALIST CAPABILITY DOCK (Ensures it never looks empty!) ── */}
+          <div className="max-w-4xl mx-auto rounded-2xl border border-slate-200/90 dark:border-slate-800 bg-white/70 dark:bg-slate-900/60 backdrop-blur-xl shadow-[0_8px_30px_rgb(0,0,0,0.04)] dark:shadow-[0_8px_30px_rgb(0,0,0,0.3)] p-5 sm:p-6 text-left transition-all hover:border-blue-400/60 dark:hover:border-blue-700/60">
+            <div className="flex flex-col md:flex-row md:items-center justify-between pb-4 mb-4 border-b border-slate-100 dark:border-slate-800/80 gap-3">
+              <div className="flex items-center gap-2.5">
+                <div className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse"></div>
+                <span className="text-xs font-bold uppercase tracking-wider text-slate-800 dark:text-slate-200">
+                  JanDristi Intelligence Matrix
+                </span>
+                <span className="text-[10px] font-bold px-2 py-0.5 rounded-md bg-blue-50 text-blue-700 dark:bg-blue-950/60 dark:text-blue-300 border border-blue-200/80 dark:border-blue-900/60">
+                  ACTIVE ENGINE
+                </span>
               </div>
-
-              {/* Headline */}
-              <h1 className="text-4xl sm:text-5xl lg:text-6xl font-black font-serif-gov leading-[1.15] tracking-tight mb-6">
-                <span className="text-[#0f3d68] dark:text-[#38bdf8] block">NyayaMitra AI</span>
-                <span className="text-[#ea580c] block text-2xl sm:text-3xl lg:text-4xl">Legal Intelligence & Citizen Welfare</span>
-              </h1>
-
-              {/* Description */}
-              <p className="text-base sm:text-lg text-gray-600 dark:text-gray-300 leading-relaxed mb-8 max-w-xl font-normal">
-                NyayaMitra AI is an advanced sovereign platform for automated verification of legal agreements, contracts, and citizen welfare schemes across India. Ensuring fair terms, statutory compliance, and social entitlement discovery through modern AI.
-              </p>
-
-              {/* Action Buttons */}
-              <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 pt-2">
-                <button 
-                  onClick={() => { setActiveTab('audit'); scrollTo(uploadRef); }}
-                  className="px-6 sm:px-8 py-3.5 sm:py-4 bg-[#0f3d68] hover:bg-[#0a2540] text-white font-bold text-xs sm:text-sm tracking-wider uppercase rounded-xl shadow-lg transition-all flex items-center justify-center gap-2 border-2 border-[#0f3d68] cursor-pointer"
-                >
-                  UPLOAD & ANALYZE <ArrowRight className="w-4 h-4" />
-                </button>
-                <button 
-                  onClick={handleLoadDemoContract}
-                  className="px-5 sm:px-7 py-3.5 sm:py-4 bg-[#ea580c] hover:bg-[#c2410c] text-white font-bold text-xs sm:text-sm tracking-wider uppercase rounded-xl shadow-lg transition-all flex items-center justify-center gap-2 cursor-pointer border-2 border-[#ea580c]"
-                  title="Test the entire dashboard immediately with a sample tender contract"
-                >
-                  <Zap className="w-4 h-4 text-amber-200" />
-                  <span>TRY DEMO CONTRACT</span>
-                </button>
-                <button 
-                  onClick={() => { setActiveTab('schemes'); scrollTo(schemesRef); }}
-                  className="px-5 sm:px-7 py-3.5 sm:py-4 bg-white hover:bg-gray-50 text-[#0f3d68] font-bold text-xs sm:text-sm tracking-wider uppercase rounded-xl border-2 border-[#0f3d68] shadow-sm transition-all dark:bg-transparent dark:text-white dark:border-gray-500 cursor-pointer flex items-center justify-center gap-2"
-                >
-                  EXPLORE SCHEMES
-                </button>
+              <div className="text-[11px] text-slate-500 dark:text-slate-400 font-medium">
+                100% In-Country Sovereign Data Processing
               </div>
             </div>
 
-            {/* Right Column: 3D Citizen Welfare & Policy Illustration */}
-            <div className="lg:col-span-5 flex justify-center lg:justify-end">
-              <div className="relative group max-w-[420px] w-full">
-                {/* Subtle ambient accent glow */}
-                <div className="absolute -inset-2 bg-gradient-to-r from-[#0f3d68]/20 via-[#ea580c]/20 to-[#138808]/20 rounded-3xl blur-xl opacity-70 group-hover:opacity-100 transition duration-500"></div>
-                <div className="relative rounded-2xl overflow-hidden border border-gray-200/80 dark:border-gray-700 shadow-2xl bg-white dark:bg-slate-900">
-                  <img
-                    src={isDark ? "/hero_scheme_dark.jpg" : "/hero_scheme.jpg"}
-                    alt="Citizen Welfare Schemes and Legal Policy Platform"
-                    className="w-full h-auto object-cover transform transition duration-500 hover:scale-[1.02]"
-                  />
+            {/* 4 Clean Minimal Capability Cards in a Responsive Row */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3.5 mb-4">
+              <div
+                onClick={() => { setActiveTab('audit'); scrollTo(uploadRef); }}
+                className="p-3.5 rounded-xl border border-slate-200/70 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800/40 hover:border-emerald-300 dark:hover:border-emerald-700 transition-all cursor-pointer group"
+              >
+                <div className="flex items-center justify-between mb-2">
+                  <div className="w-8 h-8 rounded-lg bg-emerald-50 dark:bg-emerald-950/50 text-emerald-600 dark:text-emerald-400 flex items-center justify-center">
+                    <Shield className="w-4 h-4" />
+                  </div>
+                  <span className="text-[10px] font-extrabold text-emerald-600 dark:text-emerald-400 px-1.5 py-0.5 rounded bg-emerald-100/60 dark:bg-emerald-950/80">
+                    82/100
+                  </span>
+                </div>
+                <div className="text-xs font-bold text-slate-900 dark:text-slate-100 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">
+                  Clause Risk Audit
+                </div>
+                <div className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">
+                  Automated ICA parity & flags
+                </div>
+              </div>
+
+              <div
+                onClick={() => { setActiveTab('courtroom'); scrollTo(debateRef); }}
+                className="p-3.5 rounded-xl border border-slate-200/70 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800/40 hover:border-amber-300 dark:hover:border-amber-700 transition-all cursor-pointer group"
+              >
+                <div className="flex items-center justify-between mb-2">
+                  <div className="w-8 h-8 rounded-lg bg-amber-50 dark:bg-amber-950/50 text-amber-600 dark:text-amber-400 flex items-center justify-center">
+                    <Scale className="w-4 h-4" />
+                  </div>
+                  <span className="text-[10px] font-extrabold text-amber-600 dark:text-amber-400 px-1.5 py-0.5 rounded bg-amber-100/60 dark:bg-amber-950/80">
+                    3-AGENT
+                  </span>
+                </div>
+                <div className="text-xs font-bold text-slate-900 dark:text-slate-100 group-hover:text-amber-600 dark:group-hover:text-amber-400 transition-colors">
+                  AI Courtroom
+                </div>
+                <div className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">
+                  Critic, Defender & Judge
+                </div>
+              </div>
+
+              <div
+                onClick={() => { setActiveTab('schemes'); scrollTo(schemesRef); }}
+                className="p-3.5 rounded-xl border border-slate-200/70 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800/40 hover:border-blue-300 dark:hover:border-blue-700 transition-all cursor-pointer group"
+              >
+                <div className="flex items-center justify-between mb-2">
+                  <div className="w-8 h-8 rounded-lg bg-blue-50 dark:bg-blue-950/50 text-blue-600 dark:text-blue-400 flex items-center justify-center">
+                    <Landmark className="w-4 h-4" />
+                  </div>
+                  <span className="text-[10px] font-extrabold text-blue-600 dark:text-blue-400 px-1.5 py-0.5 rounded bg-blue-100/60 dark:bg-blue-950/80">
+                    100+ SCHEMES
+                  </span>
+                </div>
+                <div className="text-xs font-bold text-slate-900 dark:text-slate-100 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">
+                  Citizen Welfare
+                </div>
+                <div className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">
+                  PM-KISAN, Ayushman & Mudra
+                </div>
+              </div>
+
+              <div
+                onClick={() => { setActiveTab('translate'); scrollTo(multilingualRef); }}
+                className="p-3.5 rounded-xl border border-slate-200/70 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800/40 hover:border-purple-300 dark:hover:border-purple-700 transition-all cursor-pointer group"
+              >
+                <div className="flex items-center justify-between mb-2">
+                  <div className="w-8 h-8 rounded-lg bg-purple-50 dark:bg-purple-950/50 text-purple-600 dark:text-purple-400 flex items-center justify-center">
+                    <Globe className="w-4 h-4" />
+                  </div>
+                  <span className="text-[10px] font-extrabold text-purple-600 dark:text-purple-400 px-1.5 py-0.5 rounded bg-purple-100/60 dark:bg-purple-950/80">
+                    17 LANGS
+                  </span>
+                </div>
+                <div className="text-xs font-bold text-slate-900 dark:text-slate-100 group-hover:text-purple-600 dark:group-hover:text-purple-400 transition-colors">
+                  Indian Languages
+                </div>
+                <div className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">
+                  Hindi, Marathi, Tamil, etc.
                 </div>
               </div>
             </div>
+
+            {/* Quick Demo Contract Pill Bar */}
+            <div className="pt-3 border-t border-slate-100 dark:border-slate-800/80 flex flex-wrap items-center justify-between gap-3 text-xs">
+              <div className="flex items-center gap-2">
+                <span className="text-[11px] font-semibold text-slate-400 dark:text-slate-500 uppercase tracking-wider">
+                  Test sample contract:
+                </span>
+                <button
+                  type="button"
+                  onClick={handleLoadDemoContract}
+                  className="inline-flex items-center gap-1.5 px-3 py-1 rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-200 hover:bg-blue-50 dark:hover:bg-blue-950/50 hover:text-blue-600 dark:hover:text-blue-400 transition-all cursor-pointer font-medium"
+                >
+                  <FileText className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400" />
+                  <span>Municipal_E-Tender_Contract.pdf</span>
+                </button>
+              </div>
+
+              <div className="flex items-center gap-2 text-[11px] text-slate-500 dark:text-slate-400">
+                <Lock className="w-3 h-3 text-emerald-600" />
+                <span>PII Redacted Automatically</span>
+              </div>
+            </div>
+          </div>
+
+          {/* Minimalist Trust & Disclaimer Footer Line */}
+          <div className="mt-8 flex flex-wrap items-center justify-center gap-x-6 gap-y-2 text-xs text-slate-500 dark:text-slate-400">
+            <span className="flex items-center gap-1.5"><CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 shrink-0" /> PDF / DOCX / TXT & Scanned OCR</span>
+            <span className="flex items-center gap-1.5"><Shield className="w-3.5 h-3.5 text-blue-600 shrink-0" /> Automated Clause Severity Analysis</span>
+            <span className="flex items-center gap-1.5 text-amber-600 dark:text-amber-400 italic">
+              <AlertCircle className="w-3.5 h-3.5 shrink-0" /> General information, not legal counsel
+            </span>
+          </div>
+
+        </div>
+      </section>
+
+      {/* ── SECTION 2: HOW IT WORKS ── */}
+      <section className="py-20 sm:py-24 bg-white dark:bg-[#070B14] border-b border-slate-200/80 dark:border-slate-800/80">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="text-center mb-14 reveal-hidden">
+            <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full text-xs font-bold tracking-wider uppercase bg-orange-50 text-orange-700 dark:bg-orange-950/60 dark:text-orange-300 border border-orange-200/80 dark:border-orange-900/60 mb-3 shadow-2xs">
+              <Zap className="w-3.5 h-3.5" />
+              <span>SIMPLE · POWERFUL · SOVEREIGN</span>
+            </div>
+            <h2 className="text-3xl sm:text-4xl lg:text-5xl font-extrabold font-display text-slate-900 dark:text-white tracking-tight mb-3">
+              How It Works
+            </h2>
+            <p className="text-slate-500 dark:text-slate-400 max-w-xl mx-auto text-sm sm:text-base">
+              From contract upload to complete statutory risk assessment in three simple steps.
+            </p>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+            {[
+              {
+                num: '01',
+                title: 'Upload Document',
+                icon: Upload,
+                desc: 'Upload any PDF, DOCX, or scanned contract, municipal tender, lease agreement, or government scheme notice.',
+                color: '#0f3d68',
+                badge: 'OCR & PII Shield'
+              },
+              {
+                num: '02',
+                title: 'Multi-Agent Audit',
+                icon: Cpu,
+                desc: 'Our 3-agent intelligence engine audits clauses, checks statutory parity, detects liabilities, and computes the health score.',
+                color: '#ea580c',
+                badge: 'Critic, Defender, Judge'
+              },
+              {
+                num: '03',
+                title: 'Act & Entitle',
+                icon: CheckCircle2,
+                desc: 'Export redlined Word documents, debate clauses, translate into 17 Indian languages, and claim matched citizen welfare benefits.',
+                color: '#059669',
+                badge: '17+ Languages'
+              }
+            ].map((step, idx) => {
+              const StepIcon = step.icon;
+              return (
+                <div
+                  key={step.num}
+                  className="reveal-hidden group p-8 rounded-2xl border bg-slate-50/50 dark:bg-slate-900/60 border-slate-200/90 dark:border-slate-800 feature-card relative overflow-hidden"
+                  style={{ animationDelay: `${idx * 0.12}s` }}
+                >
+                  <div className="flex items-center justify-between mb-6">
+                    <span className="step-num" style={{ WebkitTextStrokeColor: step.color }}>
+                      {step.num}
+                    </span>
+                    <div
+                      className="w-12 h-12 rounded-2xl flex items-center justify-center transition-transform group-hover:scale-110"
+                      style={{ backgroundColor: `${step.color}15` }}
+                    >
+                      <StepIcon className="w-6 h-6" style={{ color: step.color }} />
+                    </div>
+                  </div>
+                  <h3 className="text-lg font-bold font-display text-slate-900 dark:text-white mb-2">
+                    {step.title}
+                  </h3>
+                  <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-400 leading-relaxed mb-4">
+                    {step.desc}
+                  </p>
+                  <span className="inline-block text-[10px] font-bold uppercase tracking-wider px-2.5 py-1 rounded-md bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300">
+                    {step.badge}
+                  </span>
+                </div>
+              );
+            })}
           </div>
         </div>
       </section>
 
       {/* ── SECTION 3: UPLOAD & AUDIT WORKSPACE (Always Visible & Accessible!) ── */}
-      <section ref={uploadRef} className={`py-16 border-b border-gray-200 dark:border-gray-800 ${activeTab !== 'audit' && activeTab !== 'all' ? 'hidden' : ''}`}>
+      <section ref={uploadRef} className={`py-16 border-b border-slate-200/80 dark:border-slate-800/80 ${activeTab !== 'audit' && activeTab !== 'all' ? 'hidden' : ''}`}>
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center max-w-2xl mx-auto mb-10">
-            <div className="inline-block px-3 py-1 rounded-full text-[11px] font-bold uppercase tracking-widest bg-blue-50 text-[#0f3d68] dark:bg-blue-950 dark:text-blue-300 mb-2">
+            <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[11px] font-bold uppercase tracking-wider bg-blue-50 text-blue-700 dark:bg-blue-950/60 dark:text-blue-300 border border-blue-200/80 dark:border-blue-900/60 mb-2.5">
               WORKSPACE · MODULE 1
             </div>
-            <h2 className="text-3xl font-black font-serif-gov text-[#0f3d68] dark:text-[#38bdf8]">
+            <h2 className="text-3xl sm:text-4xl font-extrabold font-display text-slate-900 dark:text-white tracking-tight">
               Upload Document for AI Analysis
             </h2>
-            <p className="text-xs text-gray-500 mt-1">
+            <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 mt-1.5">
               Select a PDF contract or government scheme for automated summary, clause extraction, and risk detection.
             </p>
           </div>
 
           <div className="max-w-3xl mx-auto">
-            <div className={`p-8 rounded-lg shadow-lg border-t-4 border-t-[#0f3d68] border ${isDark ? 'bg-[#1e293b] border-[#334155]' : 'bg-white border-[#e2e8f0]'}`}>
+            <div className={`p-6 sm:p-8 rounded-2xl border border-slate-200/90 dark:border-slate-800 shadow-[0_2px_12px_rgba(15,23,42,0.04)] dark:shadow-none transition-all ${isDark ? 'bg-slate-900/90' : 'bg-white'}`}>
               <form onSubmit={handleUpload} className="space-y-6">
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div>
-                    <label className="block text-xs font-bold uppercase mb-1.5 text-gray-700 dark:text-gray-200">Document Type</label>
+                    <label className="block text-xs font-bold uppercase tracking-wider mb-1.5 text-slate-700 dark:text-slate-300">Document Type</label>
                     <select 
                       value={uploadDocType} 
                       onChange={e => setUploadDocType(e.target.value)}
-                      className="w-full px-3.5 py-2.5 text-xs rounded border border-gray-300 dark:border-gray-600 bg-white dark:bg-slate-800 text-gray-900 dark:text-gray-100 font-semibold cursor-pointer shadow-xs"
+                      className="w-full px-3.5 py-2.5 text-xs rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50/50 dark:bg-slate-800 text-slate-900 dark:text-slate-100 font-semibold cursor-pointer shadow-2xs focus:outline-none focus:ring-2 focus:ring-blue-500/20"
                     >
                       <option value="contract">Commercial Contract / Legal Agreement</option>
                       <option value="scheme">Government Scheme / Policy Directive</option>
                     </select>
                   </div>
                   <div>
-                    <label className="block text-xs font-bold uppercase mb-1.5 text-gray-700 dark:text-gray-200">Processing Mode</label>
+                    <label className="block text-xs font-bold uppercase tracking-wider mb-1.5 text-slate-700 dark:text-slate-300">Processing Mode</label>
                     <select
                       value={aiMode}
                       onChange={e => setAiMode(e.target.value)}
-                      className="w-full px-3.5 py-2.5 text-xs rounded border border-gray-300 dark:border-gray-600 bg-white dark:bg-slate-800 text-gray-900 dark:text-gray-100 font-semibold cursor-pointer shadow-xs"
+                      className="w-full px-3.5 py-2.5 text-xs rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50/50 dark:bg-slate-800 text-slate-900 dark:text-slate-100 font-semibold cursor-pointer shadow-2xs focus:outline-none focus:ring-2 focus:ring-blue-500/20"
                     >
                       <option value="fast">Fast (Direct Cloud AI Engine)</option>
                       <option value="secure">High Security (PII Redacted Local AI)</option>
@@ -1632,26 +1719,26 @@ Between: Municipal Corporation of Greater Mumbai (Authority) AND TechCorp Soluti
                 </div>
 
                 {/* 1-Click Demo Contract Quick-Load Banner */}
-                <div className="p-4 rounded-xl bg-gradient-to-r from-amber-500/10 via-blue-500/10 to-emerald-500/10 border border-amber-300/60 dark:border-amber-700/40 flex flex-col sm:flex-row items-center justify-between gap-3 shadow-xs">
+                <div className="p-4 rounded-xl bg-gradient-to-r from-blue-500/8 via-indigo-500/5 to-slate-500/5 border border-blue-200/70 dark:border-blue-900/40 flex flex-col sm:flex-row items-center justify-between gap-3 shadow-2xs">
                   <div className="flex items-center gap-3">
-                    <div className="w-9 h-9 rounded-lg bg-amber-500/20 text-amber-600 dark:text-amber-400 flex items-center justify-center shrink-0">
+                    <div className="w-9 h-9 rounded-xl bg-blue-100 dark:bg-blue-950/60 text-blue-600 dark:text-blue-400 flex items-center justify-center shrink-0">
                       <Sparkles className="w-5 h-5" />
                     </div>
                     <div>
-                      <h5 className="font-bold text-xs text-gray-900 dark:text-gray-100">Don't have a contract PDF handy?</h5>
-                      <p className="text-[11px] text-gray-500 dark:text-gray-400">Test the entire AI engine instantly with our realistic Municipal Tender Contract.</p>
+                      <h5 className="font-bold text-xs text-slate-900 dark:text-slate-100">Don't have a contract PDF handy?</h5>
+                      <p className="text-[11px] text-slate-500 dark:text-slate-400">Test the entire AI engine instantly with our realistic Municipal Tender Contract.</p>
                     </div>
                   </div>
                   <button
                     type="button"
                     onClick={handleLoadDemoContract}
-                    className="w-full sm:w-auto px-4 py-2 bg-[#ea580c] hover:bg-[#c2410c] text-white text-xs font-bold uppercase tracking-wider rounded-lg shadow-sm transition-all cursor-pointer flex items-center justify-center gap-1.5 shrink-0"
+                    className="w-full sm:w-auto px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold uppercase tracking-wider rounded-xl shadow-xs hover:shadow transition-all cursor-pointer flex items-center justify-center gap-1.5 shrink-0"
                   >
-                    <Zap className="w-3.5 h-3.5 text-amber-200" /> TRY DEMO CONTRACT
+                    <Zap className="w-3.5 h-3.5 text-amber-300" /> TRY DEMO CONTRACT
                   </button>
                 </div>
 
-                <div className="border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-lg p-8 text-center hover:border-[#ea580c] transition-all bg-gray-50/50 dark:bg-gray-900/30">
+                <div className="border-2 border-dashed border-slate-300 dark:border-slate-700 rounded-2xl p-8 text-center hover:border-blue-500 dark:hover:border-blue-400 transition-all bg-slate-50/50 dark:bg-slate-900/30 group">
                   <input 
                     type="file" 
                     accept=".pdf,application/pdf" 
@@ -1660,21 +1747,21 @@ Between: Municipal Corporation of Greater Mumbai (Authority) AND TechCorp Soluti
                     className="hidden" 
                   />
                   <label htmlFor="docUploader" className="cursor-pointer flex flex-col items-center">
-                    <Upload className="w-10 h-10 text-[#0f3d68] dark:text-[#38bdf8] mb-2" />
-                    <span className="text-sm font-bold text-[#0f3d68] dark:text-[#38bdf8]">
+                    <Upload className="w-10 h-10 text-blue-600 dark:text-blue-400 mb-2 group-hover:scale-110 transition-transform" />
+                    <span className="text-sm font-bold text-slate-900 dark:text-white">
                       {uploadFile ? uploadFile.name : 'Choose a Contract or Policy PDF (max 50MB)'}
                     </span>
-                    <span className="text-xs text-gray-400 mt-1">Supports standard and scanned PDF files</span>
+                    <span className="text-xs text-slate-400 mt-1">Supports standard and scanned PDF files</span>
                   </label>
                 </div>
 
                 {isUploading && (
-                  <div className="p-4 rounded bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 text-xs">
-                    <div className="flex items-center gap-2 font-bold text-amber-900 dark:text-amber-200 mb-1.5">
-                      <Cpu className="w-4 h-4 animate-spin text-[#ea580c]" /> {uploadStage}
+                  <div className="p-4 rounded-xl bg-blue-50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-800 text-xs">
+                    <div className="flex items-center gap-2 font-bold text-blue-900 dark:text-blue-200 mb-1.5">
+                      <Cpu className="w-4 h-4 animate-spin text-blue-600" /> {uploadStage}
                     </div>
-                    <div className="w-full bg-gray-200 rounded-full h-1.5 dark:bg-gray-700 overflow-hidden">
-                      <div className="bg-[#ea580c] h-1.5 rounded-full animate-pulse w-3/4"></div>
+                    <div className="w-full bg-slate-200 rounded-full h-1.5 dark:bg-slate-700 overflow-hidden">
+                      <div className="bg-blue-600 h-1.5 rounded-full animate-pulse w-3/4"></div>
                     </div>
                   </div>
                 )}
@@ -1682,7 +1769,7 @@ Between: Municipal Corporation of Greater Mumbai (Authority) AND TechCorp Soluti
                 <button
                   type="submit"
                   disabled={!uploadFile || isUploading}
-                  className="w-full py-4 bg-[#0f3d68] hover:bg-[#0a2540] disabled:opacity-50 text-white font-bold text-xs uppercase tracking-wider rounded shadow transition-all"
+                  className="w-full py-3.5 bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-white font-bold text-xs uppercase tracking-wider rounded-xl shadow-xs hover:shadow transition-all cursor-pointer"
                 >
                   {isUploading ? 'ANALYZING DOCUMENT...' : 'PROCESS & ANALYZE DOCUMENT'}
                 </button>
@@ -1693,31 +1780,31 @@ Between: Municipal Corporation of Greater Mumbai (Authority) AND TechCorp Soluti
             {currentDoc && (
               <div className="mt-8 space-y-6">
                 {/* Contract Health Score & Safety Meter */}
-                <div className={`p-6 rounded-2xl border shadow-sm flex flex-col md:flex-row items-center justify-between gap-5 transition-all ${healthGrade.bg} ${healthGrade.borderColor}`}>
+                <div className={`p-6 rounded-2xl border shadow-xs flex flex-col md:flex-row items-center justify-between gap-5 transition-all ${healthGrade.bg} ${healthGrade.borderColor}`}>
                   <div className="flex items-center gap-4 w-full md:w-auto">
                     {/* Visual Radial Dial / Health Badge */}
-                    <div className="relative w-20 h-20 flex flex-col items-center justify-center rounded-2xl bg-white dark:bg-slate-900 shadow-md border border-gray-200 dark:border-gray-700 shrink-0">
-                      <span className={`text-3xl font-black ${healthGrade.color}`}>
+                    <div className="relative w-20 h-20 flex flex-col items-center justify-center rounded-2xl bg-white dark:bg-slate-900 shadow-sm border border-slate-200 dark:border-slate-800 shrink-0">
+                      <span className={`text-3xl font-extrabold ${healthGrade.color}`}>
                         {healthScore}
                       </span>
-                      <span className="text-[9px] font-bold text-gray-400 uppercase -mt-1">/ 100</span>
+                      <span className="text-[9px] font-bold text-slate-400 uppercase -mt-0.5">/ 100</span>
                     </div>
 
                     <div className="flex-1">
                       <div className="flex items-center gap-2 mb-1 flex-wrap">
-                        <span className={`text-[10px] font-black uppercase tracking-wider px-2.5 py-0.5 rounded-full text-white shadow-2xs ${
-                          healthScore >= 80 ? 'bg-emerald-600' : healthScore >= 50 ? 'bg-amber-500' : 'bg-red-600'
+                        <span className={`text-[10px] font-bold uppercase tracking-wider px-2.5 py-0.5 rounded-full text-white shadow-2xs ${
+                          healthScore >= 80 ? 'bg-emerald-600' : healthScore >= 50 ? 'bg-amber-500' : 'bg-rose-600'
                         }`}>
                           {healthGrade.badge}
                         </span>
-                        <span className="text-[11px] text-gray-500 font-semibold">
+                        <span className="text-[11px] text-slate-500 dark:text-slate-400 font-semibold">
                           Legal Parity Score (Indian Contract Act 1872)
                         </span>
                       </div>
-                      <h4 className="text-base font-bold font-serif-gov text-[#0f3d68] dark:text-[#38bdf8]">
+                      <h4 className="text-base font-bold font-display text-slate-900 dark:text-white">
                         {healthGrade.title}
                       </h4>
-                      <div className="w-full bg-gray-200 dark:bg-slate-700 rounded-full h-1.5 mt-2.5 overflow-hidden max-w-md">
+                      <div className="w-full bg-slate-200 dark:bg-slate-700 rounded-full h-1.5 mt-2.5 overflow-hidden max-w-md">
                         <div className={`h-1.5 rounded-full transition-all duration-700 ${healthGrade.progressColor}`} style={{ width: `${healthScore}%` }}></div>
                       </div>
                     </div>
@@ -1730,14 +1817,15 @@ Between: Municipal Corporation of Greater Mumbai (Authority) AND TechCorp Soluti
                       target="_blank"
                       rel="noreferrer"
                       download
-                      className="px-4 py-2.5 bg-[#0f3d68] hover:bg-[#0a2540] text-white text-xs font-bold uppercase tracking-wider rounded-xl shadow flex items-center justify-center gap-1.5 border border-[#0f3d68] transition-all"
+                      className="px-4 py-2.5 bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold uppercase tracking-wider rounded-xl shadow-xs hover:shadow flex items-center justify-center gap-1.5 transition-all"
                     >
-                      <Download className="w-3.5 h-3.5 text-amber-400" />
+                      <Download className="w-3.5 h-3.5 text-blue-200" />
                       <span>DOWNLOAD REPORT</span>
                     </a>
                   </div>
                 </div>
-                <div className="p-6 rounded-lg bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-300 dark:border-emerald-800 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+
+                <div className="p-5 rounded-2xl bg-emerald-50/70 dark:bg-emerald-950/20 border border-emerald-200/80 dark:border-emerald-800/60 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                   <div className="flex items-center gap-3">
                     <CheckCircle className="w-6 h-6 text-emerald-600 shrink-0" />
                     <div>
@@ -1750,12 +1838,12 @@ Between: Municipal Corporation of Greater Mumbai (Authority) AND TechCorp Soluti
                       type="button"
                       disabled={isReanalyzing}
                       onClick={() => handleReanalyze(currentDoc.id)}
-                      className={`px-3.5 py-2 rounded text-xs font-bold uppercase tracking-wider border transition-all flex items-center gap-1.5 cursor-pointer shadow-xs ${
-                        isDark ? 'bg-slate-800 border-slate-700 text-slate-200 hover:bg-slate-700' : 'bg-white border-gray-300 text-gray-700 hover:bg-gray-50'
+                      className={`px-3.5 py-2 rounded-xl text-xs font-bold uppercase tracking-wider border transition-all flex items-center gap-1.5 cursor-pointer shadow-2xs ${
+                        isDark ? 'bg-slate-800 border-slate-700 text-slate-200 hover:bg-slate-700' : 'bg-white border-slate-300 text-slate-700 hover:bg-slate-50'
                       }`}
                       title={`Re-audit this contract with ${aiMode === 'fast' ? 'Faster Cloud AI' : 'Local Secure AI'}`}
                     >
-                      <Activity className={`w-3.5 h-3.5 text-[#ea580c] ${isReanalyzing ? 'animate-spin' : ''}`} />
+                      <Activity className={`w-3.5 h-3.5 text-blue-600 ${isReanalyzing ? 'animate-spin' : ''}`} />
                       {isReanalyzing ? 'Re-Auditing...' : `Re-Audit (${aiMode === 'fast' ? 'Fast' : 'Secure'})`}
                     </button>
                     <a
@@ -1763,11 +1851,11 @@ Between: Municipal Corporation of Greater Mumbai (Authority) AND TechCorp Soluti
                       target="_blank"
                       rel="noreferrer"
                       download
-                      className="px-4 py-2 bg-[#0f3d68] hover:bg-[#0a2540] text-white text-xs font-bold uppercase tracking-wider rounded shadow flex items-center gap-2 border border-[#0f3d68] transition-all"
+                      className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold uppercase tracking-wider rounded-xl shadow-xs flex items-center gap-2 transition-all"
                     >
-                      <Download className="w-4 h-4 text-[#ea580c]" /> DOWNLOAD AUDIT REPORT (PDF)
+                      <Download className="w-4 h-4 text-blue-200" /> DOWNLOAD AUDIT REPORT (PDF)
                     </a>
-                    <span className="text-xs uppercase font-black px-3 py-2 rounded bg-emerald-200 text-emerald-900 font-serif-gov">
+                    <span className="text-xs uppercase font-extrabold px-3 py-1.5 rounded-lg bg-emerald-200 dark:bg-emerald-900/60 text-emerald-900 dark:text-emerald-200">
                       ACTIVE
                     </span>
                   </div>
@@ -1775,41 +1863,41 @@ Between: Municipal Corporation of Greater Mumbai (Authority) AND TechCorp Soluti
 
                 {/* Metrics */}
                 <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-                  <div className={`p-4 rounded border text-center ${isDark ? 'bg-[#1e293b] border-[#334155]' : 'bg-white border-[#e2e8f0]'}`}>
-                    <div className="text-2xl font-black text-red-600">{highRisksCount}</div>
-                    <div className="text-xs text-gray-500 uppercase font-semibold mt-1">High Risks</div>
+                  <div className={`p-4 rounded-2xl border text-center border-t-2 border-t-rose-500 shadow-2xs ${isDark ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200/90'}`}>
+                    <div className="text-2xl font-black text-rose-600">{highRisksCount}</div>
+                    <div className="text-xs text-slate-500 uppercase font-semibold mt-1">High Risks</div>
                   </div>
-                  <div className={`p-4 rounded border text-center ${isDark ? 'bg-[#1e293b] border-[#334155]' : 'bg-white border-[#e2e8f0]'}`}>
+                  <div className={`p-4 rounded-2xl border text-center border-t-2 border-t-amber-500 shadow-2xs ${isDark ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200/90'}`}>
                     <div className="text-2xl font-black text-amber-500">{medRisksCount}</div>
-                    <div className="text-xs text-gray-500 uppercase font-semibold mt-1">Medium Risks</div>
+                    <div className="text-xs text-slate-500 uppercase font-semibold mt-1">Medium Risks</div>
                   </div>
-                  <div className={`p-4 rounded border text-center ${isDark ? 'bg-[#1e293b] border-[#334155]' : 'bg-white border-[#e2e8f0]'}`}>
-                    <div className="text-2xl font-black text-[#0f3d68] dark:text-[#38bdf8]">{docClauses.length}</div>
-                    <div className="text-xs text-gray-500 uppercase font-semibold mt-1">Clauses Classified</div>
+                  <div className={`p-4 rounded-2xl border text-center border-t-2 border-t-blue-500 shadow-2xs ${isDark ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200/90'}`}>
+                    <div className="text-2xl font-black text-blue-600 dark:text-blue-400">{docClauses.length}</div>
+                    <div className="text-xs text-slate-500 uppercase font-semibold mt-1">Clauses Classified</div>
                   </div>
-                  <div className={`p-4 rounded border text-center ${isDark ? 'bg-[#1e293b] border-[#334155]' : 'bg-white border-[#e2e8f0]'}`}>
+                  <div className={`p-4 rounded-2xl border text-center border-t-2 border-t-emerald-500 shadow-2xs ${isDark ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200/90'}`}>
                     <div className="text-2xl font-black text-emerald-600">{entitiesCount}</div>
-                    <div className="text-xs text-gray-500 uppercase font-semibold mt-1">Extracted Entities</div>
+                    <div className="text-xs text-slate-500 uppercase font-semibold mt-1">Extracted Entities</div>
                   </div>
                 </div>
 
                 {/* Summary */}
-                <div className={`p-6 rounded-lg border shadow-sm ${isDark ? 'bg-[#1e293b] border-[#334155]' : 'bg-white border-[#e2e8f0]'}`}>
+                <div className={`p-6 sm:p-7 rounded-2xl border shadow-xs ${isDark ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200/90'}`}>
                   <div className="flex items-center justify-between mb-3">
-                    <h3 className="text-base font-bold font-serif-gov text-[#0f3d68] dark:text-[#38bdf8]">Executive Summary</h3>
+                    <h3 className="text-base font-bold font-display text-slate-900 dark:text-white">Executive Summary</h3>
                     <a
                       href={`${API_BASE}/report/download/${currentDoc.id}`}
                       target="_blank"
                       rel="noreferrer"
                       download
-                      className="text-xs font-bold text-[#ea580c] hover:underline flex items-center gap-1.5"
+                      className="text-xs font-bold text-blue-600 dark:text-blue-400 hover:underline flex items-center gap-1.5"
                     >
                       <Download className="w-3.5 h-3.5" /> Download Full PDF Report
                     </a>
                   </div>
 
                   {/* Layer 1 Sovereign PII Shield Badge */}
-                  <div className="mb-3.5 p-2.5 rounded-lg border border-emerald-300 dark:border-emerald-800/80 bg-emerald-50/80 dark:bg-emerald-950/40 flex items-center justify-between flex-wrap gap-2 text-xs">
+                  <div className="mb-3.5 p-3 rounded-xl border border-emerald-300 dark:border-emerald-800/80 bg-emerald-50/80 dark:bg-emerald-950/40 flex items-center justify-between flex-wrap gap-2 text-xs">
                     <div className="flex items-center gap-2">
                       <Shield className="w-4 h-4 text-emerald-600 dark:text-emerald-400 shrink-0" />
                       <div>
@@ -1826,23 +1914,23 @@ Between: Municipal Corporation of Greater Mumbai (Authority) AND TechCorp Soluti
                     </span>
                   </div>
 
-                  <p className="text-xs leading-relaxed text-gray-700 dark:text-gray-300">{currentDoc.summary}</p>
+                  <p className="text-xs leading-relaxed text-slate-700 dark:text-slate-300">{currentDoc.summary}</p>
                 </div>
 
                 {/* Detected Risks & Remediation */}
-                <div className={`p-6 rounded-lg border shadow-sm ${isDark ? 'bg-[#1e293b] border-[#334155]' : 'bg-white border-[#e2e8f0]'}`}>
-                  <div className="flex items-center justify-between mb-4">
-                    <h3 className="text-base font-bold font-serif-gov text-[#0f3d68] dark:text-[#38bdf8] flex items-center gap-2">
+                <div className={`p-6 sm:p-7 rounded-2xl border shadow-xs ${isDark ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200/90'}`}>
+                  <div className="flex items-center justify-between mb-5">
+                    <h3 className="text-base font-bold font-display text-slate-900 dark:text-white flex items-center gap-2">
                       <AlertTriangle className="w-5 h-5 text-amber-500" />
                       Detected Risks, Severity Rationale & Remediation ({docRisks.length})
                     </h3>
-                    <span className="text-xs text-gray-500">
+                    <span className="text-xs text-slate-500">
                       Evaluated against Indian legal standards & commercial parity
                     </span>
                   </div>
                   <div className="space-y-4">
                     {docRisks.length === 0 ? (
-                      <p className="text-xs text-gray-500 italic">No significant legal liabilities or one-sided terms detected.</p>
+                      <p className="text-xs text-slate-500 italic">No significant legal liabilities or one-sided terms detected.</p>
                     ) : (
                       docRisks.map((risk, i) => {
                         const isHigh = (risk.risk_level || '').toLowerCase().includes('high');
@@ -1862,23 +1950,23 @@ Between: Municipal Corporation of Greater Mumbai (Authority) AND TechCorp Soluti
                         return (
                           <div 
                             key={i} 
-                            className={`p-5 rounded-xl border transition-all shadow-xs ${
+                            className={`p-5 rounded-2xl border transition-all shadow-2xs ${
                               isHigh 
-                                ? 'bg-red-50/70 border-red-300 dark:bg-red-950/30 dark:border-red-900/60' 
+                                ? 'bg-rose-50/50 border-rose-200 dark:bg-rose-950/20 dark:border-rose-900/60 border-l-4 border-l-rose-500' 
                                 : (isMed 
-                                  ? 'bg-amber-50/70 border-amber-300 dark:bg-amber-950/30 dark:border-amber-900/60'
-                                  : 'bg-blue-50/70 border-blue-300 dark:bg-blue-950/30 dark:border-blue-900/60')
+                                  ? 'bg-amber-50/50 border-amber-200 dark:bg-amber-950/20 dark:border-amber-900/60 border-l-4 border-l-amber-500'
+                                  : 'bg-blue-50/50 border-blue-200 dark:bg-blue-950/20 dark:border-blue-900/60 border-l-4 border-l-blue-500')
                             }`}
                           >
                             {/* Card Header with Badges */}
                             <div className="flex flex-wrap items-center justify-between gap-2 mb-3">
                               <div className="flex items-center gap-2">
-                                <span className={`text-[10px] font-black px-2.5 py-1 rounded uppercase tracking-wider text-white shadow-xs ${
-                                  isHigh ? 'bg-red-600' : (isMed ? 'bg-amber-500' : 'bg-blue-600')
+                                <span className={`text-[10px] font-black px-2.5 py-1 rounded-full uppercase tracking-wider text-white shadow-2xs ${
+                                  isHigh ? 'bg-rose-600' : (isMed ? 'bg-amber-500' : 'bg-blue-600')
                                 }`}>
                                   {risk.risk_level || 'RISK'} SEVERITY
                                 </span>
-                                <span className="font-bold text-sm text-[#0f3d68] dark:text-[#38bdf8]">
+                                <span className="font-bold text-sm text-slate-900 dark:text-white">
                                   {risk.clause_type || 'Contract Clause'}
                                 </span>
                               </div>
@@ -1890,7 +1978,7 @@ Between: Municipal Corporation of Greater Mumbai (Authority) AND TechCorp Soluti
                                     key={tidx} 
                                     className={`inline-flex items-center gap-1 text-[10px] font-semibold px-2 py-0.5 rounded-full ${
                                       isHigh 
-                                        ? 'bg-red-100 text-red-800 dark:bg-red-900/50 dark:text-red-200 border border-red-200 dark:border-red-800' 
+                                        ? 'bg-rose-100 text-rose-800 dark:bg-rose-900/50 dark:text-rose-200 border border-rose-200 dark:border-rose-800' 
                                         : 'bg-amber-100 text-amber-800 dark:bg-amber-900/50 dark:text-amber-200 border border-amber-200 dark:border-amber-800'
                                     }`}
                                   >
@@ -1903,37 +1991,37 @@ Between: Municipal Corporation of Greater Mumbai (Authority) AND TechCorp Soluti
 
                             {/* Risky Verbatim Excerpt */}
                             <div className="mb-3">
-                              <div className="text-[10px] font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400 mb-1 flex items-center gap-1">
-                                <FileText className="w-3 h-3 text-red-500" /> Problematic Verbatim Excerpt:
+                              <div className="text-[10px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-1 flex items-center gap-1">
+                                <FileText className="w-3 h-3 text-rose-500" /> Problematic Verbatim Excerpt:
                               </div>
-                              <blockquote className="p-3 rounded-lg bg-white/90 dark:bg-[#0f172a]/80 border-l-3 border-red-500 text-red-950 dark:text-red-200 font-mono text-xs leading-relaxed italic shadow-2xs">
+                              <blockquote className="p-3.5 rounded-xl bg-white/95 dark:bg-slate-900/90 border border-rose-200 dark:border-rose-900/50 border-l-4 border-l-rose-500 text-rose-950 dark:text-rose-200 font-mono text-xs leading-relaxed italic shadow-2xs">
                                 "{risk.risky_excerpt}"
                               </blockquote>
                             </div>
 
                             {/* Why It's Risky: Hazard Assessment */}
                             <div className="mb-3">
-                              <div className="text-[11px] font-bold uppercase tracking-wider text-gray-700 dark:text-gray-300 mb-1 flex items-center gap-1.5">
+                              <div className="text-[11px] font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300 mb-1 flex items-center gap-1.5">
                                 <AlertTriangle className="w-3.5 h-3.5 text-amber-600 dark:text-amber-400" />
                                 Why This Clause Is Risky (Hazard Assessment):
                               </div>
-                              <p className="text-xs text-gray-800 dark:text-gray-200 leading-relaxed bg-white/60 dark:bg-slate-900/50 p-2.5 rounded-lg border border-gray-200/60 dark:border-gray-800/60">
+                              <p className="text-xs text-slate-800 dark:text-slate-200 leading-relaxed bg-white/70 dark:bg-slate-900/60 p-3 rounded-xl border border-slate-200/80 dark:border-slate-800">
                                 {risk.why_risky}
                               </p>
                             </div>
 
                             {/* Why It's Stated As High / Medium Risk (Severity Rationale) */}
-                            <div className="mb-3 p-3 rounded-lg bg-white/90 dark:bg-slate-900/80 border border-red-200 dark:border-red-900/40">
-                              <div className="text-[11px] font-black uppercase tracking-wider text-[#0f3d68] dark:text-[#38bdf8] mb-1.5 flex items-center gap-1.5">
-                                <Activity className="w-3.5 h-3.5 text-[#ea580c]" />
+                            <div className="mb-3 p-3.5 rounded-xl bg-white/95 dark:bg-slate-900/90 border border-slate-200 dark:border-slate-800">
+                              <div className="text-[11px] font-bold uppercase tracking-wider text-blue-600 dark:text-blue-400 mb-1.5 flex items-center gap-1.5">
+                                <Activity className="w-3.5 h-3.5 text-blue-600" />
                                 Why Stated As [{risk.risk_level}] Risk (Classification Rationale):
                               </div>
-                              <p className="text-xs text-gray-700 dark:text-gray-300 leading-relaxed font-medium">
+                              <p className="text-xs text-slate-700 dark:text-slate-300 leading-relaxed font-medium">
                                 {rationale}
                               </p>
                               {impact && (
-                                <div className="mt-2 pt-2 border-t border-gray-200/60 dark:border-gray-700/60 text-[11px] text-gray-600 dark:text-gray-400">
-                                  <strong className="text-red-700 dark:text-red-400">Potential Legal & Financial Exposure: </strong>
+                                <div className="mt-2 pt-2 border-t border-slate-100 dark:border-slate-800 text-[11px] text-slate-600 dark:text-slate-400">
+                                  <strong className="text-rose-700 dark:text-rose-400">Potential Legal & Financial Exposure: </strong>
                                   {impact}
                                 </div>
                               )}
@@ -1951,7 +2039,7 @@ Between: Municipal Corporation of Greater Mumbai (Authority) AND TechCorp Soluti
                                     <button
                                       type="button"
                                       onClick={() => handleCopyClause(risk.suggested_replacement, i)}
-                                      className="px-3 py-1 rounded-md text-[10px] font-bold uppercase tracking-wider transition-all flex items-center gap-1.5 cursor-pointer bg-emerald-600 hover:bg-emerald-700 text-white shadow-2xs"
+                                      className="px-3 py-1 rounded-lg text-[10px] font-bold uppercase tracking-wider transition-all flex items-center gap-1.5 cursor-pointer bg-emerald-600 hover:bg-emerald-700 text-white shadow-2xs"
                                       title="Copy clause to clipboard"
                                     >
                                       {copiedIndex === i ? (
@@ -1968,7 +2056,7 @@ Between: Municipal Corporation of Greater Mumbai (Authority) AND TechCorp Soluti
                                     </button>
                                   </div>
                                 </div>
-                                <div className="p-3 rounded-lg bg-emerald-50/90 dark:bg-emerald-950/40 border-l-4 border-emerald-500 text-emerald-950 dark:text-emerald-100 text-xs leading-relaxed font-medium shadow-2xs">
+                                <div className="p-3.5 rounded-xl bg-emerald-50/90 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800 border-l-4 border-l-emerald-500 text-emerald-950 dark:text-emerald-100 text-xs leading-relaxed font-medium shadow-2xs">
                                   {risk.suggested_replacement}
                                 </div>
                               </div>
@@ -1982,21 +2070,21 @@ Between: Municipal Corporation of Greater Mumbai (Authority) AND TechCorp Soluti
 
                 {/* Classified Legal Clauses */}
                 {docClauses.length > 0 && (
-                  <div className={`p-6 rounded-lg border shadow-sm ${isDark ? 'bg-[#1e293b] border-[#334155]' : 'bg-white border-[#e2e8f0]'}`}>
-                    <h3 className="text-base font-bold font-serif-gov text-[#0f3d68] dark:text-[#38bdf8] mb-4 flex items-center gap-2">
-                      <FileText className="w-4 h-4 text-[#ea580c]" />
+                  <div className={`p-6 sm:p-7 rounded-2xl border shadow-xs ${isDark ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200/90'}`}>
+                    <h3 className="text-base font-bold font-display text-slate-900 dark:text-white mb-4 flex items-center gap-2">
+                      <FileText className="w-4 h-4 text-blue-600" />
                       Classified Legal Clauses ({docClauses.length})
                     </h3>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5">
                       {docClauses.map((clause, idx) => (
-                        <div key={idx} className={`p-4 rounded border text-xs space-y-1.5 ${isDark ? 'bg-slate-800/70 border-slate-700' : 'bg-gray-50/80 border-gray-200'}`}>
-                          <div className="font-bold text-[#0f3d68] dark:text-[#38bdf8] uppercase text-[11px] flex items-center gap-1.5">
-                            <span className="w-1.5 h-1.5 rounded-full bg-[#ea580c]"></span>
+                        <div key={idx} className={`p-4 rounded-xl border text-xs space-y-1.5 ${isDark ? 'bg-slate-800/60 border-slate-700' : 'bg-slate-50/70 border-slate-200/90'}`}>
+                          <div className="font-bold text-slate-900 dark:text-white uppercase text-[11px] flex items-center gap-1.5">
+                            <span className="w-1.5 h-1.5 rounded-full bg-blue-600"></span>
                             {clause.clause_type}
                           </div>
-                          <p className="text-gray-700 dark:text-gray-300 text-xs font-medium">{clause.summary}</p>
+                          <p className="text-slate-700 dark:text-slate-300 text-xs font-medium">{clause.summary}</p>
                           {clause.verbatim_excerpt && (
-                            <div className="p-2 rounded bg-white dark:bg-slate-900/60 border border-gray-200 dark:border-gray-800 italic text-[11px] text-gray-500 dark:text-gray-400">
+                            <div className="p-2.5 rounded-lg bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 italic text-[11px] text-slate-500 dark:text-slate-400">
                               "{clause.verbatim_excerpt}"
                             </div>
                           )}
@@ -2008,9 +2096,9 @@ Between: Municipal Corporation of Greater Mumbai (Authority) AND TechCorp Soluti
 
                 {/* Key Entities & Contract Metadata */}
                 {Object.keys(docEntities).length > 0 && (
-                  <div className={`p-6 rounded-lg border shadow-sm ${isDark ? 'bg-[#1e293b] border-[#334155]' : 'bg-white border-[#e2e8f0]'}`}>
-                    <h3 className="text-base font-bold font-serif-gov text-[#0f3d68] dark:text-[#38bdf8] mb-4 flex items-center gap-2">
-                      <Layers className="w-4 h-4 text-[#ea580c]" />
+                  <div className={`p-6 sm:p-7 rounded-2xl border shadow-xs ${isDark ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200/90'}`}>
+                    <h3 className="text-base font-bold font-display text-slate-900 dark:text-white mb-4 flex items-center gap-2">
+                      <Layers className="w-4 h-4 text-blue-600" />
                       Extracted Entities & Metadata
                     </h3>
                     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 text-xs">
@@ -2018,14 +2106,14 @@ Between: Municipal Corporation of Greater Mumbai (Authority) AND TechCorp Soluti
                         const list = Array.isArray(items) ? items : [String(items)];
                         if (list.length === 0) return null;
                         return (
-                          <div key={category} className={`p-3.5 rounded border ${isDark ? 'bg-slate-800/50 border-slate-700' : 'bg-gray-50/70 border-gray-200'}`}>
-                            <div className="font-bold uppercase tracking-wider text-[10px] text-[#ea580c] mb-2">
+                          <div key={category} className={`p-4 rounded-xl border ${isDark ? 'bg-slate-800/50 border-slate-700' : 'bg-slate-50/70 border-slate-200'}`}>
+                            <div className="font-bold uppercase tracking-wider text-[10px] text-blue-600 dark:text-blue-400 mb-2">
                               {category.replace('_', ' ')}
                             </div>
                             <ul className="space-y-1">
                               {list.map((item, i) => (
-                                <li key={i} className="text-gray-800 dark:text-gray-200 font-medium flex items-start gap-1.5">
-                                  <span className="text-gray-400">•</span>
+                                <li key={i} className="text-slate-800 dark:text-slate-200 font-medium flex items-start gap-1.5">
+                                  <span className="text-slate-400">•</span>
                                   <span>{typeof item === 'string' ? item : item.name || JSON.stringify(item)}</span>
                                 </li>
                               ))}
@@ -2043,76 +2131,85 @@ Between: Municipal Corporation of Greater Mumbai (Authority) AND TechCorp Soluti
       </section>
 
       {/* ── SECTION 4: INTERACTIVE Q&A CHAT MODULE ── */}
-      <section ref={chatRef} className={`py-16 border-b transition-colors ${isDark ? 'bg-[#0d162e] border-[#1e293b]' : 'bg-[#f1f5f9] border-[#e2e8f0]'} ${activeTab !== 'chat' && activeTab !== 'all' ? 'hidden' : ''}`}>
+      <section ref={chatRef} className={`py-16 border-b transition-colors ${isDark ? 'bg-[#090D16] border-slate-800/80' : 'bg-slate-50/60 border-slate-200/80'} ${activeTab !== 'chat' && activeTab !== 'all' ? 'hidden' : ''}`}>
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center max-w-2xl mx-auto mb-10">
-            <div className="inline-block px-3 py-1 rounded-full text-[11px] font-bold uppercase tracking-widest bg-amber-50 text-[#ea580c] border border-amber-200 mb-2">
+            <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[11px] font-bold uppercase tracking-wider bg-blue-50 text-blue-700 dark:bg-blue-950/60 dark:text-blue-300 border border-blue-200/80 dark:border-blue-900/60 mb-2.5">
               WORKSPACE · MODULE 2
             </div>
-            <h2 className="text-3xl font-black font-serif-gov text-[#0f3d68] dark:text-[#38bdf8]">
-              Verified Q&A Chat Assistant
+            <h2 className="text-3xl sm:text-4xl font-extrabold font-display text-slate-900 dark:text-white tracking-tight">
+              Verified Legal Copilot & Q&A
             </h2>
-            <p className="text-xs text-gray-500 mt-1">
+            <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 mt-1.5">
               Ask questions about penalties, deadlines, clauses, and obligations with exact page-level citations.
             </p>
           </div>
 
           <div className="max-w-3xl mx-auto">
             {!currentDoc ? (
-              <div className="p-8 rounded-lg border text-center text-gray-500 text-xs bg-white dark:bg-[#1e293b]">
-                <FileCheck className="w-8 h-8 text-gray-400 mx-auto mb-2" />
-                Upload a document in Module 1 above to enable the Q&A assistant.
+              <div className={`p-10 rounded-2xl border border-dashed border-slate-300 dark:border-slate-700 text-center text-slate-500 text-xs ${isDark ? 'bg-slate-900/40' : 'bg-white'}`}>
+                <FileCheck className="w-10 h-10 text-slate-400 mx-auto mb-3" />
+                <p className="text-sm font-semibold text-slate-700 dark:text-slate-300 mb-1">No Document Loaded</p>
+                <p>Upload a contract in Module 1 above to enable the interactive Q&A assistant.</p>
               </div>
             ) : (
-              <div className={`rounded-lg border shadow-md flex flex-col h-[500px] overflow-hidden ${isDark ? 'bg-[#1e293b] border-[#334155]' : 'bg-white border-[#e2e8f0]'}`}>
-                <div className="px-6 py-3.5 bg-[#0f3d68] text-white flex items-center justify-between text-xs">
-                  <div>
-                    <span className="font-bold uppercase font-serif-gov">Chatting about:</span> {currentDoc.filename}
+              <div className={`rounded-2xl border border-slate-200/90 dark:border-slate-800 shadow-[0_2px_12px_rgba(15,23,42,0.04)] flex flex-col h-[520px] overflow-hidden ${isDark ? 'bg-slate-900' : 'bg-white'}`}>
+                <div className="px-6 py-4 bg-slate-900 dark:bg-slate-800 text-white flex items-center justify-between text-xs">
+                  <div className="flex items-center gap-2.5 truncate max-w-[60%]">
+                    <MessageSquare className="w-4 h-4 text-blue-400 shrink-0" />
+                    <span className="font-semibold text-slate-300">Document:</span>
+                    <span className="font-bold truncate text-white">{currentDoc.filename}</span>
                   </div>
-                  <div className="flex items-center gap-2">
-                    <span className="text-[10px] bg-white/10 px-2 py-0.5 rounded font-semibold text-blue-100">
+                  <div className="flex items-center gap-2 shrink-0">
+                    <span className="text-[10px] bg-white/10 px-2.5 py-1 rounded-full font-semibold text-blue-200">
                       {aiMode === 'fast' ? 'Fast AI Engine' : 'High Security Engine'}
                     </span>
-                    <span className="text-[10px] bg-[#ea580c] px-2 py-0.5 rounded font-bold uppercase">Citation Verified</span>
+                    <span className="text-[10px] bg-blue-600 px-2.5 py-1 rounded-full font-bold uppercase tracking-wider text-white">Citation Verified</span>
                   </div>
                 </div>
 
-                <div className="flex-1 overflow-y-auto p-6 space-y-3.5 text-xs">
+                <div className="flex-1 overflow-y-auto p-6 space-y-4 text-xs">
                   {messages.length === 0 && (
-                    <div className="text-center py-20 text-gray-400">
-                      Ask anything! e.g. "What is risky in this paper?" or "What are the payment terms?"
+                    <div className="text-center py-20 text-slate-400">
+                      <Bot className="w-8 h-8 mx-auto mb-2 opacity-40 text-blue-500" />
+                      <p className="font-medium text-slate-500 dark:text-slate-400">Ask anything about this document!</p>
+                      <p className="text-[11px] text-slate-400 mt-1">e.g. "What is risky in this contract?" or "What are the payment milestones?"</p>
                     </div>
                   )}
                   {messages.map((m, i) => (
                     <div key={i} className={`flex ${m.sender === 'user' ? 'justify-end' : 'justify-start'}`}>
-                      <div className={`max-w-[85%] rounded-lg p-3.5 ${m.sender === 'user' ? 'bg-[#0f3d68] text-white' : 'bg-gray-100 dark:bg-gray-800 text-gray-800 dark:text-gray-200'}`}>
-                        <div className="font-bold text-[10px] uppercase opacity-70 mb-1">{m.sender === 'user' ? 'You' : 'AI Analyzer'}</div>
+                      <div className={`max-w-[85%] rounded-2xl p-4 shadow-2xs ${m.sender === 'user' ? 'bg-blue-600 text-white rounded-tr-xs' : 'bg-slate-100 dark:bg-slate-800 text-slate-900 dark:text-slate-100 rounded-tl-xs border border-slate-200/80 dark:border-slate-700/80'}`}>
+                        <div className="font-bold text-[10px] uppercase tracking-wider opacity-70 mb-1">{m.sender === 'user' ? 'You' : 'Legal AI Assistant'}</div>
                         <div className="whitespace-pre-wrap leading-relaxed">{m.text}</div>
                         {m.citations?.length > 0 && (
-                          <div className="mt-2 pt-2 border-t border-gray-300 dark:border-gray-700 flex gap-1 items-center text-[10px] font-bold">
-                            <span>CITATIONS:</span>
-                            {m.citations.map(p => <span key={p} className="bg-amber-100 text-amber-900 dark:bg-amber-900 dark:text-amber-200 px-1.5 py-0.5 rounded">Page {p}</span>)}
+                          <div className="mt-2.5 pt-2 border-t border-slate-200 dark:border-slate-700 flex flex-wrap gap-1.5 items-center text-[10px] font-bold">
+                            <span className="text-slate-500 dark:text-slate-400">VERIFIED CITATIONS:</span>
+                            {m.citations.map(p => (
+                              <span key={p} className="bg-blue-100 text-blue-800 dark:bg-blue-950 dark:text-blue-300 border border-blue-200 dark:border-blue-800 px-2 py-0.5 rounded-md">
+                                Page {p}
+                              </span>
+                            ))}
                           </div>
                         )}
                       </div>
                     </div>
                   ))}
                   {isChatLoading && (
-                    <div className="text-xs text-gray-400 flex items-center gap-2">
-                      <Cpu className="w-3.5 h-3.5 animate-spin" /> Retrieving verified excerpts and citing clauses...
+                    <div className="text-xs text-slate-400 flex items-center gap-2">
+                      <Cpu className="w-4 h-4 animate-spin text-blue-600" /> Retrieving verified excerpts and citing clauses...
                     </div>
                   )}
                 </div>
 
-                <form onSubmit={handleSendMessage} className="p-3 border-t border-gray-200 dark:border-gray-700 flex gap-2">
+                <form onSubmit={handleSendMessage} className="p-3.5 border-t border-slate-200 dark:border-slate-800 flex gap-2.5 bg-slate-50/50 dark:bg-slate-900/50">
                   <input 
                     type="text" 
                     value={chatInput} 
                     onChange={e => setChatInput(e.target.value)}
-                    placeholder="e.g. Can you tell me what is risky in this paper?"
-                    className="flex-1 px-3.5 py-2.5 text-xs rounded border border-gray-300 dark:border-gray-600 bg-white dark:bg-slate-800 text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 focus:outline-hidden"
+                    placeholder="e.g. Can you explain the uncapped indemnity clause?"
+                    className="flex-1 px-4 py-2.5 text-xs rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20 shadow-2xs"
                   />
-                  <button type="submit" disabled={isChatLoading || !chatInput.trim()} className="px-5 py-2 bg-[#ea580c] hover:bg-[#c2410c] text-white text-xs font-bold uppercase rounded">
+                  <button type="submit" disabled={isChatLoading || !chatInput.trim()} className="px-5 py-2.5 bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-white text-xs font-bold uppercase tracking-wider rounded-xl shadow-xs hover:shadow transition-all cursor-pointer">
                     Send
                   </button>
                 </form>
@@ -2123,37 +2220,38 @@ Between: Municipal Corporation of Greater Mumbai (Authority) AND TechCorp Soluti
       </section>
 
       {/* ── SECTION 5: MULTI-AGENT COURTROOM DEBATE ── */}
-      <section ref={debateRef} className={`py-16 border-b border-gray-200 dark:border-gray-800 ${activeTab !== 'courtroom' && activeTab !== 'all' ? 'hidden' : ''}`}>
+      <section ref={debateRef} className={`py-16 border-b border-slate-200/80 dark:border-slate-800/80 ${activeTab !== 'courtroom' && activeTab !== 'all' ? 'hidden' : ''}`}>
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center max-w-2xl mx-auto mb-10">
-            <div className="inline-block px-3 py-1 rounded-full text-[11px] font-bold uppercase tracking-widest bg-emerald-50 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300 mb-2">
+            <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[11px] font-bold uppercase tracking-wider bg-blue-50 text-blue-700 dark:bg-blue-950/60 dark:text-blue-300 border border-blue-200/80 dark:border-blue-900/60 mb-2.5">
               WORKSPACE · MODULE 3
             </div>
-            <h2 className="text-3xl font-black font-serif-gov text-[#0f3d68] dark:text-[#38bdf8]">
+            <h2 className="text-3xl sm:text-4xl font-extrabold font-display text-slate-900 dark:text-white tracking-tight">
               Multi-Agent Legal Courtroom
             </h2>
-            <p className="text-xs text-gray-500 mt-1">
+            <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 mt-1.5">
               3 AI agents debate your contract clauses: The Critic, The Defender, and Judicial Verdict.
             </p>
           </div>
 
           <div className="max-w-3xl mx-auto">
             {!currentDoc ? (
-              <div className="p-8 rounded-lg border text-center text-gray-500 text-xs bg-white dark:bg-[#1e293b]">
-                <Scale className="w-8 h-8 text-gray-400 mx-auto mb-2" />
-                Upload a document in Module 1 to run the multi-agent legal debate.
+              <div className={`p-10 rounded-2xl border border-dashed border-slate-300 dark:border-slate-700 text-center text-slate-500 text-xs ${isDark ? 'bg-slate-900/40' : 'bg-white'}`}>
+                <Scale className="w-10 h-10 text-slate-400 mx-auto mb-3" />
+                <p className="text-sm font-semibold text-slate-700 dark:text-slate-300 mb-1">No Document Uploaded</p>
+                <p>Upload a document in Module 1 to simulate the multi-agent legal courtroom debate.</p>
               </div>
             ) : (
               <div className="space-y-6">
-                <div className="p-6 rounded-lg bg-[#0f3d68] text-white flex items-center justify-between">
+                <div className="p-6 sm:p-7 rounded-2xl bg-slate-900 dark:bg-slate-800 text-white flex flex-col sm:flex-row sm:items-center justify-between gap-4 border border-slate-800 shadow-xs">
                   <div>
-                    <h4 className="font-bold text-sm font-serif-gov">Simulate Autonomous Courtroom</h4>
-                    <p className="text-xs text-blue-200 mt-0.5">Prosecution, Defense, and Judicial Verdict on detected loopholes.</p>
+                    <h4 className="font-bold text-base font-display text-white">Simulate Autonomous Courtroom</h4>
+                    <p className="text-xs text-slate-300 mt-1">Prosecution, Defense, and Judicial Verdict on detected contractual loopholes.</p>
                   </div>
                   <button 
                     onClick={handleStartDebate} 
                     disabled={isDebating}
-                    className="px-5 py-2.5 bg-[#ea580c] hover:bg-[#c2410c] text-white text-xs font-bold uppercase rounded shadow"
+                    className="px-6 py-3 bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-white text-xs font-bold uppercase tracking-wider rounded-xl shadow-xs hover:shadow transition-all cursor-pointer shrink-0"
                   >
                     {isDebating ? 'AGENTS DEBATING...' : 'START COURTROOM DEBATE'}
                   </button>
@@ -2162,48 +2260,48 @@ Between: Municipal Corporation of Greater Mumbai (Authority) AND TechCorp Soluti
                 {debateResult && (
                   <div className="space-y-4">
                     {debateResult.error ? (
-                      <div className="p-4 rounded-lg bg-red-50 dark:bg-red-950/40 border border-red-200 dark:border-red-800 text-xs text-red-700 dark:text-red-300 flex items-center justify-between">
+                      <div className="p-4 rounded-xl bg-rose-50 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-800 text-xs text-rose-700 dark:text-rose-300 flex items-center justify-between">
                         <div>
                           <strong>Courtroom Adjourned:</strong> {debateResult.error}
                         </div>
                         <button
                           onClick={handleStartDebate}
-                          className="px-3 py-1 bg-[#ea580c] hover:bg-[#c2410c] text-white font-bold rounded cursor-pointer"
+                          className="px-3.5 py-1.5 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-lg cursor-pointer"
                         >
                           Retry Debate
                         </button>
                       </div>
                     ) : (
-                      <div className={`p-6 rounded-lg border shadow-md space-y-6 ${isDark ? 'bg-[#1e293b] border-[#334155]' : 'bg-white border-[#e2e8f0]'}`}>
+                      <div className={`p-6 sm:p-8 rounded-2xl border border-slate-200/90 dark:border-slate-800 shadow-[0_2px_12px_rgba(15,23,42,0.04)] space-y-6 ${isDark ? 'bg-slate-900' : 'bg-white'}`}>
                         {/* Overall Judicial Ruling Banner */}
-                        <div className="border-b border-gray-200 dark:border-gray-700 pb-4">
-                          <div className="flex items-center gap-2 mb-1.5">
-                            <Scale className="w-4 h-4 text-[#ea580c]" />
-                            <span className="text-[11px] font-bold uppercase tracking-wider text-[#ea580c]">
+                        <div className="border-b border-slate-200 dark:border-slate-800 pb-5">
+                          <div className="flex items-center gap-2 mb-2">
+                            <Scale className="w-4 h-4 text-blue-600 dark:text-blue-400" />
+                            <span className="text-[11px] font-bold uppercase tracking-wider text-blue-600 dark:text-blue-400">
                               Judicial Summary Ruling & Contract Verdict
                             </span>
                           </div>
-                          <p className="text-sm font-semibold text-[#0f3d68] dark:text-[#38bdf8] leading-relaxed">
+                          <p className="text-sm font-semibold text-slate-900 dark:text-slate-100 leading-relaxed">
                             {debateResult.overall_verdict || "The judicial magistrate reviewed the submitted contract terms across all disputed clauses."}
                           </p>
                         </div>
 
                         {/* Debated Issues */}
-                        <div className="space-y-4">
-                          <h4 className="text-xs font-bold uppercase tracking-wider text-gray-500">
+                        <div className="space-y-5">
+                          <h4 className="text-xs font-bold uppercase tracking-wider text-slate-500">
                             Courtroom Arguments on Contested Issues ({debateResult.debate?.length || 0})
                           </h4>
 
                           {(debateResult.debate || []).map((d, i) => (
-                            <div key={i} className={`p-5 rounded-lg border space-y-3.5 ${isDark ? 'bg-slate-800/60 border-slate-700' : 'bg-gray-50/70 border-gray-200'}`}>
+                            <div key={i} className={`p-5 sm:p-6 rounded-2xl border border-slate-200/90 dark:border-slate-800 space-y-4 ${isDark ? 'bg-slate-800/40' : 'bg-slate-50/70'}`}>
                               {/* Issue Title & Risk Pill */}
-                              <div className="flex items-center justify-between flex-wrap gap-2 pb-2 border-b border-gray-200/80 dark:border-gray-700/80">
-                                <span className="font-bold text-sm text-[#0f3d68] dark:text-[#38bdf8]">
+                              <div className="flex items-center justify-between flex-wrap gap-2 pb-3 border-b border-slate-200/80 dark:border-slate-700/80">
+                                <span className="font-bold text-sm text-slate-900 dark:text-white">
                                   {i + 1}. {d.issue}
                                 </span>
-                                <span className={`text-[10px] font-black uppercase px-2.5 py-0.5 rounded-full ${
+                                <span className={`text-[10px] font-extrabold uppercase px-3 py-1 rounded-full ${
                                   d.final_risk_level?.toLowerCase() === 'high'
-                                    ? 'bg-red-100 text-red-800 dark:bg-red-950 dark:text-red-300'
+                                    ? 'bg-rose-100 text-rose-800 dark:bg-rose-950 dark:text-rose-300'
                                     : d.final_risk_level?.toLowerCase() === 'medium'
                                     ? 'bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300'
                                     : 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300'
@@ -2213,36 +2311,36 @@ Between: Municipal Corporation of Greater Mumbai (Authority) AND TechCorp Soluti
                               </div>
 
                               {/* 3 Agents Dialogue */}
-                              <div className="grid grid-cols-1 md:grid-cols-3 gap-3 text-xs">
+                              <div className="grid grid-cols-1 md:grid-cols-3 gap-3.5 text-xs">
                                 {/* Critic */}
-                                <div className="p-3.5 rounded-lg border border-red-200 dark:border-red-900/60 bg-red-50/50 dark:bg-red-950/20 space-y-1">
-                                  <div className="font-bold text-red-800 dark:text-red-400 flex items-center gap-1.5">
-                                    <Scale className="w-3.5 h-3.5 text-red-600 dark:text-red-400 shrink-0" />
+                                <div className="p-4 rounded-xl border border-rose-200/80 dark:border-rose-900/50 bg-white/95 dark:bg-slate-900/80 space-y-1.5 border-t-2 border-t-rose-500 shadow-2xs">
+                                  <div className="font-bold text-rose-800 dark:text-rose-400 flex items-center gap-1.5">
+                                    <Scale className="w-3.5 h-3.5 text-rose-600 dark:text-rose-400 shrink-0" />
                                     <span>The Critic (Prosecution):</span>
                                   </div>
-                                  <div className="text-gray-700 dark:text-gray-300 leading-relaxed text-[11px]">
+                                  <div className="text-slate-700 dark:text-slate-300 leading-relaxed text-[11px]">
                                     {d.critic_argument}
                                   </div>
                                 </div>
 
                                 {/* Defender */}
-                                <div className="p-3.5 rounded-lg border border-emerald-200 dark:border-emerald-900/60 bg-emerald-50/50 dark:bg-emerald-950/20 space-y-1">
+                                <div className="p-4 rounded-xl border border-emerald-200/80 dark:border-emerald-900/50 bg-white/95 dark:bg-slate-900/80 space-y-1.5 border-t-2 border-t-emerald-500 shadow-2xs">
                                   <div className="font-bold text-emerald-800 dark:text-emerald-400 flex items-center gap-1.5">
                                     <Shield className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400 shrink-0" />
-                                    <span>The Defender (Defense Counsel):</span>
+                                    <span>The Defender (Counsel):</span>
                                   </div>
-                                  <div className="text-gray-700 dark:text-gray-300 leading-relaxed text-[11px]">
+                                  <div className="text-slate-700 dark:text-slate-300 leading-relaxed text-[11px]">
                                     {d.defender_argument}
                                   </div>
                                 </div>
 
                                 {/* Judge */}
-                                <div className="p-3.5 rounded-lg border border-blue-200 dark:border-blue-900/60 bg-blue-50/50 dark:bg-blue-950/20 space-y-1">
+                                <div className="p-4 rounded-xl border border-blue-200/80 dark:border-blue-900/50 bg-white/95 dark:bg-slate-900/80 space-y-1.5 border-t-2 border-t-blue-500 shadow-2xs">
                                   <div className="font-bold text-blue-800 dark:text-blue-400 flex items-center gap-1.5">
                                     <Award className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400 shrink-0" />
                                     <span>Judicial Verdict (Magistrate):</span>
                                   </div>
-                                  <div className="text-gray-800 dark:text-gray-200 leading-relaxed text-[11px] font-medium">
+                                  <div className="text-slate-800 dark:text-slate-200 leading-relaxed text-[11px] font-medium">
                                     {d.judge_verdict}
                                   </div>
                                 </div>
@@ -2261,35 +2359,35 @@ Between: Municipal Corporation of Greater Mumbai (Authority) AND TechCorp Soluti
       </section>
 
       {/* ── SECTION 6: AUTO-REDLINE MODULE ── */}
-      <section ref={redlineRef} className={`py-16 border-b transition-colors ${isDark ? 'bg-[#0d162e] border-[#1e293b]' : 'bg-[#f1f5f9] border-[#e2e8f0]'} ${activeTab !== 'redline' && activeTab !== 'all' ? 'hidden' : ''}`}>
+      <section ref={redlineRef} className={`py-16 border-b transition-colors ${isDark ? 'bg-[#090D16] border-slate-800/80' : 'bg-slate-50/60 border-slate-200/80'} ${activeTab !== 'redline' && activeTab !== 'all' ? 'hidden' : ''}`}>
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center max-w-3xl mx-auto mb-10">
-            <div className="inline-block px-3 py-1 rounded-full text-[11px] font-bold uppercase tracking-widest bg-red-100 text-red-800 dark:bg-red-950/60 dark:text-red-300 mb-2 border border-red-200 dark:border-red-900">
+            <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[11px] font-bold uppercase tracking-wider bg-rose-50 text-rose-700 dark:bg-rose-950/60 dark:text-rose-300 mb-2.5 border border-rose-200/80 dark:border-rose-900/60">
               WORKSPACE · MODULE 4 · VISUAL AUDIT
             </div>
-            <h2 className="text-3xl font-black font-serif-gov text-[#0f3d68] dark:text-[#38bdf8]">
+            <h2 className="text-3xl sm:text-4xl font-extrabold font-display text-slate-900 dark:text-white tracking-tight">
               Automated Contract Redlining
             </h2>
-            <p className="text-xs text-gray-500 mt-1 max-w-xl mx-auto">
+            <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 mt-1.5 max-w-xl mx-auto">
               Visual strikethrough red lines and highlight annotations applied directly to the uploaded PDF for all detected risky text and clauses.
             </p>
           </div>
 
           {!currentDoc ? (
-            <div className="max-w-2xl mx-auto p-12 rounded-xl border-2 border-dashed border-gray-300 dark:border-gray-700 text-center bg-white dark:bg-[#1e293b]">
-              <div className="w-14 h-14 mx-auto mb-4 rounded-full bg-red-50 dark:bg-red-950/40 flex items-center justify-center text-red-600 dark:text-red-400">
+            <div className={`max-w-2xl mx-auto p-12 rounded-2xl border border-dashed border-slate-300 dark:border-slate-700 text-center ${isDark ? 'bg-slate-900/40' : 'bg-white'}`}>
+              <div className="w-14 h-14 mx-auto mb-4 rounded-2xl bg-rose-50 dark:bg-rose-950/40 flex items-center justify-center text-rose-600 dark:text-rose-400">
                 <FileText className="w-7 h-7" />
               </div>
-              <h3 className="text-base font-bold text-gray-900 dark:text-gray-100 mb-1">
+              <h3 className="text-base font-bold text-slate-900 dark:text-white mb-1">
                 No Contract Uploaded Yet
               </h3>
-              <p className="text-xs text-gray-500 max-w-md mx-auto mb-6">
+              <p className="text-xs text-slate-500 max-w-md mx-auto mb-6">
                 Upload your contract or legal document in Module 1. The AI engine will automatically scan all clauses and apply high-contrast red lines directly onto risky sections in the original PDF.
               </p>
               <button
                 type="button"
                 onClick={() => scrollTo(uploadRef)}
-                className="px-5 py-2.5 bg-[#0f3d68] hover:bg-[#0a2540] text-white text-xs font-bold uppercase tracking-wider rounded shadow transition-all cursor-pointer inline-flex items-center gap-2"
+                className="px-5 py-2.5 bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold uppercase tracking-wider rounded-xl shadow-xs transition-all cursor-pointer inline-flex items-center gap-2"
               >
                 <Upload className="w-4 h-4" /> Go to Document Upload
               </button>
@@ -2297,21 +2395,21 @@ Between: Municipal Corporation of Greater Mumbai (Authority) AND TechCorp Soluti
           ) : (
             <div className="space-y-6">
               {/* Action & Info Bar */}
-              <div className={`p-5 rounded-xl border shadow-sm flex flex-wrap items-center justify-between gap-4 ${isDark ? 'bg-[#1e293b] border-[#334155]' : 'bg-white border-[#e2e8f0]'}`}>
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-lg bg-red-100 dark:bg-red-950/50 flex items-center justify-center text-red-600 dark:text-red-400 shrink-0 font-bold">
+              <div className={`p-5 rounded-2xl border border-slate-200/90 dark:border-slate-800 shadow-[0_2px_12px_rgba(15,23,42,0.04)] flex flex-wrap items-center justify-between gap-4 ${isDark ? 'bg-slate-900' : 'bg-white'}`}>
+                <div className="flex items-center gap-3.5">
+                  <div className="w-10 h-10 rounded-xl bg-rose-50 dark:bg-rose-950/50 flex items-center justify-center text-rose-600 dark:text-rose-400 shrink-0 font-bold border border-rose-200/60 dark:border-rose-900/50">
                     <Edit3 className="w-5 h-5" />
                   </div>
                   <div>
-                    <div className="flex items-center gap-2">
-                      <span className="font-bold text-sm text-gray-900 dark:text-gray-100">
+                    <div className="flex items-center gap-2.5">
+                      <span className="font-bold text-sm text-slate-900 dark:text-white">
                         {currentDoc.filename}
                       </span>
-                      <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-red-100 text-red-700 dark:bg-red-900/60 dark:text-red-300">
+                      <span className="text-[10px] font-bold px-2.5 py-0.5 rounded-full bg-rose-100 text-rose-700 dark:bg-rose-950 dark:text-rose-300 border border-rose-200 dark:border-rose-800">
                         {`${docRisks.length} Risky Clauses Red-Marked`}
                       </span>
                     </div>
-                    <p className="text-[11px] text-gray-500 dark:text-gray-400 mt-0.5">
+                    <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">
                       Vector-rendered strikethrough red lines & caution tags drawn directly onto the PDF file pages.
                     </p>
                   </div>
@@ -2323,15 +2421,15 @@ Between: Municipal Corporation of Greater Mumbai (Authority) AND TechCorp Soluti
                     href={`${API_BASE}/redline/pdf/${currentDoc.id}`}
                     target="_blank"
                     rel="noreferrer"
-                    className={`px-4 py-2 text-xs font-bold rounded border transition-all flex items-center gap-1.5 cursor-pointer ${
-                      isDark ? 'border-gray-700 text-gray-200 hover:bg-slate-800' : 'border-gray-300 text-gray-700 hover:bg-gray-100'
+                    className={`px-4 py-2 text-xs font-semibold rounded-xl border transition-all flex items-center gap-1.5 cursor-pointer ${
+                      isDark ? 'border-slate-700 text-slate-200 hover:bg-slate-800' : 'border-slate-200 text-slate-700 hover:bg-slate-50'
                     }`}
                   >
                     <ExternalLink className="w-3.5 h-3.5" /> Fullscreen PDF
                   </a>
                   <button
                     onClick={handleDownloadRedlinePdf}
-                    className="px-5 py-2.5 bg-[#ea580c] hover:bg-[#c2410c] text-white text-xs font-bold uppercase tracking-wider rounded shadow-md transition-all cursor-pointer flex items-center gap-2"
+                    className="px-5 py-2.5 bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold uppercase tracking-wider rounded-xl shadow-xs hover:shadow transition-all cursor-pointer flex items-center gap-2"
                   >
                     <Download className="w-4 h-4" /> Download Redlined PDF
                   </button>
@@ -2342,16 +2440,16 @@ Between: Municipal Corporation of Greater Mumbai (Authority) AND TechCorp Soluti
               <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
                 {/* Embedded PDF Viewer */}
                 <div className="lg:col-span-7 xl:col-span-8 flex flex-col">
-                  <div className={`p-2 rounded-xl border shadow-md flex-1 flex flex-col ${isDark ? 'bg-[#1e293b] border-[#334155]' : 'bg-white border-[#e2e8f0]'}`}>
-                    <div className="px-3 py-2 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between text-xs text-gray-500 font-semibold">
-                      <span className="flex items-center gap-1.5 text-gray-700 dark:text-gray-300">
-                        <FileText className="w-4 h-4 text-red-500" /> Live Redlined PDF Preview (Direct Strikethroughs)
+                  <div className={`p-3 rounded-2xl border border-slate-200/90 dark:border-slate-800 shadow-[0_2px_12px_rgba(15,23,42,0.04)] flex-1 flex flex-col ${isDark ? 'bg-slate-900' : 'bg-white'}`}>
+                    <div className="px-3 py-2 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between text-xs text-slate-500 font-semibold">
+                      <span className="flex items-center gap-1.5 text-slate-800 dark:text-slate-200">
+                        <FileText className="w-4 h-4 text-rose-500" /> Live Redlined PDF Preview (Direct Strikethroughs)
                       </span>
-                      <span className="text-[11px] text-gray-400">
+                      <span className="text-[11px] text-slate-400">
                         Interactive View · Zoom / Scroll
                       </span>
                     </div>
-                    <div className="relative w-full h-[640px] sm:h-[720px] rounded-lg overflow-hidden bg-gray-100 dark:bg-slate-900 mt-2">
+                    <div className="relative w-full h-[640px] sm:h-[720px] rounded-xl overflow-hidden bg-slate-100 dark:bg-slate-950 mt-2">
                       <iframe
                         src={`${API_BASE}/redline/pdf/${currentDoc.id}#toolbar=1&navpanes=0`}
                         title="Redlined Contract PDF"
@@ -2363,24 +2461,24 @@ Between: Municipal Corporation of Greater Mumbai (Authority) AND TechCorp Soluti
 
                 {/* Right: Detected Redlined Risky Clauses Breakdown */}
                 <div className="lg:col-span-5 xl:col-span-4 flex flex-col">
-                  <div className={`p-5 rounded-xl border shadow-md flex-1 flex flex-col ${isDark ? 'bg-[#1e293b] border-[#334155]' : 'bg-white border-[#e2e8f0]'}`}>
-                    <div className="flex items-center justify-between pb-3 border-b border-gray-200 dark:border-gray-700 mb-4">
+                  <div className={`p-5 sm:p-6 rounded-2xl border border-slate-200/90 dark:border-slate-800 shadow-[0_2px_12px_rgba(15,23,42,0.04)] flex-1 flex flex-col ${isDark ? 'bg-slate-900' : 'bg-white'}`}>
+                    <div className="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-slate-800 mb-4">
                       <div>
-                        <h4 className="text-xs font-bold uppercase tracking-wider text-gray-800 dark:text-gray-200">
+                        <h4 className="text-xs font-bold uppercase tracking-wider text-slate-800 dark:text-slate-200">
                           Red-Marked Clauses
                         </h4>
-                        <span className="text-[10px] text-gray-500">
+                        <span className="text-[10px] text-slate-400">
                           Clauses struck through in red in the PDF
                         </span>
                       </div>
-                      <span className="text-[11px] font-bold px-2 py-0.5 rounded bg-red-100 text-red-800 dark:bg-red-950 dark:text-red-300">
+                      <span className="text-[11px] font-bold px-2.5 py-0.5 rounded-full bg-rose-100 text-rose-800 dark:bg-rose-950 dark:text-rose-300">
                         Visual Redline
                       </span>
                     </div>
 
                     <div className="flex-1 overflow-y-auto max-h-[640px] pr-1 space-y-4">
                       {docRisks.length === 0 ? (
-                        <div className="p-6 text-center text-xs text-gray-500">
+                        <div className="p-6 text-center text-xs text-slate-500">
                           <CheckCircle2 className="w-8 h-8 text-emerald-500 mx-auto mb-2" />
                           No high or medium risks detected in this document.
                         </div>
@@ -2388,31 +2486,31 @@ Between: Municipal Corporation of Greater Mumbai (Authority) AND TechCorp Soluti
                         docRisks.map((risk, idx) => (
                           <div
                             key={idx}
-                            className={`p-4 rounded-lg border text-xs space-y-2.5 transition-all ${
-                              isDark ? 'bg-slate-800/80 border-gray-700 hover:border-red-500/50' : 'bg-gray-50/80 border-gray-200 hover:border-red-400'
+                            className={`p-4 rounded-xl border text-xs space-y-3 transition-all ${
+                              isDark ? 'bg-slate-800/60 border-slate-700 hover:border-rose-500/50' : 'bg-slate-50/70 border-slate-200/90 hover:border-rose-400'
                             }`}
                           >
                             <div className="flex items-center justify-between gap-2">
-                              <span className={`text-[10px] font-bold px-2 py-0.5 rounded uppercase tracking-wider ${
+                              <span className={`text-[10px] font-bold px-2.5 py-0.5 rounded-full uppercase tracking-wider ${
                                 (risk.risk_level || '').toLowerCase().includes('high')
-                                  ? 'bg-red-600 text-white'
+                                  ? 'bg-rose-600 text-white'
                                   : 'bg-amber-500 text-white'
                               }`}>
                                 {risk.risk_level || 'RISK'} RISK
                               </span>
-                              <span className="text-[11px] font-semibold text-gray-500 dark:text-gray-400">
+                              <span className="text-[11px] font-semibold text-slate-500 dark:text-slate-400">
                                 {risk.clause_type || 'Contract Clause'}
                               </span>
                             </div>
 
                             {/* Marked Redline Excerpt with Visual Line */}
                             <div>
-                              <div className="text-[10px] font-bold uppercase text-red-600 dark:text-red-400 mb-1 flex items-center gap-1">
-                                <span className="w-2 h-0.5 bg-red-500 inline-block"></span>
+                              <div className="text-[10px] font-bold uppercase text-rose-600 dark:text-rose-400 mb-1 flex items-center gap-1">
+                                <span className="w-2 h-0.5 bg-rose-500 inline-block"></span>
                                 Struck Through with Red Line in PDF:
                               </div>
-                              <div className="p-2.5 rounded bg-red-50 dark:bg-red-950/40 border-l-3 border-red-500 text-red-900 dark:text-red-200 text-xs font-mono leading-relaxed relative">
-                                <span className="line-through decoration-red-600 decoration-2 font-medium">
+                              <div className="p-3 rounded-xl bg-rose-50 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-900/60 border-l-4 border-l-rose-500 text-rose-950 dark:text-rose-200 text-xs font-mono leading-relaxed relative">
+                                <span className="line-through decoration-rose-600 decoration-2 font-medium">
                                   {risk.risky_excerpt}
                                 </span>
                               </div>
@@ -2421,19 +2519,19 @@ Between: Municipal Corporation of Greater Mumbai (Authority) AND TechCorp Soluti
                             {/* Why it's risky & Severity Rationale */}
                             <div className="space-y-2">
                               <div>
-                                <div className="text-[10px] font-bold uppercase text-gray-500 dark:text-gray-400 mb-0.5">
+                                <div className="text-[10px] font-bold uppercase text-slate-500 dark:text-slate-400 mb-0.5">
                                   Hazard Assessment:
                                 </div>
-                                <p className="text-gray-700 dark:text-gray-300 text-[11px] leading-relaxed">
+                                <p className="text-slate-700 dark:text-slate-300 text-[11px] leading-relaxed">
                                   {risk.why_risky}
                                 </p>
                               </div>
-                              <div className="p-2.5 rounded bg-gray-100/80 dark:bg-slate-900/60 border border-gray-200 dark:border-gray-700/50">
-                                <div className="text-[10px] font-bold uppercase text-[#0f3d68] dark:text-[#38bdf8] mb-1 flex items-center gap-1">
-                                  <Activity className="w-3 h-3 text-[#ea580c]" />
+                              <div className="p-3 rounded-xl bg-white/80 dark:bg-slate-900/60 border border-slate-200 dark:border-slate-800">
+                                <div className="text-[10px] font-bold uppercase text-blue-600 dark:text-blue-400 mb-1 flex items-center gap-1">
+                                  <Activity className="w-3 h-3 text-blue-600" />
                                   Why Stated As {risk.risk_level || 'Medium'} Risk:
                                 </div>
-                                <p className="text-[11px] text-gray-600 dark:text-gray-400 leading-relaxed">
+                                <p className="text-[11px] text-slate-600 dark:text-slate-400 leading-relaxed">
                                   {risk.severity_reasoning || (
                                     (risk.risk_level || '').toLowerCase().includes('high')
                                       ? 'Designated as High Risk because this clause imposes asymmetric exposure, uncapped financial liability, or forfeiture of essential statutory rights without reciprocal remedies.'
@@ -2441,7 +2539,7 @@ Between: Municipal Corporation of Greater Mumbai (Authority) AND TechCorp Soluti
                                   )}
                                 </p>
                                 {risk.potential_impact && (
-                                  <div className="mt-1.5 pt-1.5 border-t border-gray-200 dark:border-gray-800 text-[10px] text-red-700 dark:text-red-400">
+                                  <div className="mt-1.5 pt-1.5 border-t border-slate-100 dark:border-slate-800 text-[10px] text-rose-700 dark:text-rose-400">
                                     <strong>Impact: </strong>{risk.potential_impact}
                                   </div>
                                 )}
@@ -2450,11 +2548,11 @@ Between: Municipal Corporation of Greater Mumbai (Authority) AND TechCorp Soluti
 
                             {/* Suggested replacement */}
                             {risk.suggested_replacement && (
-                              <div className="pt-2 border-t border-gray-200 dark:border-gray-700/60">
+                              <div className="pt-2 border-t border-slate-200 dark:border-slate-700/60">
                                 <div className="text-[10px] font-bold uppercase text-emerald-600 dark:text-emerald-400 mb-1 flex items-center gap-1">
                                   <CheckCircle2 className="w-3 h-3" /> Recommended Legal Amendment:
                                 </div>
-                                <div className="p-2.5 rounded bg-emerald-50 dark:bg-emerald-950/30 border-l-3 border-emerald-500 text-emerald-900 dark:text-emerald-200 text-xs leading-relaxed">
+                                <div className="p-3 rounded-xl bg-emerald-50/80 dark:bg-emerald-950/30 border border-emerald-200 dark:border-emerald-800 border-l-4 border-l-emerald-500 text-emerald-950 dark:text-emerald-200 text-xs leading-relaxed font-medium">
                                   {risk.suggested_replacement}
                                 </div>
                               </div>
@@ -2472,31 +2570,31 @@ Between: Municipal Corporation of Greater Mumbai (Authority) AND TechCorp Soluti
       </section>
 
       {/* ── SECTION 7: NATIONAL WELFARE SCHEME DIRECTORY & CITIZEN RECOMMENDER ── */}
-      <section ref={schemesRef} className={`py-16 border-b border-gray-200 dark:border-gray-800 ${activeTab !== 'schemes' && activeTab !== 'all' ? 'hidden' : ''}`}>
+      <section ref={schemesRef} className={`py-16 border-b border-slate-200/80 dark:border-slate-800/80 ${activeTab !== 'schemes' && activeTab !== 'all' ? 'hidden' : ''}`}>
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           
           <div className="flex flex-wrap items-end justify-between mb-8 gap-4">
             <div>
-              <div className="inline-block px-3 py-1 rounded-full text-[11px] font-bold uppercase tracking-widest bg-emerald-50 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300 mb-2">
+              <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[11px] font-bold uppercase tracking-wider bg-emerald-50 text-emerald-700 dark:bg-emerald-950/60 dark:text-emerald-300 mb-2.5 border border-emerald-200/80 dark:border-emerald-900/60">
                 WORKSPACE · MODULE 5
               </div>
-              <h2 className="text-3xl font-black font-serif-gov text-[#0f3d68] dark:text-[#38bdf8]">
-                Citizen Welfare Scheme Recommender & Directory
+              <h2 className="text-3xl sm:text-4xl font-extrabold font-display text-slate-900 dark:text-white tracking-tight">
+                Citizen Welfare Entitlement Engine
               </h2>
-              <p className="text-xs text-gray-500 mt-1">
+              <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 mt-1.5">
                 Enter your demographic profile (Gender, Age, Occupation, Income) to discover applicable government welfare schemes, or browse the 96+ program directory.
               </p>
             </div>
 
             {/* Mode Switcher: Recommender vs Browse */}
-            <div className={`p-1 rounded-lg border flex items-center gap-1 ${isDark ? 'bg-[#1e293b] border-[#334155]' : 'bg-white border-[#cbd5e1]'}`}>
+            <div className={`p-1 rounded-xl border flex items-center gap-1 ${isDark ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200 shadow-2xs'}`}>
               <button
                 type="button"
                 onClick={() => setSchemeTab('recommend')}
-                className={`px-3.5 py-1.5 rounded text-xs font-bold uppercase transition-all flex items-center gap-1.5 cursor-pointer ${
+                className={`px-4 py-2 rounded-lg text-xs font-bold uppercase tracking-wider transition-all flex items-center gap-1.5 cursor-pointer ${
                   schemeTab === 'recommend'
-                    ? 'bg-[#ea580c] text-white shadow-xs'
-                    : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'
+                    ? 'bg-blue-600 text-white shadow-2xs'
+                    : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
                 }`}
               >
                 <Sparkles className="w-3.5 h-3.5" /> AI Citizen Finder
@@ -2504,10 +2602,10 @@ Between: Municipal Corporation of Greater Mumbai (Authority) AND TechCorp Soluti
               <button
                 type="button"
                 onClick={() => setSchemeTab('browse')}
-                className={`px-3.5 py-1.5 rounded text-xs font-bold uppercase transition-all flex items-center gap-1.5 cursor-pointer ${
+                className={`px-4 py-2 rounded-lg text-xs font-bold uppercase tracking-wider transition-all flex items-center gap-1.5 cursor-pointer ${
                   schemeTab === 'browse'
-                    ? 'bg-[#0f3d68] text-white shadow-xs'
-                    : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'
+                    ? 'bg-slate-800 text-white dark:bg-slate-700 shadow-2xs'
+                    : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
                 }`}
               >
                 <BookOpen className="w-3.5 h-3.5" /> Browse 96 Schemes
@@ -2519,42 +2617,42 @@ Between: Municipal Corporation of Greater Mumbai (Authority) AND TechCorp Soluti
           {schemeTab === 'recommend' && (
             <div className="space-y-8">
               {/* Profile Intake Form Card */}
-              <div className={`p-6 sm:p-8 rounded-lg shadow-lg border-t-4 border-t-[#0f3d68] border ${isDark ? 'bg-[#1e293b] border-[#334155]' : 'bg-white border-[#e2e8f0]'}`}>
-                <div className="flex flex-wrap items-center justify-between pb-4 mb-6 border-b border-gray-200 dark:border-gray-700 gap-3">
+              <div className={`p-6 sm:p-8 rounded-2xl border border-slate-200/90 dark:border-slate-800 shadow-[0_2px_12px_rgba(15,23,42,0.04)] ${isDark ? 'bg-slate-900' : 'bg-white'}`}>
+                <div className="flex flex-wrap items-center justify-between pb-5 mb-6 border-b border-slate-100 dark:border-slate-800 gap-3">
                   <div>
-                    <span className="text-[10px] font-bold uppercase tracking-wider text-[#ea580c]">Targeted Social Entitlement Assessment</span>
-                    <h3 className="text-lg font-bold font-serif-gov text-[#0f3d68] dark:text-[#38bdf8]">
+                    <span className="text-[10px] font-bold uppercase tracking-wider text-blue-600 dark:text-blue-400">Targeted Social Entitlement Assessment</span>
+                    <h3 className="text-lg font-bold font-display text-slate-900 dark:text-white">
                       Enter Your Demographic & Qualification Details
                     </h3>
                   </div>
                   {/* Quick Presets */}
                   <div className="flex flex-wrap items-center gap-1.5">
-                    <span className="text-[11px] font-bold text-gray-400 uppercase mr-1">Quick Presets:</span>
+                    <span className="text-[11px] font-bold text-slate-400 uppercase mr-1">Quick Presets:</span>
                     <button
                       type="button"
                       onClick={() => setPresetProfile('farmer_female')}
-                      className="px-2.5 py-1 text-[11px] font-semibold rounded-lg bg-emerald-50 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800 hover:bg-emerald-100 cursor-pointer inline-flex items-center gap-1"
+                      className="px-3 py-1.5 text-[11px] font-semibold rounded-xl bg-slate-50 text-slate-700 dark:bg-slate-800/80 dark:text-slate-200 border border-slate-200 dark:border-slate-700 hover:border-blue-400 cursor-pointer inline-flex items-center gap-1.5 transition-all shadow-2xs"
                     >
                       <User className="w-3 h-3 text-emerald-600 shrink-0" /> Female Farmer (28)
                     </button>
                     <button
                       type="button"
                       onClick={() => setPresetProfile('student_male')}
-                      className="px-2.5 py-1 text-[11px] font-semibold rounded-lg bg-sky-50 text-sky-800 dark:bg-sky-950 dark:text-sky-300 border border-sky-200 dark:border-sky-800 hover:bg-sky-100 cursor-pointer inline-flex items-center gap-1"
+                      className="px-3 py-1.5 text-[11px] font-semibold rounded-xl bg-slate-50 text-slate-700 dark:bg-slate-800/80 dark:text-slate-200 border border-slate-200 dark:border-slate-700 hover:border-blue-400 cursor-pointer inline-flex items-center gap-1.5 transition-all shadow-2xs"
                     >
-                      <User className="w-3 h-3 text-sky-600 shrink-0" /> Male Student (22)
+                      <User className="w-3 h-3 text-blue-600 shrink-0" /> Male Student (22)
                     </button>
                     <button
                       type="button"
                       onClick={() => setPresetProfile('senior_male')}
-                      className="px-2.5 py-1 text-[11px] font-semibold rounded-lg bg-purple-50 text-purple-800 dark:bg-purple-950 dark:text-purple-300 border border-purple-200 dark:border-purple-800 hover:bg-purple-100 cursor-pointer inline-flex items-center gap-1"
+                      className="px-3 py-1.5 text-[11px] font-semibold rounded-xl bg-slate-50 text-slate-700 dark:bg-slate-800/80 dark:text-slate-200 border border-slate-200 dark:border-slate-700 hover:border-blue-400 cursor-pointer inline-flex items-center gap-1.5 transition-all shadow-2xs"
                     >
                       <User className="w-3 h-3 text-purple-600 shrink-0" /> Senior Citizen (65)
                     </button>
                     <button
                       type="button"
                       onClick={() => setPresetProfile('business_msme')}
-                      className="px-2.5 py-1 text-[11px] font-semibold rounded-lg bg-amber-50 text-amber-800 dark:bg-amber-950 dark:text-amber-300 border border-amber-200 dark:border-amber-800 hover:bg-amber-100 cursor-pointer inline-flex items-center gap-1"
+                      className="px-3 py-1.5 text-[11px] font-semibold rounded-xl bg-slate-50 text-slate-700 dark:bg-slate-800/80 dark:text-slate-200 border border-slate-200 dark:border-slate-700 hover:border-blue-400 cursor-pointer inline-flex items-center gap-1.5 transition-all shadow-2xs"
                     >
                       <Building className="w-3 h-3 text-amber-600 shrink-0" /> MSME Trader (38)
                     </button>
@@ -2565,23 +2663,23 @@ Between: Municipal Corporation of Greater Mumbai (Authority) AND TechCorp Soluti
                   <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 text-xs">
                     {/* Full Name */}
                     <div>
-                      <label className="font-bold block mb-1 text-gray-700 dark:text-gray-200">Full Name</label>
+                      <label className="font-bold block mb-1.5 text-slate-700 dark:text-slate-300">Full Name</label>
                       <input
                         type="text"
                         value={citizenProfile.name}
                         onChange={e => setCitizenProfile({...citizenProfile, name: e.target.value})}
                         placeholder="e.g. Sunita Devi"
-                        className="w-full p-2.5 border rounded border-gray-300 dark:border-gray-600 bg-white dark:bg-slate-800 text-gray-900 dark:text-gray-100 font-semibold"
+                        className="w-full px-3.5 py-2.5 border rounded-xl border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 font-semibold focus:outline-none focus:ring-2 focus:ring-blue-500/20 shadow-2xs"
                       />
                     </div>
 
                     {/* Gender */}
                     <div>
-                      <label className="font-bold block mb-1 text-gray-700 dark:text-gray-200">Gender</label>
+                      <label className="font-bold block mb-1.5 text-slate-700 dark:text-slate-300">Gender</label>
                       <select
                         value={citizenProfile.gender}
                         onChange={e => setCitizenProfile({...citizenProfile, gender: e.target.value})}
-                        className="w-full p-2.5 border rounded border-gray-300 dark:border-gray-600 bg-white dark:bg-slate-800 text-gray-900 dark:text-gray-100 font-semibold cursor-pointer"
+                        className="w-full px-3.5 py-2.5 border rounded-xl border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 font-semibold cursor-pointer focus:outline-none focus:ring-2 focus:ring-blue-500/20 shadow-2xs"
                       >
                         <option value="Female">Female</option>
                         <option value="Male">Male</option>
@@ -2591,24 +2689,24 @@ Between: Municipal Corporation of Greater Mumbai (Authority) AND TechCorp Soluti
 
                     {/* Age */}
                     <div>
-                      <label className="font-bold block mb-1 text-gray-700 dark:text-gray-200">Age (Years)</label>
+                      <label className="font-bold block mb-1.5 text-slate-700 dark:text-slate-300">Age (Years)</label>
                       <input
                         type="number"
                         min="1"
                         max="120"
                         value={citizenProfile.age}
                         onChange={e => setCitizenProfile({...citizenProfile, age: e.target.value})}
-                        className="w-full p-2.5 border rounded border-gray-300 dark:border-gray-600 bg-white dark:bg-slate-800 text-gray-900 dark:text-gray-100 font-semibold"
+                        className="w-full px-3.5 py-2.5 border rounded-xl border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 font-semibold focus:outline-none focus:ring-2 focus:ring-blue-500/20 shadow-2xs"
                       />
                     </div>
 
                     {/* Occupation */}
                     <div>
-                      <label className="font-bold block mb-1 text-gray-700 dark:text-gray-200">Occupation / Employment</label>
+                      <label className="font-bold block mb-1.5 text-slate-700 dark:text-slate-300">Occupation / Employment</label>
                       <select
                         value={citizenProfile.occupation}
                         onChange={e => setCitizenProfile({...citizenProfile, occupation: e.target.value})}
-                        className="w-full p-2.5 border rounded border-gray-300 dark:border-gray-600 bg-white dark:bg-slate-800 text-gray-900 dark:text-gray-100 font-semibold cursor-pointer"
+                        className="w-full px-3.5 py-2.5 border rounded-xl border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 font-semibold cursor-pointer focus:outline-none focus:ring-2 focus:ring-blue-500/20 shadow-2xs"
                       >
                         <option value="Farmer / Agricultural Laborer">Farmer / Agricultural Laborer</option>
                         <option value="Student / Youth">Student / Youth</option>
@@ -2623,23 +2721,23 @@ Between: Municipal Corporation of Greater Mumbai (Authority) AND TechCorp Soluti
 
                     {/* Annual Household Income */}
                     <div>
-                      <label className="font-bold block mb-1 text-gray-700 dark:text-gray-200">Annual Household Income (INR)</label>
+                      <label className="font-bold block mb-1.5 text-slate-700 dark:text-slate-300">Annual Household Income (INR)</label>
                       <input
                         type="number"
                         value={citizenProfile.annual_income_inr}
                         onChange={e => setCitizenProfile({...citizenProfile, annual_income_inr: e.target.value})}
                         placeholder="e.g. 80000"
-                        className="w-full p-2.5 border rounded border-gray-300 dark:border-gray-600 bg-white dark:bg-slate-800 text-gray-900 dark:text-gray-100 font-semibold"
+                        className="w-full px-3.5 py-2.5 border rounded-xl border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 font-semibold focus:outline-none focus:ring-2 focus:ring-blue-500/20 shadow-2xs"
                       />
                     </div>
 
                     {/* State / UT */}
                     <div>
-                      <label className="font-bold block mb-1 text-gray-700 dark:text-gray-200">State / Union Territory</label>
+                      <label className="font-bold block mb-1.5 text-slate-700 dark:text-slate-300">State / Union Territory</label>
                       <select
                         value={citizenProfile.state}
                         onChange={e => setCitizenProfile({...citizenProfile, state: e.target.value})}
-                        className="w-full p-2.5 border rounded border-gray-300 dark:border-gray-600 bg-white dark:bg-slate-800 text-gray-900 dark:text-gray-100 font-semibold cursor-pointer"
+                        className="w-full px-3.5 py-2.5 border rounded-xl border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 font-semibold cursor-pointer focus:outline-none focus:ring-2 focus:ring-blue-500/20 shadow-2xs"
                       >
                         <option value="All India / Central">All India / Central Scheme</option>
                         <option value="Maharashtra">Maharashtra</option>
@@ -2666,11 +2764,11 @@ Between: Municipal Corporation of Greater Mumbai (Authority) AND TechCorp Soluti
 
                     {/* Social Category / Caste */}
                     <div className="sm:col-span-2">
-                      <label className="font-bold block mb-1 text-gray-700 dark:text-gray-200">Social Category / Caste</label>
+                      <label className="font-bold block mb-1.5 text-slate-700 dark:text-slate-300">Social Category / Caste</label>
                       <select
                         value={citizenProfile.category}
                         onChange={e => setCitizenProfile({...citizenProfile, category: e.target.value})}
-                        className="w-full p-2.5 border rounded border-gray-300 dark:border-gray-600 bg-white dark:bg-slate-800 text-gray-900 dark:text-gray-100 font-semibold cursor-pointer"
+                        className="w-full px-3.5 py-2.5 border rounded-xl border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 font-semibold cursor-pointer focus:outline-none focus:ring-2 focus:ring-blue-500/20 shadow-2xs"
                       >
                         <option value="General">General Category</option>
                         <option value="OBC">OBC (Other Backward Class)</option>
@@ -2684,7 +2782,7 @@ Between: Municipal Corporation of Greater Mumbai (Authority) AND TechCorp Soluti
 
                   {/* Special Conditions / Status Pills */}
                   <div>
-                    <label className="font-bold block text-xs uppercase mb-2 text-gray-700 dark:text-gray-200">
+                    <label className="font-bold block text-xs uppercase tracking-wider mb-2 text-slate-700 dark:text-slate-300">
                       Special Qualifications & Status (Click all that apply)
                     </label>
                     <div className="flex flex-wrap gap-2 text-xs">
@@ -2703,14 +2801,14 @@ Between: Municipal Corporation of Greater Mumbai (Authority) AND TechCorp Soluti
                             type="button"
                             key={item.id}
                             onClick={() => toggleSpecialCondition(item.id)}
-                            className={`px-3 py-1.5 rounded-full border text-xs font-semibold transition-all cursor-pointer inline-flex items-center gap-1.5 ${
+                            className={`px-3.5 py-2 rounded-xl border text-xs font-semibold transition-all cursor-pointer inline-flex items-center gap-2 ${
                               isSelected
-                                ? 'bg-[#0f3d68] text-white border-[#0f3d68] shadow-xs'
-                                : 'bg-gray-50 dark:bg-slate-800 text-gray-700 dark:text-gray-300 border-gray-300 dark:border-gray-600 hover:border-gray-400'
+                                ? 'bg-blue-600 text-white border-blue-600 shadow-2xs'
+                                : 'bg-slate-50 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-700 hover:border-slate-400'
                             }`}
                           >
                             <span className={`w-3.5 h-3.5 rounded-full flex items-center justify-center text-[9px] ${
-                              isSelected ? 'bg-amber-400 text-slate-900 font-black' : 'border border-gray-400 dark:border-gray-500'
+                              isSelected ? 'bg-white text-blue-600 font-bold' : 'border border-slate-400'
                             }`}>
                               {isSelected ? <Check className="w-2.5 h-2.5" /> : ''}
                             </span>
@@ -2725,7 +2823,7 @@ Between: Municipal Corporation of Greater Mumbai (Authority) AND TechCorp Soluti
                   <button
                     type="submit"
                     disabled={isRecommending}
-                    className="w-full py-3.5 bg-[#ea580c] hover:bg-[#c2410c] text-white font-bold text-xs uppercase tracking-wider rounded-xl shadow-md transition-all cursor-pointer flex items-center justify-center gap-2"
+                    className="w-full py-3.5 bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs uppercase tracking-wider rounded-xl shadow-xs hover:shadow transition-all cursor-pointer flex items-center justify-center gap-2"
                   >
                     <Search className="w-4 h-4" />
                     {isRecommending ? 'ANALYZING 96 WELFARE SCHEMES FOR YOUR PROFILE...' : 'FIND MY ELIGIBLE WELFARE SCHEMES'}
@@ -2737,20 +2835,20 @@ Between: Municipal Corporation of Greater Mumbai (Authority) AND TechCorp Soluti
               {recommendationsData && (
                 <div className="space-y-6">
                   {/* Summary Banner */}
-                  <div className={`p-6 rounded-lg border-l-4 border-l-[#ea580c] border shadow-md flex flex-wrap items-center justify-between gap-4 ${isDark ? 'bg-[#1e293b] border-[#334155]' : 'bg-white border-[#e2e8f0]'}`}>
+                  <div className={`p-6 sm:p-7 rounded-2xl border border-slate-200/90 dark:border-slate-800 border-l-4 border-l-blue-600 shadow-xs flex flex-wrap items-center justify-between gap-4 ${isDark ? 'bg-slate-900' : 'bg-white'}`}>
                     <div>
-                      <div className="flex items-center gap-2 mb-1">
-                        <span className="text-[10px] font-bold uppercase tracking-wider text-[#ea580c] bg-amber-50 dark:bg-amber-950 px-2 py-0.5 rounded">
+                      <div className="flex items-center gap-2 mb-1.5">
+                        <span className="text-[10px] font-bold uppercase tracking-wider text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-950 px-2.5 py-0.5 rounded-full">
                           Official Entitlement Assessment
                         </span>
                         <span className="text-xs font-bold px-2.5 py-0.5 rounded-full bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300">
                           {recommendationsData.total_matched} Schemes Matched
                         </span>
                       </div>
-                      <h3 className="text-xl font-black font-serif-gov text-[#0f3d68] dark:text-[#38bdf8]">
+                      <h3 className="text-xl font-bold font-display text-slate-900 dark:text-white">
                         Recommended Welfare Programs for {citizenProfile.name || 'Citizen'}
                       </h3>
-                      <p className="text-xs text-gray-600 dark:text-gray-300 mt-1">
+                      <p className="text-xs text-slate-600 dark:text-slate-300 mt-1">
                         {recommendationsData.profile_summary}
                       </p>
                     </div>
@@ -2758,7 +2856,7 @@ Between: Municipal Corporation of Greater Mumbai (Authority) AND TechCorp Soluti
                     <button
                       type="button"
                       onClick={() => setRecommendationsData(null)}
-                      className="px-3 py-1.5 border border-gray-300 dark:border-gray-600 rounded text-xs font-bold text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-slate-700 cursor-pointer"
+                      className="px-4 py-2 border border-slate-300 dark:border-slate-700 rounded-xl text-xs font-semibold text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 cursor-pointer transition-all"
                     >
                       Reset Evaluation
                     </button>
@@ -2769,43 +2867,43 @@ Between: Municipal Corporation of Greater Mumbai (Authority) AND TechCorp Soluti
                     {recommendationsData.recommendations?.map((rec, idx) => (
                       <div
                         key={idx}
-                        className={`p-6 rounded-lg border-t-4 border-t-[#0f3d68] border shadow-sm flex flex-col justify-between transition-all hover:shadow-md ${
-                          isDark ? 'bg-[#1e293b] border-[#334155]' : 'bg-white border-[#e2e8f0]'
+                        className={`p-6 sm:p-7 rounded-2xl border border-slate-200/90 dark:border-slate-800 shadow-[0_2px_12px_rgba(15,23,42,0.04)] flex flex-col justify-between transition-all hover:border-blue-400 dark:hover:border-slate-700 ${
+                          isDark ? 'bg-slate-900' : 'bg-white'
                         }`}
                       >
                         <div>
                           {/* Score and Status */}
-                          <div className="flex items-center justify-between gap-2 mb-2">
-                            <span className="text-xs font-black px-2.5 py-1 rounded bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300">
+                          <div className="flex items-center justify-between gap-2 mb-3">
+                            <span className="text-xs font-extrabold px-3 py-1 rounded-full bg-emerald-50 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800">
                               {rec.match_score}% MATCH
                             </span>
-                            <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded bg-blue-50 text-blue-800 dark:bg-blue-950 dark:text-blue-300">
+                            <span className="text-[10px] font-bold uppercase tracking-wider px-2.5 py-0.5 rounded-full bg-blue-50 text-blue-800 dark:bg-blue-950 dark:text-blue-300">
                               {rec.eligibility_status || 'Highly Eligible'}
                             </span>
                           </div>
 
-                          <div className="text-[10px] uppercase font-bold text-gray-400 mb-1">
+                          <div className="text-[10px] uppercase font-bold text-slate-400 mb-1">
                             {rec.ministry} · {rec.category}
                           </div>
-                          <h4 className="font-bold text-base font-serif-gov text-[#0f3d68] dark:text-[#38bdf8] mb-3">
+                          <h4 className="font-bold text-base font-display text-slate-900 dark:text-white mb-3">
                             {rec.scheme_name}
                           </h4>
 
                           {/* Why You Are Eligible */}
-                          <div className="p-3 rounded text-xs bg-emerald-50/70 dark:bg-emerald-950/40 border border-emerald-200/80 dark:border-emerald-800/40 mb-3 space-y-1">
+                          <div className="p-3.5 rounded-xl text-xs bg-emerald-50/70 dark:bg-emerald-950/20 border border-emerald-200/80 dark:border-emerald-800/40 mb-3 space-y-1">
                             <div className="font-bold text-emerald-900 dark:text-emerald-300 flex items-center gap-1.5">
                               <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
                               Why You Are Applicable:
                             </div>
-                            <div className="text-gray-700 dark:text-gray-200 text-[11px] leading-relaxed">
+                            <div className="text-slate-700 dark:text-slate-200 text-[11px] leading-relaxed">
                               {rec.why_eligible}
                             </div>
                           </div>
 
                           {/* Key Benefit */}
-                          <div className="p-3 rounded text-xs bg-amber-50/60 dark:bg-amber-950/30 border border-amber-200/80 dark:border-amber-800/40 mb-3">
-                            <span className="font-bold text-[#ea580c] block mb-0.5">Key Entitlement / Benefit:</span>
-                            <span className="text-gray-800 dark:text-gray-200 text-[11px]">
+                          <div className="p-3.5 rounded-xl text-xs bg-blue-50/60 dark:bg-blue-950/20 border border-blue-200/80 dark:border-blue-800/40 mb-3">
+                            <span className="font-bold text-blue-700 dark:text-blue-300 block mb-0.5">Key Entitlement / Benefit:</span>
+                            <span className="text-slate-800 dark:text-slate-200 text-[11px]">
                               {rec.key_benefit}
                             </span>
                           </div>
@@ -2813,14 +2911,14 @@ Between: Municipal Corporation of Greater Mumbai (Authority) AND TechCorp Soluti
                           {/* Required Documents */}
                           {rec.required_documents && rec.required_documents.length > 0 && (
                             <div className="mb-4">
-                              <div className="text-[10px] font-bold text-gray-500 uppercase tracking-wider mb-1.5">
+                              <div className="text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1.5">
                                 Required Documents for Verification:
                               </div>
-                              <div className="flex flex-wrap gap-1">
+                              <div className="flex flex-wrap gap-1.5">
                                 {rec.required_documents.map((doc, docIdx) => (
                                   <span
                                     key={docIdx}
-                                    className="inline-flex items-center gap-1 text-[10px] px-2 py-0.5 rounded-md bg-gray-100 dark:bg-slate-700/80 text-gray-700 dark:text-gray-300 font-medium"
+                                    className="inline-flex items-center gap-1 text-[10px] px-2.5 py-1 rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 font-medium border border-slate-200 dark:border-slate-700"
                                   >
                                     <FileText className="w-3 h-3 text-blue-500 shrink-0" />
                                     <span>{doc}</span>
@@ -2832,15 +2930,15 @@ Between: Municipal Corporation of Greater Mumbai (Authority) AND TechCorp Soluti
                         </div>
 
                         {/* How to Apply & Action */}
-                        <div className="pt-3 border-t border-gray-100 dark:border-gray-700 flex items-center justify-between gap-2">
-                          <span className="text-[10px] text-gray-500 line-clamp-1">
+                        <div className="pt-3.5 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between gap-2">
+                          <span className="text-[10px] text-slate-500 line-clamp-1">
                             {rec.how_to_apply || 'Apply online or at nearest CSC'}
                           </span>
                           <a
                             href={rec.official_portal && rec.official_portal.startsWith('http') ? rec.official_portal : 'https://india.gov.in'}
                             target="_blank"
                             rel="noreferrer"
-                            className="px-3 py-1.5 bg-[#0f3d68] hover:bg-[#0a2540] text-white text-[11px] font-bold uppercase rounded flex items-center gap-1 transition-all whitespace-nowrap cursor-pointer"
+                            className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-[11px] font-bold uppercase tracking-wider rounded-xl flex items-center gap-1.5 transition-all whitespace-nowrap cursor-pointer shadow-2xs"
                           >
                             Apply Portal <ExternalLink className="w-3 h-3" />
                           </a>
@@ -2856,15 +2954,15 @@ Between: Municipal Corporation of Greater Mumbai (Authority) AND TechCorp Soluti
           {/* ── TAB 2: BROWSE ALL 96 SCHEMES DIRECTORY ── */}
           {schemeTab === 'browse' && (
             <div>
-              <div className="flex flex-wrap gap-1.5 mb-8 justify-end">
+              <div className="flex flex-wrap gap-2 mb-8 justify-end">
                 {['All', 'Agriculture', 'Finance', 'Housing', 'Energy', 'Women'].map(cat => (
                   <button
                     key={cat}
                     onClick={() => setSchemeCategory(cat)}
-                    className={`text-xs px-3.5 py-1.5 rounded font-bold uppercase transition-all cursor-pointer ${
+                    className={`text-xs px-4 py-2 rounded-xl font-bold uppercase tracking-wider transition-all cursor-pointer ${
                       schemeCategory === cat 
-                        ? 'bg-[#ea580c] text-white shadow-xs' 
-                        : 'bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300 hover:bg-gray-200'
+                        ? 'bg-blue-600 text-white shadow-2xs' 
+                        : 'bg-white border border-slate-200 dark:border-slate-700 text-slate-700 dark:bg-slate-800 dark:text-slate-300 hover:bg-slate-50'
                     }`}
                   >
                     {cat}
@@ -2879,18 +2977,18 @@ Between: Municipal Corporation of Greater Mumbai (Authority) AND TechCorp Soluti
                   .map(scheme => (
                     <div 
                       key={scheme.id}
-                      className={`p-6 rounded-lg border-t-4 border-t-[#ea580c] border shadow-xs flex flex-col justify-between ${
-                        isDark ? 'bg-[#1e293b] border-[#334155]' : 'bg-white border-[#e2e8f0]'
+                      className={`p-6 sm:p-7 rounded-2xl border border-slate-200/90 dark:border-slate-800 shadow-[0_2px_12px_rgba(15,23,42,0.04)] flex flex-col justify-between ${
+                        isDark ? 'bg-slate-900' : 'bg-white'
                       }`}
                     >
                       <div>
-                        <div className="text-[10px] uppercase font-bold text-gray-400 mb-1">{scheme.ministry || 'Government of India'}</div>
-                        <h3 className="font-bold text-base font-serif-gov text-[#0f3d68] dark:text-[#38bdf8] mb-2">{scheme.name}</h3>
-                        <p className="text-xs text-gray-600 dark:text-gray-300 line-clamp-3 mb-4">{scheme.description}</p>
+                        <div className="text-[10px] uppercase font-bold text-slate-400 mb-1">{scheme.ministry || 'Government of India'}</div>
+                        <h3 className="font-bold text-base font-display text-slate-900 dark:text-white mb-2">{scheme.name}</h3>
+                        <p className="text-xs text-slate-600 dark:text-slate-300 line-clamp-3 mb-5 leading-relaxed">{scheme.description}</p>
                       </div>
                       <button
                         onClick={() => { setSelectedScheme(scheme); setEligResult(null); }}
-                        className="w-full py-2.5 bg-[#0f3d68] hover:bg-[#0a2540] text-white text-xs font-bold uppercase tracking-wider rounded transition-all cursor-pointer"
+                        className="w-full py-2.5 bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold uppercase tracking-wider rounded-xl transition-all cursor-pointer shadow-2xs"
                       >
                         CHECK INDIVIDUAL ELIGIBILITY
                       </button>
@@ -2902,38 +3000,38 @@ Between: Municipal Corporation of Greater Mumbai (Authority) AND TechCorp Soluti
 
           {/* Scheme Evaluation Modal for Individual Scheme */}
           {selectedScheme && (
-            <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4">
-              <div className={`max-w-2xl w-full max-h-[90vh] overflow-y-auto rounded-lg p-6 shadow-2xl border ${isDark ? 'bg-[#1e293b] border-[#334155]' : 'bg-white border-[#cbd5e1]'}`}>
-                <div className="flex items-center justify-between pb-3 border-b mb-4">
+            <div className="fixed inset-0 bg-black/60 backdrop-blur-xs z-50 flex items-center justify-center p-4">
+              <div className={`max-w-2xl w-full max-h-[90vh] overflow-y-auto rounded-2xl p-6 sm:p-8 shadow-2xl border ${isDark ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200'}`}>
+                <div className="flex items-center justify-between pb-4 border-b border-slate-100 dark:border-slate-800 mb-5">
                   <div>
-                    <span className="text-[10px] font-bold uppercase tracking-wider text-[#ea580c]">Eligibility Evaluation</span>
-                    <h3 className="text-lg font-bold font-serif-gov text-[#0f3d68] dark:text-[#38bdf8]">{selectedScheme.name}</h3>
+                    <span className="text-[10px] font-bold uppercase tracking-wider text-blue-600 dark:text-blue-400">Eligibility Evaluation</span>
+                    <h3 className="text-lg font-bold font-display text-slate-900 dark:text-white">{selectedScheme.name}</h3>
                   </div>
                   <button 
                     onClick={() => setSelectedScheme(null)} 
-                    className="p-1 rounded-lg text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-slate-800 transition-all cursor-pointer"
+                    className="p-1.5 rounded-xl text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition-all cursor-pointer"
                     aria-label="Close modal"
                   >
                     <X className="w-5 h-5" />
                   </button>
                 </div>
 
-                <div className="grid grid-cols-2 gap-3 text-xs mb-4">
+                <div className="grid grid-cols-2 gap-3.5 text-xs mb-5">
                   <div>
-                    <label className="font-bold block mb-1 text-gray-700 dark:text-gray-200">Full Name</label>
-                    <input type="text" value={eligProfile.name} onChange={e => setEligProfile({...eligProfile, name: e.target.value})} className="w-full p-2 border rounded border-gray-300 dark:border-gray-600 bg-white dark:bg-slate-800 text-gray-900 dark:text-gray-100" />
+                    <label className="font-bold block mb-1 text-slate-700 dark:text-slate-300">Full Name</label>
+                    <input type="text" value={eligProfile.name} onChange={e => setEligProfile({...eligProfile, name: e.target.value})} className="w-full px-3 py-2 border rounded-xl border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 shadow-2xs" />
                   </div>
                   <div>
-                    <label className="font-bold block mb-1 text-gray-700 dark:text-gray-200">Annual Income (INR)</label>
-                    <input type="number" value={eligProfile.annual_income_inr} onChange={e => setEligProfile({...eligProfile, annual_income_inr: e.target.value})} className="w-full p-2 border rounded border-gray-300 dark:border-gray-600 bg-white dark:bg-slate-800 text-gray-900 dark:text-gray-100" />
+                    <label className="font-bold block mb-1 text-slate-700 dark:text-slate-300">Annual Income (INR)</label>
+                    <input type="number" value={eligProfile.annual_income_inr} onChange={e => setEligProfile({...eligProfile, annual_income_inr: e.target.value})} className="w-full px-3 py-2 border rounded-xl border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 shadow-2xs" />
                   </div>
                   <div>
-                    <label className="font-bold block mb-1 text-gray-700 dark:text-gray-200">State / UT</label>
-                    <input type="text" value={eligProfile.state} onChange={e => setEligProfile({...eligProfile, state: e.target.value})} className="w-full p-2 border rounded border-gray-300 dark:border-gray-600 bg-white dark:bg-slate-800 text-gray-900 dark:text-gray-100" />
+                    <label className="font-bold block mb-1 text-slate-700 dark:text-slate-300">State / UT</label>
+                    <input type="text" value={eligProfile.state} onChange={e => setEligProfile({...eligProfile, state: e.target.value})} className="w-full px-3 py-2 border rounded-xl border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 shadow-2xs" />
                   </div>
                   <div>
-                    <label className="font-bold block mb-1 text-gray-700 dark:text-gray-200">Category</label>
-                    <select value={eligProfile.category} onChange={e => setEligProfile({...eligProfile, category: e.target.value})} className="w-full p-2 border rounded border-gray-300 dark:border-gray-600 bg-white dark:bg-slate-800 text-gray-900 dark:text-gray-100">
+                    <label className="font-bold block mb-1 text-slate-700 dark:text-slate-300">Category</label>
+                    <select value={eligProfile.category} onChange={e => setEligProfile({...eligProfile, category: e.target.value})} className="w-full px-3 py-2 border rounded-xl border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 shadow-2xs">
                       <option>General</option><option>OBC</option><option>SC</option><option>ST</option><option>EWS</option>
                     </select>
                   </div>
@@ -2942,23 +3040,23 @@ Between: Municipal Corporation of Greater Mumbai (Authority) AND TechCorp Soluti
                 <button 
                   onClick={handleMatchScheme} 
                   disabled={isMatching}
-                  className="w-full py-3 bg-[#ea580c] hover:bg-[#c2410c] text-white font-bold text-xs uppercase rounded shadow cursor-pointer"
+                  className="w-full py-3.5 bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs uppercase tracking-wider rounded-xl shadow-xs transition-all cursor-pointer"
                 >
                   {isMatching ? 'EVALUATING ELIGIBILITY...' : 'RUN ELIGIBILITY CHECK'}
                 </button>
 
                 {eligResult && (
-                  <div className="mt-6 pt-4 border-t space-y-3">
-                    <div className="flex items-center justify-between p-4 rounded bg-gray-50 dark:bg-gray-800">
+                  <div className="mt-6 pt-4 border-t border-slate-100 dark:border-slate-800 space-y-3">
+                    <div className="flex items-center justify-between p-4 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700">
                       <div>
-                        <div className="text-2xl font-black text-[#0f3d68] dark:text-[#38bdf8]">{eligResult.match_score}%</div>
-                        <div className="text-xs uppercase font-bold text-gray-500">Eligibility Match Score</div>
+                        <div className="text-2xl font-black text-blue-600 dark:text-blue-400">{eligResult.match_score}%</div>
+                        <div className="text-xs uppercase font-bold text-slate-500">Eligibility Match Score</div>
                       </div>
-                      <span className={`px-3 py-1 rounded text-xs font-bold uppercase ${eligResult.eligible ? 'bg-emerald-100 text-emerald-800' : 'bg-red-100 text-red-800'}`}>
+                      <span className={`px-3 py-1 rounded-full text-xs font-bold uppercase ${eligResult.eligible ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300' : 'bg-rose-100 text-rose-800 dark:bg-rose-950 dark:text-rose-300'}`}>
                         {eligResult.eligible ? 'ELIGIBLE' : 'NOT ELIGIBLE'}
                       </span>
                     </div>
-                    <p className="text-xs text-gray-600 dark:text-gray-300 italic">{eligResult.recommendation}</p>
+                    <p className="text-xs text-slate-600 dark:text-slate-300 italic">{eligResult.recommendation}</p>
                   </div>
                 )}
               </div>
@@ -2968,45 +3066,46 @@ Between: Municipal Corporation of Greater Mumbai (Authority) AND TechCorp Soluti
       </section>
 
       {/* ── SECTION 8: MULTILINGUAL LEGAL EXPLAINER ── */}
-      <section ref={multilingualRef} className={`py-16 border-b border-gray-200 dark:border-gray-800 ${activeTab !== 'translate' && activeTab !== 'all' ? 'hidden' : ''}`}>
+      <section ref={multilingualRef} className={`py-16 border-b border-slate-200/80 dark:border-slate-800/80 ${activeTab !== 'translate' && activeTab !== 'all' ? 'hidden' : ''}`}>
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center max-w-2xl mx-auto mb-10">
-            <div className="inline-block px-3 py-1 rounded-full text-[11px] font-bold uppercase tracking-widest bg-sky-50 text-sky-800 dark:bg-sky-950 dark:text-sky-300 mb-2 border border-sky-200 dark:border-sky-900">
+            <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[11px] font-bold uppercase tracking-wider bg-blue-50 text-blue-700 dark:bg-blue-950/60 dark:text-blue-300 mb-2.5 border border-blue-200/80 dark:border-blue-900/60">
               WORKSPACE · MODULE 6 · MULTILINGUAL ACCESS
             </div>
-            <h2 className="text-3xl font-black font-serif-gov text-[#0f3d68] dark:text-[#38bdf8]">
+            <h2 className="text-3xl sm:text-4xl font-extrabold font-display text-slate-900 dark:text-white tracking-tight">
               Indian Language Legal Translator
             </h2>
-            <p className="text-xs text-gray-500 mt-1">
+            <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 mt-1.5">
               Translate dense contractual clauses and government scheme mandates into 22 scheduled Indian languages with legal precision.
             </p>
           </div>
 
-          <div className="max-w-3xl mx-auto p-6 sm:p-8 rounded-2xl border shadow-md bg-white dark:bg-[#1e293b] border-gray-200 dark:border-gray-700">
+          <div className={`max-w-3xl mx-auto p-6 sm:p-8 rounded-2xl border border-slate-200/90 dark:border-slate-800 shadow-[0_2px_12px_rgba(15,23,42,0.04)] ${isDark ? 'bg-slate-900' : 'bg-white'}`}>
             {!currentDoc ? (
-              <div className="text-center p-8 text-xs text-gray-500">
-                <Globe className="w-10 h-10 text-gray-400 mx-auto mb-3" />
+              <div className="text-center p-8 text-xs text-slate-500">
+                <Globe className="w-10 h-10 text-slate-400 mx-auto mb-3" />
+                <p className="text-sm font-semibold text-slate-700 dark:text-slate-300 mb-1">No Contract Document Loaded</p>
                 <p>Please load or upload a contract document in Module 1 to enable multi-lingual legal translation.</p>
                 <button
                   type="button"
                   onClick={handleLoadDemoContract}
-                  className="mt-4 px-4 py-2 bg-[#ea580c] hover:bg-[#c2410c] text-white text-xs font-bold uppercase rounded-lg shadow-sm transition-all cursor-pointer inline-flex items-center gap-1.5"
+                  className="mt-4 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold uppercase tracking-wider rounded-xl shadow-xs transition-all cursor-pointer inline-flex items-center gap-1.5"
                 >
-                  <Zap className="w-3.5 h-3.5 text-amber-200" /> Load Demo Contract
+                  <Zap className="w-3.5 h-3.5 text-amber-300" /> Load Demo Contract
                 </button>
               </div>
             ) : (
               <div className="space-y-6">
-                <div className="flex flex-col sm:flex-row items-center justify-between gap-4 p-4 rounded-xl bg-gray-50 dark:bg-slate-800 border border-gray-200 dark:border-gray-700">
+                <div className="flex flex-col sm:flex-row items-center justify-between gap-4 p-4 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700">
                   <div>
-                    <span className="text-[10px] uppercase font-bold text-gray-400">Source Document</span>
-                    <h4 className="text-xs font-bold text-gray-900 dark:text-gray-100">{currentDoc.filename}</h4>
+                    <span className="text-[10px] uppercase font-bold text-slate-400">Source Document</span>
+                    <h4 className="text-xs font-bold text-slate-900 dark:text-white">{currentDoc.filename}</h4>
                   </div>
                   <div className="flex items-center gap-2 w-full sm:w-auto">
                     <select
                       value={targetLang}
                       onChange={e => setTargetLang(e.target.value)}
-                      className="px-3 py-2 text-xs font-bold rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-slate-900 text-gray-800 dark:text-gray-200 cursor-pointer"
+                      className="px-3.5 py-2 text-xs font-bold rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-200 cursor-pointer shadow-2xs"
                     >
                       {INDIAN_LANGUAGES.map(l => (
                         <option key={l.code} value={l.name}>{l.name} ({l.native})</option>
@@ -3016,7 +3115,7 @@ Between: Municipal Corporation of Greater Mumbai (Authority) AND TechCorp Soluti
                       type="button"
                       disabled={isTranslating}
                       onClick={handleTranslate}
-                      className="px-4 py-2 bg-[#0f3d68] hover:bg-[#0a2540] disabled:opacity-50 text-white text-xs font-bold uppercase tracking-wider rounded-lg shadow-sm transition-all cursor-pointer flex items-center gap-1.5 shrink-0"
+                      className="px-4 py-2 bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-white text-xs font-bold uppercase tracking-wider rounded-xl shadow-xs transition-all cursor-pointer flex items-center gap-1.5 shrink-0"
                     >
                       <Sparkles className={`w-3.5 h-3.5 ${isTranslating ? 'animate-spin' : ''}`} />
                       <span>{isTranslating ? 'Translating...' : 'Translate'}</span>
@@ -3025,7 +3124,7 @@ Between: Municipal Corporation of Greater Mumbai (Authority) AND TechCorp Soluti
                 </div>
 
                 {translatedText ? (
-                  <div className="p-5 rounded-xl border border-emerald-300 dark:border-emerald-800 bg-emerald-50/50 dark:bg-emerald-950/20 space-y-3">
+                  <div className="p-5 rounded-2xl border border-emerald-300 dark:border-emerald-800 bg-emerald-50/50 dark:bg-emerald-950/20 space-y-3">
                     <div className="flex items-center justify-between gap-2">
                       <span className="text-xs font-bold text-emerald-800 dark:text-emerald-300 uppercase tracking-wider flex items-center gap-1.5">
                         <CheckCircle2 className="w-4 h-4 text-emerald-600" />
@@ -3034,7 +3133,7 @@ Between: Municipal Corporation of Greater Mumbai (Authority) AND TechCorp Soluti
                       <button
                         type="button"
                         onClick={() => handleCopyClause(translatedText, 'translate')}
-                        className="px-2.5 py-1 rounded-lg text-xs font-semibold bg-white dark:bg-slate-800 border border-gray-300 dark:border-slate-700 hover:border-emerald-500 text-gray-700 dark:text-gray-200 flex items-center gap-1 shadow-2xs cursor-pointer"
+                        className="px-3 py-1.5 rounded-lg text-xs font-semibold bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 hover:border-emerald-500 text-slate-700 dark:text-slate-200 flex items-center gap-1 shadow-2xs cursor-pointer"
                         title="Copy translated text to clipboard"
                       >
                         {copiedIndex === 'translate' ? (
@@ -3044,18 +3143,18 @@ Between: Municipal Corporation of Greater Mumbai (Authority) AND TechCorp Soluti
                           </>
                         ) : (
                           <>
-                            <Copy className="w-3.5 h-3.5 text-gray-500" />
+                            <Copy className="w-3.5 h-3.5 text-slate-500" />
                             <span>Copy</span>
                           </>
                         )}
                       </button>
                     </div>
-                    <p className="text-xs sm:text-sm text-gray-800 dark:text-gray-200 leading-relaxed font-medium whitespace-pre-line">
+                    <p className="text-xs sm:text-sm text-slate-800 dark:text-slate-200 leading-relaxed font-medium whitespace-pre-line">
                       {translatedText}
                     </p>
                   </div>
                 ) : (
-                  <div className="p-6 rounded-xl border border-dashed border-gray-300 dark:border-gray-700 text-center text-xs text-gray-500">
+                  <div className="p-6 rounded-xl border border-dashed border-slate-300 dark:border-slate-700 text-center text-xs text-slate-500">
                     Select an Indian language above and click <strong>Translate</strong> to generate an accurate legal translation.
                   </div>
                 )}
@@ -3066,46 +3165,48 @@ Between: Municipal Corporation of Greater Mumbai (Authority) AND TechCorp Soluti
       </section>
 
       {/* ── SECTION 9: INSPECTION RECORDS & AUDIT HISTORY ── */}
-      <section ref={historyRef} className={`py-16 border-b transition-colors ${isDark ? 'bg-[#0d162e] border-[#1e293b]' : 'bg-[#f1f5f9] border-[#e2e8f0]'} ${activeTab !== 'history' && activeTab !== 'all' ? 'hidden' : ''}`}>
+      <section ref={historyRef} className={`py-16 border-b border-slate-200/80 dark:border-slate-800/80 ${activeTab !== 'history' && activeTab !== 'all' ? 'hidden' : ''}`}>
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center max-w-2xl mx-auto mb-10">
-            <div className="inline-block px-3 py-1 rounded-full text-[11px] font-bold uppercase tracking-widest bg-gray-200 text-gray-800 dark:bg-gray-800 dark:text-gray-200 mb-2">
-              WORKSPACE · MODULE 6
+            <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[11px] font-bold uppercase tracking-wider bg-blue-50 text-blue-700 dark:bg-blue-950/60 dark:text-blue-300 mb-2.5 border border-blue-200/80 dark:border-blue-900/60">
+              WORKSPACE · MODULE 7
             </div>
-            <h2 className="text-3xl font-black font-serif-gov text-[#0f3d68] dark:text-[#38bdf8]">
+            <h2 className="text-3xl sm:text-4xl font-extrabold font-display text-slate-900 dark:text-white tracking-tight">
               Inspection & Audit Records
             </h2>
-            <p className="text-xs text-gray-500 mt-1">
+            <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 mt-1.5">
               Private audit history for <strong>{user?.name}</strong> ({user?.email}). Only contracts uploaded by your account are displayed here.
             </p>
           </div>
 
-          <div className="max-w-3xl mx-auto space-y-3">
+          <div className="max-w-3xl mx-auto space-y-3.5">
             {documents.length === 0 ? (
-              <div className="p-8 rounded-lg border text-center text-gray-400 text-xs bg-white dark:bg-[#1e293b]">
-                No historical inspection documents for your account yet. Upload a document in Module 1 to begin.
+              <div className={`p-10 rounded-2xl border border-dashed border-slate-300 dark:border-slate-700 text-center text-slate-400 text-xs ${isDark ? 'bg-slate-900/40' : 'bg-white'}`}>
+                <Folder className="w-10 h-10 text-slate-400 mx-auto mb-2 opacity-50" />
+                <p className="text-sm font-semibold text-slate-700 dark:text-slate-300 mb-1">No Historical Audits</p>
+                <p>No historical inspection documents for your account yet. Upload a document in Module 1 to begin.</p>
               </div>
             ) : (
               documents.map(doc => (
-                <div key={doc.id} className={`p-4 rounded border flex items-center justify-between ${isDark ? 'bg-[#1e293b] border-[#334155]' : 'bg-white border-[#e2e8f0]'}`}>
+                <div key={doc.id} className={`p-4 sm:p-5 rounded-2xl border border-slate-200/90 dark:border-slate-800 shadow-2xs flex items-center justify-between gap-4 transition-all hover:border-blue-400 dark:hover:border-slate-700 ${isDark ? 'bg-slate-900' : 'bg-white'}`}>
                   <div>
-                    <div className="font-bold text-sm text-[#0f3d68] dark:text-[#38bdf8]">{doc.filename}</div>
-                    <div className="text-xs text-gray-500">{doc.uploaded_at} · {doc.page_count} Pages · {doc.doc_type?.toUpperCase()}</div>
+                    <div className="font-bold text-sm text-slate-900 dark:text-white">{doc.filename}</div>
+                    <div className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">{doc.uploaded_at} · {doc.page_count} Pages · {doc.doc_type?.toUpperCase()}</div>
                   </div>
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-2 shrink-0">
                     <a
                       href={`${API_BASE}/report/download/${doc.id}`}
                       target="_blank"
                       rel="noreferrer"
                       download
-                      className="p-2 border border-gray-300 dark:border-gray-600 rounded text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
+                      className="p-2.5 border border-slate-200 dark:border-slate-700 rounded-xl text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors shadow-2xs"
                       title="Download PDF Audit Report"
                     >
-                      <Download className="w-4 h-4 text-[#ea580c]" />
+                      <Download className="w-4 h-4 text-blue-600 dark:text-blue-400" />
                     </a>
                     <button
                       onClick={() => { setCurrentDoc(doc); scrollTo(uploadRef); }}
-                      className="px-4 py-2 bg-[#0f3d68] hover:bg-[#0a2540] text-white text-xs font-bold uppercase rounded shadow-xs"
+                      className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold uppercase tracking-wider rounded-xl shadow-xs transition-all cursor-pointer"
                     >
                       LOAD AUDIT
                     </button>
@@ -3117,51 +3218,486 @@ Between: Municipal Corporation of Greater Mumbai (Authority) AND TechCorp Soluti
         </div>
       </section>
 
+      {/* ── SECTION 3: FEATURE MODULES & LIVE VIDEO DEMO ── */}
+      <section id="features-section" className="py-20 sm:py-24 bg-slate-50/60 dark:bg-[#090D16] border-b border-slate-200/80 dark:border-slate-800/80">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="text-center mb-10 reveal-hidden">
+            <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full text-xs font-bold tracking-wider uppercase bg-blue-50 text-blue-700 dark:bg-blue-950/60 dark:text-blue-300 border border-blue-200/80 dark:border-blue-900/60 mb-3 shadow-2xs">
+              <LayoutGrid className="w-3.5 h-3.5" />
+              <span>7 SOVEREIGN MODULES · LIVE PLATFORM WALKTHROUGH</span>
+            </div>
+            <h2 className="text-3xl sm:text-4xl lg:text-5xl font-extrabold font-display text-slate-900 dark:text-white tracking-tight mb-3">
+              Feature Modules & Video Walkthrough
+            </h2>
+            <p className="text-slate-500 dark:text-slate-400 max-w-xl mx-auto text-sm sm:text-base">
+              Watch how JanDristi audits contracts and discovers citizen entitlements in real-time, or launch any module directly.
+            </p>
+          </div>
+
+          {/* Category Filter Chips */}
+          <div className="flex flex-wrap justify-center gap-2 mb-10 reveal-hidden">
+            {['All', 'Analysis', 'Documents', 'Citizens'].map((cat) => (
+              <button
+                key={cat}
+                type="button"
+                onClick={() => setFeatureFilter(cat)}
+                className={`px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+                  featureFilter === cat
+                    ? 'bg-[#0f3d68] text-white shadow-xs'
+                    : 'bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-400 border border-slate-200 dark:border-slate-800 hover:border-blue-300'
+                }`}
+              >
+                {cat}
+              </button>
+            ))}
+          </div>
+
+          {/* Side-by-Side Split: Left = Auto-playing Video Player, Right = Compact Module Grid */}
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+            
+            {/* Left Column (5 Cols): Auto-playing Video Player Card with Mute/Unmute */}
+            <div className="lg:col-span-5 reveal-hidden">
+              <div className="rounded-2xl border border-slate-200/90 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-xl overflow-hidden sticky top-24 transition-all">
+                
+                {/* Video Header Bar */}
+                <div className="px-4 py-3 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between bg-slate-50/60 dark:bg-slate-800/40">
+                  <div className="flex items-center gap-2">
+                    <span className="w-2.5 h-2.5 rounded-full bg-red-500 animate-pulse"></span>
+                    <span className="text-xs font-bold text-slate-800 dark:text-slate-200 uppercase tracking-wide">
+                      AI Demo Walkthrough
+                    </span>
+                  </div>
+                  
+                  {/* Quick Mute/Unmute toggle button in header */}
+                  <button
+                    type="button"
+                    onClick={toggleMute}
+                    className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-bold transition-all bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 shadow-2xs hover:border-blue-400 cursor-pointer"
+                    title={isVideoMuted ? "Click to Unmute Sound" : "Click to Mute"}
+                  >
+                    {isVideoMuted ? (
+                      <>
+                        <VolumeX className="w-3.5 h-3.5 text-rose-500" />
+                        <span className="text-rose-500 text-[11px]">Unmute</span>
+                      </>
+                    ) : (
+                      <>
+                        <Volume2 className="w-3.5 h-3.5 text-emerald-500" />
+                        <span className="text-emerald-500 text-[11px]">Mute</span>
+                      </>
+                    )}
+                  </button>
+                </div>
+
+                {/* Video Frame */}
+                <div className="relative aspect-video bg-black flex items-center justify-center overflow-hidden group">
+                  <video
+                    ref={videoRef}
+                    autoPlay
+                    loop
+                    muted={isVideoMuted}
+                    playsInline
+                    className="w-full h-full object-cover"
+                    poster="/logo.png"
+                  >
+                    <source src="/demo-video.mp4" type="video/mp4" />
+                    Your browser does not support the video tag.
+                  </video>
+
+                  {/* Floating Action Controls Overlay */}
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity flex items-end justify-between p-3.5 pointer-events-none">
+                    <button
+                      type="button"
+                      onClick={togglePlay}
+                      className="pointer-events-auto p-2 rounded-xl bg-black/60 hover:bg-black/80 text-white backdrop-blur-md transition-all cursor-pointer shadow-sm"
+                      title={isVideoPlaying ? "Pause Video" : "Play Video"}
+                    >
+                      {isVideoPlaying ? <Pause className="w-4 h-4" /> : <Play className="w-4 h-4" />}
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={toggleMute}
+                      className="pointer-events-auto flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-black/60 hover:bg-black/80 text-white backdrop-blur-md transition-all cursor-pointer text-xs font-semibold shadow-sm"
+                    >
+                      {isVideoMuted ? (
+                        <>
+                          <VolumeX className="w-3.5 h-3.5 text-rose-400" />
+                          <span>Muted</span>
+                        </>
+                      ) : (
+                        <>
+                          <Volume2 className="w-3.5 h-3.5 text-emerald-400" />
+                          <span>Sound On</span>
+                        </>
+                      )}
+                    </button>
+                  </div>
+                </div>
+
+                {/* Video Info & Quick Actions */}
+                <div className="p-4 sm:p-5 space-y-3.5">
+                  <div>
+                    <h4 className="font-bold text-sm text-slate-900 dark:text-white font-display">
+                      How JanDristi Works in 60 Seconds
+                    </h4>
+                    <p className="text-xs text-slate-500 dark:text-slate-400 mt-1 leading-relaxed">
+                      Instant clause health evaluation, 3-Agent legal courtroom debate, and universal citizen welfare entitlement discovery.
+                    </p>
+                  </div>
+
+                  <div className="space-y-1.5 text-[11px] text-slate-600 dark:text-slate-300 font-medium pt-1 border-t border-slate-100 dark:border-slate-800">
+                    <div className="flex items-center gap-2">
+                      <span className="w-1.5 h-1.5 rounded-full bg-blue-500"></span>
+                      <span>0:00 — Upload contract & automatic PII scrubbing</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <span className="w-1.5 h-1.5 rounded-full bg-amber-500"></span>
+                      <span>0:20 — Health Score & 3-Agent Courtroom debate</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
+                      <span>0:40 — Word DOCX redline export & welfare schemes</span>
+                    </div>
+                  </div>
+
+                  <div className="pt-2 flex items-center gap-2">
+                    <button
+                      type="button"
+                      onClick={handleLoadDemoContract}
+                      className="w-full py-2.5 bg-[#ea580c] hover:bg-[#c2410c] text-white text-xs font-bold uppercase tracking-wider rounded-xl shadow-xs hover:shadow transition-all flex items-center justify-center gap-1.5 cursor-pointer"
+                    >
+                      <Zap className="w-3.5 h-3.5 text-amber-300" />
+                      <span>Test Live Demo Contract</span>
+                    </button>
+                  </div>
+                </div>
+
+              </div>
+            </div>
+
+            {/* Right Column (7 Cols): Compact Feature Modules Grid */}
+            <div className="lg:col-span-7">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+                {[
+                  {
+                    id: 'audit',
+                    cat: 'Analysis',
+                    icon: Shield,
+                    title: 'Clause Risk Audit',
+                    desc: 'Automated clause risk assessment, statutory parity verification, and health score calculation.',
+                    tab: 'audit',
+                    ref: uploadRef,
+                    color: '#0f3d68'
+                  },
+                  {
+                    id: 'chat',
+                    cat: 'Analysis',
+                    icon: MessageSquare,
+                    title: 'Q&A with Citations',
+                    desc: 'Ask direct questions about contract terms and receive responses cited with exact page excerpts.',
+                    tab: 'chat',
+                    ref: chatRef,
+                    color: '#2563eb'
+                  },
+                  {
+                    id: 'courtroom',
+                    cat: 'Analysis',
+                    icon: Scale,
+                    title: 'AI Courtroom Debate',
+                    desc: '3-Agent legal debate: The Critic finds loopholes, The Defender counters, and The Judge delivers the verdict.',
+                    tab: 'courtroom',
+                    ref: debateRef,
+                    color: '#ea580c'
+                  },
+                  {
+                    id: 'redline',
+                    cat: 'Documents',
+                    icon: Edit3,
+                    title: 'Visual Redlining & DOCX',
+                    desc: 'AI recommends fair contract modifications with tracked changes exportable directly to Microsoft Word.',
+                    tab: 'redline',
+                    ref: redlineRef,
+                    color: '#0891b2'
+                  },
+                  {
+                    id: 'schemes',
+                    cat: 'Citizens',
+                    icon: Landmark,
+                    title: 'Welfare Recommender',
+                    desc: 'Universal citizen entitlement discovery matching individual demographics to central and state benefits.',
+                    tab: 'schemes',
+                    ref: schemesRef,
+                    color: '#059669'
+                  },
+                  {
+                    id: 'translate',
+                    cat: 'Citizens',
+                    icon: Globe,
+                    title: '17 Indian Languages',
+                    desc: 'Plain-language summaries and translation across Indian regional languages with legal precision.',
+                    tab: 'translate',
+                    ref: multilingualRef,
+                    color: '#7c3aed'
+                  },
+                  {
+                    id: 'history',
+                    cat: 'Documents',
+                    icon: Folder,
+                    title: 'Audit Records & Graph',
+                    desc: 'Private archive of all historical inspection reports, document logs, and entity relationship data.',
+                    tab: 'history',
+                    ref: historyRef,
+                    color: '#475569'
+                  }
+                ]
+                  .filter(m => featureFilter === 'All' || m.cat === featureFilter)
+                  .map((module, i) => {
+                    const ModIcon = module.icon;
+                    return (
+                      <button
+                        key={module.id}
+                        type="button"
+                        onClick={() => {
+                          setActiveTab(module.tab);
+                          setTimeout(() => {
+                            module.ref?.current?.scrollIntoView({ behavior: 'smooth' });
+                          }, 50);
+                        }}
+                        className="reveal-hidden text-left p-4 sm:p-4.5 rounded-xl border bg-white dark:bg-slate-900/80 border-slate-200/90 dark:border-slate-800 feature-card cursor-pointer group flex flex-col justify-between hover:border-blue-400 dark:hover:border-blue-600 shadow-2xs hover:shadow-xs transition-all"
+                        style={{ animationDelay: `${i * 0.06}s` }}
+                      >
+                        <div>
+                          <div className="flex items-center justify-between mb-2.5">
+                            <div
+                              className="w-9 h-9 rounded-lg flex items-center justify-center transition-transform group-hover:scale-110"
+                              style={{ backgroundColor: `${module.color}15` }}
+                            >
+                              <ModIcon className="w-4 h-4" style={{ color: module.color }} />
+                            </div>
+                            <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400">
+                              {module.cat}
+                            </span>
+                          </div>
+                          
+                          <h3 className="font-bold text-xs sm:text-sm text-slate-900 dark:text-white mb-1 font-display group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">
+                            {module.title}
+                          </h3>
+                          
+                          <p className="text-[11px] text-slate-500 dark:text-slate-400 leading-relaxed mb-3 line-clamp-2">
+                            {module.desc}
+                          </p>
+                        </div>
+                        
+                        <div className="flex items-center text-[11px] font-bold pt-2 border-t border-slate-100 dark:border-slate-800/80 text-blue-600 dark:text-blue-400">
+                          <span>Launch module</span>
+                          <ChevronRight className="w-3.5 h-3.5 ml-1 transition-transform group-hover:translate-x-1" />
+                        </div>
+                      </button>
+                    );
+                  })}
+              </div>
+            </div>
+
+          </div>
+        </div>
+      </section>
+
+      {/* ── SECTION 4: STATS / TRUST ROW ── */}
+      <section className="py-16 bg-[#0f3d68] dark:bg-[#070E1A] border-b border-blue-900/40">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-8 text-center">
+            {[
+              { num: '17+', label: 'Indian Regional Languages', icon: Globe },
+              { num: '3-Agent', label: 'Courtroom Deliberation Engine', icon: Scale },
+              { num: '100%', label: 'In-Country Sovereign AI Processing', icon: Lock },
+              { num: 'DPDP', label: 'Act 2023 Statutory Compliance', icon: Shield }
+            ].map((stat, i) => {
+              const StatIcon = stat.icon;
+              return (
+                <div key={stat.label} className="reveal-hidden" style={{ animationDelay: `${i * 0.1}s` }}>
+                  <div className="w-10 h-10 rounded-xl bg-white/10 flex items-center justify-center mx-auto mb-3">
+                    <StatIcon className="w-5 h-5 text-white/90" />
+                  </div>
+                  <div className="stat-num text-3xl sm:text-4xl font-extrabold text-white font-grotesk mb-1">
+                    {stat.num}
+                  </div>
+                  <div className="text-xs font-semibold text-blue-200 tracking-wide">
+                    {stat.label}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      </section>
+
+      {/* ── SECTION 7: FAQ ACCORDION ── */}
+      <section className="py-20 sm:py-24 bg-white dark:bg-[#070B14] border-b border-slate-200/80 dark:border-slate-800/80">
+        <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="text-center mb-14 reveal-hidden">
+            <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full text-xs font-bold tracking-wider uppercase bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300 border border-slate-200 dark:border-slate-700 mb-3 shadow-2xs">
+              <HelpCircle className="w-3.5 h-3.5" />
+              <span>FREQUENTLY ASKED QUESTIONS</span>
+            </div>
+            <h2 className="text-3xl sm:text-4xl font-extrabold font-display text-slate-900 dark:text-white tracking-tight mb-3">
+              Frequently Asked Questions
+            </h2>
+            <p className="text-slate-500 dark:text-slate-400 text-sm sm:text-base">
+              Everything you need to know about the JanDristi platform.
+            </p>
+          </div>
+
+          <div className="space-y-3.5 reveal-hidden">
+            {[
+              {
+                q: 'What types of documents can JanDristi analyze?',
+                a: 'JanDristi supports commercial agreements, municipal e-tenders, procurement contracts, employment agreements, residential/commercial leases, NDAs, and government policy directives in PDF, DOCX, and TXT formats. Both digital PDFs and scanned image documents are supported through OCR.'
+              },
+              {
+                q: 'How does the PII Shield protect sensitive personal data?',
+                a: 'Our built-in PII Shield automatically scans and redacts sensitive Indian personal identifiers — including 12-digit Aadhaar numbers, 10-character PAN identifiers, contact numbers, and personal addresses — before any document text is processed by AI models, ensuring strict compliance with the Digital Personal Data Protection Act 2023.'
+              },
+              {
+                q: 'How does the 3-Agent Courtroom Debate work?',
+                a: 'The Courtroom simulates a judicial review panel where three AI personas examine contentious terms. The Critic identifies contractual vulnerabilities and worst-case liability. The Defender counters with customary commercial norms. The Judge balances both perspectives and delivers a binding statutory assessment with actionable amendments.'
+              },
+              {
+                q: 'Can I export redlined contracts back to Microsoft Word?',
+                a: 'Yes. In the PDF Redlining module, you can provide instructions for amendments (e.g. "Cap liability at 5% and add a 14-day cure period"). The AI generates the modifications as tracked changes and lets you download a formatted .docx document with revisions in color.'
+              },
+              {
+                q: 'Which Indian regional languages are supported?',
+                a: 'JanDristi natively supports 17 Indian constitutional languages including Hindi, Marathi, Bengali, Tamil, Telugu, Gujarati, Kannada, Malayalam, Punjabi, Odia, Assamese, and Urdu. Summaries and clause explanations are translated while preserving legal precision.'
+              },
+              {
+                q: 'Does JanDristi provide legal advice?',
+                a: 'No. JanDristi is an automated legal metrology and contract analysis platform designed to assist citizens, advocates, and regulatory officers. The outputs represent automated statutory analysis and do not substitute for formal legal representation by an advocate.'
+              }
+            ].map((faq, idx) => (
+              <div
+                key={idx}
+                className={`border rounded-2xl overflow-hidden transition-all ${
+                  openFaqIdx === idx
+                    ? 'border-blue-400 dark:border-blue-700 bg-blue-50/40 dark:bg-blue-950/20'
+                    : 'border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900/60'
+                }`}
+              >
+                <button
+                  type="button"
+                  onClick={() => toggleFaq(idx)}
+                  className="w-full text-left px-6 py-5 flex items-center justify-between gap-4 cursor-pointer"
+                  aria-expanded={openFaqIdx === idx}
+                >
+                  <span className="font-bold text-sm text-slate-900 dark:text-white">{faq.q}</span>
+                  <ChevronDown
+                    className={`w-5 h-5 text-slate-400 shrink-0 transition-transform duration-300 ${
+                      openFaqIdx === idx ? 'rotate-180 text-blue-600' : ''
+                    }`}
+                  />
+                </button>
+                <div className={`faq-answer ${openFaqIdx === idx ? 'open' : ''}`}>
+                  <div className="px-6 pb-5 text-xs sm:text-sm text-slate-600 dark:text-slate-300 leading-relaxed font-normal">
+                    {faq.a}
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* ── SECTION 8: BOTTOM CTA BANNER ── */}
+      <section className="py-20 bg-gradient-to-br from-[#0f3d68] via-[#154675] to-[#0a2744] text-white">
+        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center reveal-hidden">
+          <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full text-xs font-bold tracking-wider uppercase bg-white/10 text-orange-300 border border-white/20 mb-6">
+            <Sparkles className="w-3.5 h-3.5" />
+            <span>INSTANT SOVEREIGN INTELLIGENCE</span>
+          </div>
+          <h2 className="text-3xl sm:text-4xl lg:text-5xl font-extrabold font-display tracking-tight mb-4">
+            Start Protecting Your Legal Rights Today
+          </h2>
+          <p className="text-blue-100 text-sm sm:text-base max-w-xl mx-auto mb-8 font-normal leading-relaxed">
+            Upload your commercial contract or try our realistic Municipal Tender demo in seconds. 100% confidential, in-country processing under the DPDP Act 2023.
+          </p>
+          <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
+            <button
+              type="button"
+              onClick={() => {
+                setActiveTab('audit');
+                if (!user) {
+                  setShowAuthModal(true);
+                  setAuthError('Sign in to upload documents and run deep compliance audits.');
+                } else {
+                  scrollTo(uploadRef);
+                }
+              }}
+              className="w-full sm:w-auto px-8 py-4 bg-[#ea580c] hover:bg-[#c2410c] text-white font-bold text-xs sm:text-sm uppercase tracking-wider rounded-xl shadow-lg hover:shadow-xl transition-all cursor-pointer flex items-center justify-center gap-2"
+            >
+              <Upload className="w-4 h-4" />
+              <span>UPLOAD A CONTRACT — FREE</span>
+            </button>
+            <button
+              type="button"
+              onClick={handleLoadDemoContract}
+              className="w-full sm:w-auto px-7 py-4 bg-white/10 hover:bg-white/20 text-white font-bold text-xs sm:text-sm uppercase tracking-wider rounded-xl border border-white/30 backdrop-blur-sm transition-all cursor-pointer flex items-center justify-center gap-2"
+            >
+              <Zap className="w-4 h-4 text-amber-300" />
+              <span>TRY DEMO FIRST</span>
+            </button>
+          </div>
+          <p className="text-xs text-blue-200/70 mt-6 italic">
+            AI output is general information, not legal advice. Consult a qualified advocate for formal legal counsel.
+          </p>
+        </div>
+      </section>
+
       {/* ── FOOTER ── */}
-      <footer className={`border-t py-12 transition-colors ${isDark ? 'bg-[#090d1a] border-[#1e293b] text-gray-400' : 'bg-[#0a2540] border-[#061726] text-gray-300'}`}>
+      <footer className={`border-t py-12 transition-colors ${isDark ? 'bg-[#070B14] border-slate-800/80 text-slate-400' : 'bg-slate-900 border-slate-800 text-slate-300'}`}>
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="grid grid-cols-1 md:grid-cols-4 gap-8 mb-10 text-xs">
             <div>
-              <div className="flex items-center space-x-2.5 text-white font-bold font-serif-gov text-sm mb-3">
-                <img src="/logo.jpg" alt="NyayaMitra AI Logo" className="w-7 h-7 rounded object-cover border border-amber-500/50" />
-                <span>NyayaMitra AI</span>
+              <div className="flex items-center space-x-2.5 text-white font-bold font-display text-sm mb-3">
+                <img src="/logo.png" alt="JanDristi Logo" className="w-8 h-8 rounded-xl object-contain bg-white p-0.5 border border-slate-700" />
+                <span>JanDristi</span>
               </div>
-              <p className="text-gray-400 leading-relaxed">
+              <p className="text-slate-400 leading-relaxed">
                 Empowering citizens, legal professionals, and regulatory authorities with artificial intelligence compliance verification.
               </p>
             </div>
             <div>
               <h4 className="text-white font-bold uppercase tracking-wider mb-3">National Initiatives</h4>
-              <ul className="space-y-2">
-                <li><a href="https://www.india.gov.in" target="_blank" rel="noreferrer" className="hover:text-white">National Portal of India</a></li>
-                <li><a href="https://www.digitalindia.gov.in" target="_blank" rel="noreferrer" className="hover:text-white">Digital India Programme</a></li>
-                <li><a href="https://www.mygov.in" target="_blank" rel="noreferrer" className="hover:text-white">MyGov Citizen Portal</a></li>
+              <ul className="space-y-2 text-slate-400">
+                <li><a href="https://www.india.gov.in" target="_blank" rel="noreferrer" className="hover:text-white transition-colors">National Portal of India</a></li>
+                <li><a href="https://www.digitalindia.gov.in" target="_blank" rel="noreferrer" className="hover:text-white transition-colors">Digital India Programme</a></li>
+                <li><a href="https://www.mygov.in" target="_blank" rel="noreferrer" className="hover:text-white transition-colors">MyGov Citizen Portal</a></li>
               </ul>
             </div>
             <div>
               <h4 className="text-white font-bold uppercase tracking-wider mb-3">Support & Helpline</h4>
-              <ul className="space-y-2">
-                <li>Toll-Free Helpline: <strong>1915</strong></li>
+              <ul className="space-y-2 text-slate-400">
+                <li>National Toll-Free Helpline: <strong className="text-white">1915</strong></li>
                 <li>Direct Citizen Assistance Desk</li>
                 <li>DPDP Act Compliance Verified</li>
               </ul>
             </div>
             <div>
               <h4 className="text-white font-bold uppercase tracking-wider mb-3">Data Sovereignty</h4>
-              <p className="text-gray-400 leading-relaxed mb-2">
+              <p className="text-slate-400 leading-relaxed mb-2">
                 Strict adherence to the Digital Personal Data Protection Act.
               </p>
-              <div className="text-[11px] text-[#ea580c] font-bold">100% In-Country Data Processing</div>
+              <div className="text-[11px] text-blue-400 font-bold">100% In-Country Sovereign Processing</div>
             </div>
           </div>
 
-          <div className="pt-8 border-t border-gray-700/60 flex flex-col sm:flex-row items-center justify-between text-xs text-gray-400 gap-4">
+          <div className="pt-8 border-t border-slate-800 flex flex-col sm:flex-row items-center justify-between text-xs text-slate-500 gap-4">
             <div>
-              © 2026 NyayaMitra AI · Sovereign Legal & Welfare Intelligence Platform
+              © 2026 JanDristi · Sovereign Legal & Welfare Intelligence Platform
             </div>
-            <div className="flex space-x-4">
-              <span>Privacy Policy</span>
-              <span>Terms of Service</span>
+            <div className="flex space-x-5 text-slate-400">
+              <span className="hover:text-white transition-colors cursor-pointer">Privacy Policy</span>
+              <span className="hover:text-white transition-colors cursor-pointer">Terms of Service</span>
+              <span className="hover:text-white transition-colors cursor-pointer">Legal Disclaimer</span>
             </div>
           </div>
         </div>
@@ -3170,23 +3706,23 @@ Between: Municipal Corporation of Greater Mumbai (Authority) AND TechCorp Soluti
       {/* ── STRONG AUTHENTICATION MODAL (GOOGLE FIREBASE + EMAIL/PASSWORD) ── */}
       {showAuthModal && (
         <div className="fixed inset-0 bg-black/75 backdrop-blur-xs z-50 flex items-center justify-center p-4">
-          <div className={`max-w-md w-full rounded-2xl p-6 sm:p-7 shadow-2xl border relative transition-all ${isDark ? 'bg-[#0f172a] border-[#334155]' : 'bg-white border-[#e2e8f0]'}`}>
+          <div className={`max-w-md w-full rounded-2xl p-6 sm:p-8 shadow-2xl border relative transition-all ${isDark ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200'}`}>
             <button 
               type="button"
               onClick={() => { setShowAuthModal(false); setAuthError(''); }}
-              className="absolute right-4 top-4 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 p-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-slate-800 transition-all cursor-pointer"
+              className="absolute right-4 top-4 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 p-1.5 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800 transition-all cursor-pointer"
               aria-label="Close modal"
             >
               <X className="w-5 h-5" />
             </button>
 
             <div className="flex items-center gap-3 mb-5">
-              <img src="/logo.jpg" alt="NyayaMitra AI Logo" className="w-9 h-9 rounded-xl object-cover border border-amber-500/50 shadow-xs" />
+              <img src="/logo.png" alt="JanDristi Logo" className="w-10 h-10 rounded-xl object-contain bg-white p-0.5 border border-slate-200 dark:border-slate-700 shadow-2xs" />
               <div>
-                <h3 className="font-bold text-lg font-serif-gov text-[#0f3d68] dark:text-[#38bdf8] leading-tight">
-                  {authMode === 'login' ? 'Sign In to NyayaMitra' : authMode === 'register' ? 'Create GovTech Account' : 'Reset Password'}
+                <h3 className="font-bold text-lg font-display text-slate-900 dark:text-white leading-tight">
+                  {authMode === 'login' ? 'Sign In to JanDristi' : authMode === 'register' ? 'Create GovTech Account' : 'Reset Password'}
                 </h3>
-                <p className="text-[11px] text-gray-500 dark:text-gray-400">
+                <p className="text-[11px] text-slate-500 dark:text-slate-400">
                   {authMode === 'login' 
                     ? 'Access your private legal audits & inspection history' 
                     : authMode === 'register' 
@@ -3197,16 +3733,16 @@ Between: Municipal Corporation of Greater Mumbai (Authority) AND TechCorp Soluti
             </div>
 
             {authError && (
-              <div className="mb-4 p-3 rounded-xl bg-amber-50 dark:bg-amber-950/40 text-amber-900 dark:text-amber-200 border border-amber-200 dark:border-amber-800 text-xs flex items-center gap-2">
-                <AlertCircle className="w-4 h-4 text-amber-600 shrink-0" />
+              <div className="mb-4 p-3 rounded-xl bg-rose-50 dark:bg-rose-950/40 text-rose-900 dark:text-rose-200 border border-rose-200 dark:border-rose-800 text-xs flex items-center gap-2">
+                <AlertCircle className="w-4 h-4 text-rose-600 shrink-0" />
                 <span>{authError}</span>
               </div>
             )}
 
-            <form onSubmit={handleAuth} className="space-y-3.5">
+            <form onSubmit={handleAuth} className="space-y-4">
               {authMode === 'register' && (
                 <div>
-                  <label className="block text-[11px] font-bold uppercase tracking-wider mb-1 text-gray-700 dark:text-gray-300">
+                  <label className="block text-[11px] font-bold uppercase tracking-wider mb-1.5 text-slate-700 dark:text-slate-300">
                     Full Name
                   </label>
                   <input 
@@ -3215,13 +3751,13 @@ Between: Municipal Corporation of Greater Mumbai (Authority) AND TechCorp Soluti
                     value={authName}
                     onChange={e => setAuthName(e.target.value)}
                     placeholder="e.g. Aarav Sharma"
-                    className="w-full px-3.5 py-2.5 text-xs rounded-xl border border-gray-300 dark:border-gray-600 bg-white dark:bg-slate-800 text-gray-900 dark:text-gray-100 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#0f3d68]"
+                    className="w-full px-3.5 py-2.5 text-xs rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500/20 shadow-2xs"
                   />
                 </div>
               )}
 
               <div>
-                <label className="block text-[11px] font-bold uppercase tracking-wider mb-1 text-gray-700 dark:text-gray-300">
+                <label className="block text-[11px] font-bold uppercase tracking-wider mb-1.5 text-slate-700 dark:text-slate-300">
                   Email Address
                 </label>
                 <input 
@@ -3230,21 +3766,21 @@ Between: Municipal Corporation of Greater Mumbai (Authority) AND TechCorp Soluti
                   value={authEmail}
                   onChange={e => setAuthEmail(e.target.value)}
                   placeholder="name@domain.com"
-                  className="w-full px-3.5 py-2.5 text-xs rounded-xl border border-gray-300 dark:border-gray-600 bg-white dark:bg-slate-800 text-gray-900 dark:text-gray-100 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#0f3d68]"
+                  className="w-full px-3.5 py-2.5 text-xs rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500/20 shadow-2xs"
                 />
               </div>
 
               {authMode !== 'reset' && (
                 <div>
-                  <div className="flex items-center justify-between mb-1">
-                    <label className="text-[11px] font-bold uppercase tracking-wider text-gray-700 dark:text-gray-300">
+                  <div className="flex items-center justify-between mb-1.5">
+                    <label className="text-[11px] font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300">
                       Password
                     </label>
                     {authMode === 'login' && (
                       <button
                         type="button"
                         onClick={() => { setAuthMode('reset'); setAuthError(''); }}
-                        className="text-[11px] font-semibold text-[#ea580c] hover:underline cursor-pointer"
+                        className="text-[11px] font-semibold text-blue-600 dark:text-blue-400 hover:underline cursor-pointer"
                       >
                         Forgot password?
                       </button>
@@ -3256,7 +3792,7 @@ Between: Municipal Corporation of Greater Mumbai (Authority) AND TechCorp Soluti
                     value={authPassword}
                     onChange={e => setAuthPassword(e.target.value)}
                     placeholder={authMode === 'register' ? 'Minimum 6 characters' : '••••••••••••'}
-                    className="w-full px-3.5 py-2.5 text-xs rounded-xl border border-gray-300 dark:border-gray-600 bg-white dark:bg-slate-800 text-gray-900 dark:text-gray-100 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#0f3d68]"
+                    className="w-full px-3.5 py-2.5 text-xs rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500/20 shadow-2xs"
                   />
                 </div>
               )}
@@ -3264,7 +3800,7 @@ Between: Municipal Corporation of Greater Mumbai (Authority) AND TechCorp Soluti
               <button
                 type="submit"
                 disabled={authLoading}
-                className="w-full py-3 bg-[#0f3d68] hover:bg-[#0a2540] disabled:opacity-50 text-white font-bold text-xs uppercase tracking-wider rounded-xl shadow-md transition-all cursor-pointer flex items-center justify-center gap-2 mt-2"
+                className="w-full py-3.5 bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-white font-bold text-xs uppercase tracking-wider rounded-xl shadow-xs hover:shadow transition-all cursor-pointer flex items-center justify-center gap-2 mt-2"
               >
                 {authLoading ? (
                   <span>Processing...</span>
@@ -3278,23 +3814,23 @@ Between: Municipal Corporation of Greater Mumbai (Authority) AND TechCorp Soluti
               </button>
             </form>
 
-            <div className="mt-4 pt-3 border-t border-gray-100 dark:border-gray-800 text-center text-xs text-gray-500">
+            <div className="mt-5 pt-4 border-t border-slate-100 dark:border-slate-800 text-center text-xs text-slate-500">
               {authMode === 'login' ? (
                 <span>
                   Don't have an account?{' '}
-                  <button type="button" onClick={() => { setAuthMode('register'); setAuthError(''); }} className="text-[#ea580c] font-bold hover:underline cursor-pointer">
+                  <button type="button" onClick={() => { setAuthMode('register'); setAuthError(''); }} className="text-blue-600 dark:text-blue-400 font-bold hover:underline cursor-pointer">
                     Register here
                   </button>
                 </span>
               ) : authMode === 'register' ? (
                 <span>
                   Already have an account?{' '}
-                  <button type="button" onClick={() => { setAuthMode('login'); setAuthError(''); }} className="text-[#ea580c] font-bold hover:underline cursor-pointer">
+                  <button type="button" onClick={() => { setAuthMode('login'); setAuthError(''); }} className="text-blue-600 dark:text-blue-400 font-bold hover:underline cursor-pointer">
                     Sign in
                   </button>
                 </span>
               ) : (
-                <button type="button" onClick={() => { setAuthMode('login'); setAuthError(''); }} className="text-[#0f3d68] dark:text-sky-400 font-bold hover:underline cursor-pointer">
+                <button type="button" onClick={() => { setAuthMode('login'); setAuthError(''); }} className="text-blue-600 dark:text-blue-400 font-bold hover:underline cursor-pointer">
                   ← Back to Sign In
                 </button>
               )}
@@ -3304,13 +3840,13 @@ Between: Municipal Corporation of Greater Mumbai (Authority) AND TechCorp Soluti
       )}
 
       {/* ── MOBILE BOTTOM NAVIGATION BAR (Thumb-friendly on Android / iOS) ── */}
-      <nav aria-label="Mobile Navigation" className="md:hidden fixed bottom-0 left-0 right-0 z-40 bg-white/95 dark:bg-[#060b18]/95 backdrop-blur-xl border-t border-gray-200/80 dark:border-gray-800/80 shadow-[0_-4px_20px_rgba(0,0,0,0.08)] px-2 py-1.5 flex items-center justify-around">
+      <nav aria-label="Mobile Navigation" className="md:hidden fixed bottom-0 left-0 right-0 z-40 bg-white/95 dark:bg-[#090D16]/95 backdrop-blur-xl border-t border-slate-200/80 dark:border-slate-800/80 shadow-[0_-4px_20px_rgba(0,0,0,0.06)] px-2 py-1.5 flex items-center justify-around">
         <button
           onClick={() => { setActiveTab('audit'); window.scrollTo({ top: 380, behavior: 'smooth' }); }}
           className={`flex flex-col items-center justify-center py-1.5 px-3 min-w-[58px] rounded-xl text-[10px] font-bold transition-all cursor-pointer ${
             activeTab === 'audit'
-              ? 'text-[#ea580c] dark:text-[#f97316] bg-orange-500/10 dark:bg-orange-500/20 shadow-2xs'
-              : 'text-gray-500 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white'
+              ? 'text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-950/50 shadow-2xs'
+              : 'text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white'
           }`}
         >
           <ShieldAlert className="w-5 h-5 mb-0.5" />
@@ -3321,8 +3857,8 @@ Between: Municipal Corporation of Greater Mumbai (Authority) AND TechCorp Soluti
           onClick={() => { setActiveTab('chat'); window.scrollTo({ top: 400, behavior: 'smooth' }); }}
           className={`flex flex-col items-center justify-center py-1.5 px-3 min-w-[58px] rounded-xl text-[10px] font-bold transition-all cursor-pointer ${
             activeTab === 'chat'
-              ? 'text-[#ea580c] dark:text-[#f97316] bg-orange-500/10 dark:bg-orange-500/20 shadow-2xs'
-              : 'text-gray-500 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white'
+              ? 'text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-950/50 shadow-2xs'
+              : 'text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white'
           }`}
         >
           <Bot className="w-5 h-5 mb-0.5" />
@@ -3333,8 +3869,8 @@ Between: Municipal Corporation of Greater Mumbai (Authority) AND TechCorp Soluti
           onClick={() => { setActiveTab('courtroom'); window.scrollTo({ top: 400, behavior: 'smooth' }); }}
           className={`flex flex-col items-center justify-center py-1.5 px-3 min-w-[58px] rounded-xl text-[10px] font-bold transition-all cursor-pointer ${
             activeTab === 'courtroom'
-              ? 'text-[#ea580c] dark:text-[#f97316] bg-orange-500/10 dark:bg-orange-500/20 shadow-2xs'
-              : 'text-gray-500 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white'
+              ? 'text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-950/50 shadow-2xs'
+              : 'text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white'
           }`}
         >
           <Scale className="w-5 h-5 mb-0.5" />
@@ -3345,8 +3881,8 @@ Between: Municipal Corporation of Greater Mumbai (Authority) AND TechCorp Soluti
           onClick={() => { setActiveTab('redline'); window.scrollTo({ top: 400, behavior: 'smooth' }); }}
           className={`flex flex-col items-center justify-center py-1.5 px-3 min-w-[58px] rounded-xl text-[10px] font-bold transition-all cursor-pointer ${
             activeTab === 'redline'
-              ? 'text-[#ea580c] dark:text-[#f97316] bg-orange-500/10 dark:bg-orange-500/20 shadow-2xs'
-              : 'text-gray-500 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white'
+              ? 'text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-950/50 shadow-2xs'
+              : 'text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white'
           }`}
         >
           <FileCheck className="w-5 h-5 mb-0.5" />
@@ -3357,8 +3893,8 @@ Between: Municipal Corporation of Greater Mumbai (Authority) AND TechCorp Soluti
           onClick={() => { setActiveTab('schemes'); window.scrollTo({ top: 400, behavior: 'smooth' }); }}
           className={`flex flex-col items-center justify-center py-1.5 px-3 min-w-[58px] rounded-xl text-[10px] font-bold transition-all cursor-pointer ${
             activeTab === 'schemes'
-              ? 'text-[#ea580c] dark:text-[#f97316] bg-orange-500/10 dark:bg-orange-500/20 shadow-2xs'
-              : 'text-gray-500 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white'
+              ? 'text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-950/50 shadow-2xs'
+              : 'text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white'
           }`}
         >
           <Sparkles className="w-5 h-5 mb-0.5" />

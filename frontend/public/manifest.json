@@ -1,6 +1,6 @@
 {
-  "name": "NyayaMitra AI — Sovereign Legal & Welfare Navigator",
-  "short_name": "NyayaMitra AI",
+  "name": "JanDristi — Sovereign Legal & Welfare Navigator",
+  "short_name": "JanDristi",
   "description": "Sovereign AI-powered legal contract analyzer, visual PDF redlining, and citizen welfare scheme recommendation platform.",
   "start_url": "/",
   "display": "standalone",
@@ -9,9 +9,9 @@
   "orientation": "portrait-primary",
   "icons": [
     {
-      "src": "/logo.jpg",
+      "src": "/logo.png",
       "sizes": "192x192 512x512",
-      "type": "image/jpeg",
+      "type": "image/png",
       "purpose": "any maskable"
     },
     {
