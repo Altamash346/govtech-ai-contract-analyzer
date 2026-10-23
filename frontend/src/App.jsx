@@ -1612,8 +1612,6 @@ Between: Municipal Corporation of Greater Mumbai (Authority) AND TechCorp Soluti
               <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
               भारत सरकार · Government of India
             </span>
-            <span className="hidden md:inline text-blue-800">|</span>
-            <span className="hidden md:inline font-medium text-slate-300">Legal Metrology & Contract Intelligence Platform</span>
           </div>
           <div className="flex items-center space-x-2.5 sm:space-x-3">
             {/* Indian Language Selector */}
@@ -1939,7 +1937,7 @@ Between: Municipal Corporation of Greater Mumbai (Authority) AND TechCorp Soluti
               <span className="relative inline-flex rounded-full h-2 w-2 bg-blue-600 dark:bg-blue-400"></span>
             </span>
             <span className="text-[11px] font-bold uppercase tracking-wider text-blue-700 dark:text-blue-300">
-              SOVEREIGN LEGAL METROLOGY & WELFARE PLATFORM
+              SOVEREIGN LEGAL & WELFARE INTELLIGENCE PLATFORM
             </span>
             <span className="text-slate-300 dark:text-slate-700">|</span>
             <span className="text-slate-500 dark:text-slate-400 text-[11px]">DPDP Act 2023 Compliant</span>
@@ -4326,7 +4324,7 @@ Between: Municipal Corporation of Greater Mumbai (Authority) AND TechCorp Soluti
               },
               {
                 q: 'Does JanDristi provide legal advice?',
-                a: 'No. JanDristi is an automated legal metrology and contract analysis platform designed to assist citizens, advocates, and regulatory officers. The outputs represent automated statutory analysis and do not substitute for formal legal representation by an advocate.'
+                a: 'No. JanDristi is an automated legal contract and welfare analysis platform designed to assist citizens, advocates, and regulatory officers. The outputs represent automated statutory analysis and do not substitute for formal legal representation by an advocate.'
               }
             ].map((faq, idx) => (
               <div
