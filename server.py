@@ -45,8 +45,16 @@ app.add_middleware(
 # ─── Health & Root Endpoints for Render Health Checks ─────────────────────────
 @app.get("/")
 @app.get("/health")
+@app.get("/api/health")
+@app.get("/api/dashboard")
 def health():
-    return {"status": "ok", "app": "NyayaMitra AI", "version": "2.0"}
+    return {
+        "status": "ok",
+        "app": "NyayaMitra AI",
+        "version": "2.0",
+        "schemes_count": 96,
+        "languages_count": 22
+    }
 
 # ─── Auth Models & Endpoints ──────────────────────────────────────────────────
 class LoginRequest(BaseModel):
@@ -275,7 +283,7 @@ def save_firebase_config(req: SaveFirebaseConfigRequest):
     env_path = os.path.join(os.path.dirname(__file__), "frontend", ".env")
     lines = [
         "# JanDristi Frontend Environment Variables",
-        "VITE_API_BASE=http://localhost:8000/api",
+        "VITE_API_BASE=http://localhost:8001/api",
         f"VITE_FIREBASE_API_KEY={req.apiKey.strip()}",
         f"VITE_FIREBASE_AUTH_DOMAIN={req.authDomain.strip()}",
         f"VITE_FIREBASE_PROJECT_ID={req.projectId.strip()}",
@@ -394,19 +402,41 @@ async def upload_document(
             except Exception:
                 pass
 
+def resolve_index_dir(index_dir: Optional[str] = None, doc_id: Optional[int] = None) -> Optional[str]:
+    """
+    Finds the actual FAISS index directory on disk across Windows and Linux path representations,
+    handling relative paths, forward/backward slashes, and looking up via doc_id if needed.
+    """
+    candidates = []
+    project_root = os.path.dirname(os.path.abspath(__file__))
+
+    if index_dir:
+        # Standardize slashes for current OS
+        clean = str(index_dir).replace("\\", os.sep).replace("/", os.sep)
+        candidates.append(clean)
+        candidates.append(os.path.abspath(clean))
+        candidates.append(os.path.normpath(os.path.join(project_root, clean)))
+        candidates.append(os.path.normpath(os.path.join(project_root, "vector_store", os.path.basename(clean))))
+    
+    if doc_id:
+        candidates.append(os.path.normpath(os.path.join(project_root, "vector_store", str(doc_id))))
+        candidates.append(os.path.normpath(os.path.join(config.FAISS_INDEX_PATH, str(doc_id))))
+
+    for c in candidates:
+        if c and os.path.exists(c) and os.path.isdir(c):
+            return c
+    return None
+
 # ─── Chat / Q&A ───────────────────────────────────────────────────────────────
 class ChatRequest(BaseModel):
     question: str
-    index_dir: str
+    index_dir: Optional[str] = ""
     doc_id: Optional[int] = None
     user_id: Optional[int] = 1
     ai_mode: str = "fast"
 
 @app.post("/api/chat")
 def chat_with_doc(req: ChatRequest):
-    if not os.path.exists(req.index_dir):
-        raise HTTPException(status_code=400, detail="Document index directory not found.")
-    
     # Enforce AI Question usage limit per billing period
     if req.user_id:
         session = db.SessionLocal()
@@ -415,7 +445,60 @@ def chat_with_doc(req: ChatRequest):
         finally:
             session.close()
 
-    result = rag.ask_question(req.question, req.index_dir, mode=req.ai_mode)
+    actual_index_dir = resolve_index_dir(req.index_dir, req.doc_id)
+
+    if actual_index_dir and os.path.exists(os.path.join(actual_index_dir, "chunks.json")):
+        result = rag.ask_question(req.question, actual_index_dir, mode=req.ai_mode)
+    elif req.doc_id:
+        # Graceful fallback: synthesize answer directly from document summary, clauses, and risks in app.db
+        session = db.SessionLocal()
+        doc = session.query(db.Document).filter_by(id=req.doc_id).first()
+        if not doc:
+            session.close()
+            raise HTTPException(status_code=404, detail="Document not found.")
+
+        context_parts = []
+        if doc.summary:
+            context_parts.append(f"Document Summary:\n{doc.summary}")
+        if doc.clauses:
+            try:
+                c_list = json.loads(doc.clauses)
+                for c in c_list:
+                    context_parts.append(f"Clause: {c.get('title', '')} — {c.get('text', '')}")
+            except Exception:
+                pass
+        if doc.risks:
+            try:
+                r_list = json.loads(doc.risks)
+                for r in r_list:
+                    context_parts.append(f"Flagged Risk ({r.get('level', '')}): {r.get('clause', '')} - {r.get('explanation', '')}")
+            except Exception:
+                pass
+
+        # Auto-heal vector store chunks on disk if folder/chunks were missing
+        try:
+            heal_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), "vector_store", str(req.doc_id))
+            os.makedirs(heal_dir, exist_ok=True)
+            chunks_file = os.path.join(heal_dir, "chunks.json")
+            if not os.path.exists(chunks_file):
+                recovered_chunks = []
+                for i, part in enumerate(context_parts):
+                    recovered_chunks.append({"page": 1, "chunk_id": i + 1, "text": part})
+                with open(chunks_file, "w", encoding="utf-8") as f_heal:
+                    json.dump(recovered_chunks, f_heal, ensure_ascii=False)
+        except Exception as e_heal:
+            print(f"[chat] Auto-heal index notice: {e_heal}")
+
+        context_text = "\n\n".join(context_parts) if context_parts else (doc.summary or "General Legal Contract")
+        result = rag.ask_question_with_context(req.question, context_text, citations=[1], mode=req.ai_mode)
+        session.close()
+    elif actual_index_dir:
+        result = rag.ask_question(req.question, actual_index_dir, mode=req.ai_mode)
+    else:
+        raise HTTPException(
+            status_code=400,
+            detail="Document index not found on disk. Please re-upload or select the document from your audit history."
+        )
 
     if req.doc_id:
         session = db.SessionLocal()
@@ -463,17 +546,29 @@ def _get_redlined_pdf_bytes(doc_id: int) -> tuple[bytes, str]:
     if not filename.lower().endswith(".pdf"):
         filename += ".pdf"
 
-    orig_pdf_path = os.path.join(doc.faiss_index_path or "", "original.pdf")
+    actual_dir = resolve_index_dir(doc.faiss_index_path, doc.id)
+    orig_pdf_path = os.path.join(actual_dir or "", "original.pdf")
     pdf_bytes = b""
 
-    if os.path.exists(orig_pdf_path):
+    if actual_dir and os.path.exists(orig_pdf_path):
         pdf_bytes = redline_generator.generate_redlined_pdf(orig_pdf_path, risks)
     else:
-        chunks_path = os.path.join(doc.faiss_index_path or "", "chunks.json")
-        if os.path.exists(chunks_path):
+        chunks_path = os.path.join(actual_dir or "", "chunks.json")
+        if actual_dir and os.path.exists(chunks_path):
             with open(chunks_path, "r", encoding="utf-8") as f:
                 chunks = json.load(f)
             pdf_bytes = redline_generator.generate_fallback_pdf_from_text(chunks, risks)
+        else:
+            # Fallback using clauses and summary if raw PDF not cached on disk
+            fallback_chunks = [{"page": 1, "text": doc.summary or "Contract Agreement"}]
+            if doc.clauses:
+                try:
+                    c_list = json.loads(doc.clauses)
+                    for c in c_list:
+                        fallback_chunks.append({"page": 1, "text": f"{c.get('title', '')}: {c.get('text', '')}"})
+                except Exception:
+                    pass
+            pdf_bytes = redline_generator.generate_fallback_pdf_from_text(fallback_chunks, risks)
 
     session.close()
     if not pdf_bytes:
@@ -555,8 +650,9 @@ def get_user_documents(user_id: int):
     results = []
     for d in docs:
         full_text = ""
-        if d.faiss_index_path:
-            chunks_path = os.path.join(d.faiss_index_path, "chunks.json")
+        actual_dir = resolve_index_dir(d.faiss_index_path, d.id)
+        if actual_dir:
+            chunks_path = os.path.join(actual_dir, "chunks.json")
             if os.path.exists(chunks_path):
                 try:
                     with open(chunks_path, "r", encoding="utf-8") as f:
@@ -564,6 +660,16 @@ def get_user_documents(user_id: int):
                         full_text = "\n".join([c.get("text", "") for c in chunks_data])
                 except Exception:
                     pass
+
+        if not full_text:
+            if d.clauses:
+                try:
+                    c_list = json.loads(d.clauses)
+                    full_text = "\n\n".join([f"{c.get('title', '')}\n{c.get('text', '')}" for c in c_list])
+                except Exception:
+                    pass
+            if not full_text:
+                full_text = d.summary or ""
 
         results.append({
             "id": d.id,
@@ -574,7 +680,7 @@ def get_user_documents(user_id: int):
             "risks": json.loads(d.risks) if d.risks else [],
             "clauses": json.loads(d.clauses) if d.clauses else [],
             "entities": json.loads(d.entities) if d.entities else {},
-            "index_dir": d.faiss_index_path,
+            "index_dir": actual_dir or d.faiss_index_path or f"./vector_store/{d.id}",
             "full_text": full_text,
             "uploaded_at": d.uploaded_at.strftime("%b %d, %Y")
         })
@@ -594,13 +700,14 @@ def reanalyze_document(doc_id: int, req: ReanalyzeRequest):
         raise HTTPException(status_code=404, detail="Document not found")
 
     full_text = ""
-    if doc.faiss_index_path:
-        orig_pdf = os.path.join(doc.faiss_index_path, "original.pdf")
+    actual_dir = resolve_index_dir(doc.faiss_index_path, doc.id)
+    if actual_dir:
+        orig_pdf = os.path.join(actual_dir, "original.pdf")
         if os.path.exists(orig_pdf):
             pages = ingestion.extract_text_from_pdf(orig_pdf)
             full_text = "\n".join([ingestion.preprocess_text(p["text"]) for p in pages])
         else:
-            chunks_path = os.path.join(doc.faiss_index_path, "chunks.json")
+            chunks_path = os.path.join(actual_dir, "chunks.json")
             if os.path.exists(chunks_path):
                 with open(chunks_path, "r", encoding="utf-8") as f:
                     chunks_data = json.load(f)

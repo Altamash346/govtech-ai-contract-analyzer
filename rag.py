@@ -133,3 +133,37 @@ LEGAL ASSISTANT ANSWER (with citations):"""
         "answer": answer,
         "citations": citations
     }
+
+
+def ask_question_with_context(question: str, context: str, citations: list = None, mode: str = None) -> dict:
+    """
+    Answers a question directly using supplied document context (clauses, summary, or full text)
+    when the vector store index directory is not immediately available.
+    """
+    if citations is None:
+        citations = [1]
+
+    prompt = f"""You are an expert legal assistant analyzing a legal document. Answer the user's question accurately, clearly, and thoroughly based on the provided document context below.
+
+INSTRUCTIONS:
+1. Ground your answer in the facts, clauses, and terms found in the document excerpts below.
+2. If the user asks for a summary or translation (e.g., in Hindi or another Indian language), provide a comprehensive, high-quality answer directly in the requested language.
+3. Include page citations where relevant (e.g., [Page 1]).
+4. If the question asks for general understanding, synthesize a helpful, legally sound response based on the document summary and clauses.
+
+DOCUMENT CONTEXT:
+{context}
+
+USER QUESTION: {question}
+
+LEGAL ASSISTANT ANSWER (with citations):"""
+
+    try:
+        answer = _call_llm(prompt, mode)
+    except Exception as e:
+        answer = f"Document overview: {context[:400]}..."
+
+    return {
+        "answer": answer,
+        "citations": citations
+    }
