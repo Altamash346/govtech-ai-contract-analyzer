@@ -1,12 +1,16 @@
 {
   "appId": "org.vit.nyayamitra",
-  "appName": "NyayaMitra AI",
+  "appName": "JanDristi AI",
   "webDir": "dist",
   "server": {
     "androidScheme": "https",
     "cleartext": true,
     "allowNavigation": [
       "govtech-ai-contract-analyzer-platform.onrender.com",
+      "jandrishti-15147.firebaseapp.com",
+      "*.firebaseapp.com",
+      "*.google.com",
+      "accounts.google.com",
       "translate.google.com",
       "translate.googleapis.com",
       "fonts.googleapis.com",

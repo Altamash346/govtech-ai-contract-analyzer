@@ -28,13 +28,13 @@ const isNativePlatform = typeof window !== 'undefined' && (
   (window.location.hostname === 'localhost' && (!window.location.port || window.location.port === '80' || window.location.port === '443'))
 );
 
-const API_BASE = import.meta.env.VITE_API_BASE || (
-  isNativePlatform
-    ? RENDER_BACKEND
-    : (typeof window !== 'undefined' && (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') && window.location.port !== ''
+const API_BASE = isNativePlatform
+  ? RENDER_BACKEND
+  : (import.meta.env.VITE_API_BASE || (
+      typeof window !== 'undefined' && (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') && window.location.port !== ''
         ? '/api'
-        : RENDER_BACKEND)
-);
+        : RENDER_BACKEND
+    ));
 
 // Safe parsing helper for JSON fields stored or returned as strings
 function safeParse(val, fallback) {
