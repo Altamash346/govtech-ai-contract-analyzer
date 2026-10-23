@@ -6,7 +6,7 @@ import {
   Calendar, DollarSign, Layers, ArrowRight, Sparkles, Cpu, Lock, PhoneCall,
   ExternalLink, Award, CheckCircle2, ChevronDown, BookOpen, Activity, AlertCircle,
   FileCheck, HelpCircle, VolumeX, Copy, Check, LayoutGrid, PieChart, Zap, Play, Pause,
-  ShieldAlert, Bot, X, Menu, Crown, CreditCard, Unlock
+  ShieldAlert, Bot, X, Menu, Crown, CreditCard, Unlock, Mail, KeyRound, RefreshCw, ShieldCheck
 } from 'lucide-react';
 import { 
   signInWithGoogle, 
@@ -470,13 +470,27 @@ export default function App() {
     }
   }, []);
   
-  // Auth Modal
+  // Auth Modal & Mail Verification (OTP) State
   const [showAuthModal, setShowAuthModal] = useState(false);
-  const [authMode, setAuthMode] = useState('login');
+  const [authMode, setAuthMode] = useState('login'); // 'login' | 'register' | 'reset'
+  const [authMethod, setAuthMethod] = useState('otp'); // 'otp' (email verification code) | 'password'
   const [authEmail, setAuthEmail] = useState('');
   const [authPassword, setAuthPassword] = useState('');
   const [authName, setAuthName] = useState('');
   const [authError, setAuthError] = useState('');
+  const [authSuccessMsg, setAuthSuccessMsg] = useState('');
+  const [otpStep, setOtpStep] = useState('input_email'); // 'input_email' | 'input_code'
+  const [otpCode, setOtpCode] = useState('');
+  const [otpDevCode, setOtpDevCode] = useState(null);
+  const [otpCooldown, setOtpCooldown] = useState(0);
+
+  useEffect(() => {
+    if (otpCooldown <= 0) return;
+    const interval = setInterval(() => {
+      setOtpCooldown(prev => Math.max(0, prev - 1));
+    }, 1000);
+    return () => clearInterval(interval);
+  }, [otpCooldown]);
 
   // Active Document State
   const [currentDoc, setCurrentDoc] = useState(null);
@@ -874,9 +888,96 @@ Between: Municipal Corporation of Greater Mumbai (Authority) AND TechCorp Soluti
     }
   };
 
+  // Send 6-Digit Email Verification Code (OTP)
+  const handleSendOtp = async (e) => {
+    if (e) e.preventDefault();
+    if (!authEmail.trim() || !authEmail.includes('@') || !authEmail.includes('.')) {
+      setAuthError('Please enter a valid email address.');
+      return;
+    }
+    setAuthLoading(true);
+    setAuthError('');
+    setAuthSuccessMsg('');
+
+    try {
+      const res = await safeFetch(`${API_BASE}/auth/send-verification-code`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          email: authEmail.trim(),
+          purpose: authMode === 'register' ? 'register' : 'login'
+        })
+      });
+
+      if (res && res.success) {
+        setOtpStep('input_code');
+        setOtpCooldown(60);
+        setAuthSuccessMsg(res.message || `Verification code sent to ${authEmail}`);
+        if (res.dev_code) {
+          setOtpDevCode(res.dev_code);
+        }
+      } else {
+        setAuthError(res?.detail || res?.message || 'Could not send verification code.');
+      }
+    } catch (err) {
+      setAuthError(err.message || 'Error sending verification code.');
+    } finally {
+      setAuthLoading(false);
+    }
+  };
+
+  // Verify 6-Digit Email Verification Code (OTP)
+  const handleVerifyOtp = async (e) => {
+    if (e) e.preventDefault();
+    if (!otpCode || otpCode.trim().length !== 6) {
+      setAuthError('Please enter the complete 6-digit verification code.');
+      return;
+    }
+    setAuthLoading(true);
+    setAuthError('');
+
+    try {
+      const res = await safeFetch(`${API_BASE}/auth/verify-code`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          email: authEmail.trim(),
+          code: otpCode.trim(),
+          purpose: authMode === 'register' ? 'register' : 'login',
+          name: authName.trim() || undefined
+        })
+      });
+
+      if (res && res.success && res.user) {
+        setUser(res.user);
+        setSafeStorage('gov_user', JSON.stringify(res.user));
+        setShowAuthModal(false);
+        setOtpStep('input_email');
+        setOtpCode('');
+        setOtpDevCode(null);
+        triggerToast(`Email verified! Welcome, ${res.user.name}`, 'success');
+        fetchUserDocuments(res.user.id);
+        fetchUserUsage(res.user.id);
+      } else {
+        setAuthError(res?.detail || res?.message || 'Invalid verification code.');
+      }
+    } catch (err) {
+      setAuthError(err.message || 'Verification failed. Please check your code.');
+    } finally {
+      setAuthLoading(false);
+    }
+  };
+
   // Auth Submit (Firebase Email/Password & Reset)
   const handleAuth = async (e) => {
     e.preventDefault();
+    if (authMode === 'login' && authMethod === 'otp') {
+      if (otpStep === 'input_email') {
+        return handleSendOtp(e);
+      } else {
+        return handleVerifyOtp(e);
+      }
+    }
     setAuthError('');
     setAuthLoading(true);
 
@@ -1584,8 +1685,30 @@ Between: Municipal Corporation of Greater Mumbai (Authority) AND TechCorp Soluti
             {user ? (
               <div className="flex items-center space-x-2.5">
                 <div className="text-right hidden sm:block">
-                  <div className="text-xs font-bold text-white truncate max-w-[130px]">{user.name}</div>
-                  <div className="text-[10px] text-blue-200 truncate max-w-[130px]">{user.email}</div>
+                  <div className="text-xs font-bold text-white truncate max-w-[150px] flex items-center gap-1.5 justify-end">
+                    <span className="truncate">{user.name}</span>
+                    {user.is_verified ? (
+                      <span className="inline-flex items-center gap-0.5 text-[9px] font-black text-emerald-300 bg-emerald-950/70 border border-emerald-500/40 px-1.5 py-0.5 rounded-full shrink-0" title="Email Verified Citizen">
+                        <Check className="w-2.5 h-2.5" /> Verified
+                      </span>
+                    ) : (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setAuthEmail(user.email);
+                          setAuthMode('login');
+                          setAuthMethod('otp');
+                          setOtpStep('input_email');
+                          setShowAuthModal(true);
+                        }}
+                        className="inline-flex items-center gap-0.5 text-[9px] font-bold text-amber-300 bg-amber-950/70 border border-amber-500/40 px-1.5 py-0.5 rounded-full hover:bg-amber-900/70 transition-all cursor-pointer shrink-0"
+                        title="Click to verify your email"
+                      >
+                        <Mail className="w-2.5 h-2.5" /> Verify
+                      </button>
+                    )}
+                  </div>
+                  <div className="text-[10px] text-blue-200 truncate max-w-[150px]">{user.email}</div>
                 </div>
                 <button
                   type="button"
@@ -4257,34 +4380,69 @@ Between: Municipal Corporation of Greater Mumbai (Authority) AND TechCorp Soluti
         </div>
       </footer>
 
-      {/* ── STRONG AUTHENTICATION MODAL (GOOGLE FIREBASE + EMAIL/PASSWORD) ── */}
+      {/* ── STRONG AUTHENTICATION MODAL (MAIL VERIFICATION OTP + PASSWORD + GOOGLE) ── */}
       {showAuthModal && (
         <div className="fixed inset-0 bg-black/75 backdrop-blur-xs z-50 flex items-center justify-center p-4">
           <div className={`max-w-md w-full rounded-2xl p-6 sm:p-8 shadow-2xl border relative transition-all ${isDark ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200'}`}>
             <button 
               type="button"
-              onClick={() => { setShowAuthModal(false); setAuthError(''); }}
+              onClick={() => { setShowAuthModal(false); setAuthError(''); setAuthSuccessMsg(''); setOtpCode(''); setOtpDevCode(null); }}
               className="absolute right-4 top-4 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 p-1.5 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800 transition-all cursor-pointer"
               aria-label="Close modal"
             >
               <X className="w-5 h-5" />
             </button>
 
-            <div className="flex items-center gap-3 mb-5">
+            <div className="flex items-center gap-3 mb-4">
               <img src="/logo.png" alt="JanDristi Logo" className="w-10 h-10 rounded-xl object-contain bg-white p-0.5 border border-slate-200 dark:border-slate-700 shadow-2xs" />
               <div>
                 <h3 className="font-bold text-lg font-display text-slate-900 dark:text-white leading-tight">
-                  {authMode === 'login' ? 'Sign In to JanDristi' : authMode === 'register' ? 'Create GovTech Account' : 'Reset Password'}
+                  {authMode === 'login' 
+                    ? (authMethod === 'otp' ? 'Sign In via Mail Code' : 'Sign In to JanDristi') 
+                    : authMode === 'register' ? 'Create GovTech Account' : 'Reset Password'}
                 </h3>
                 <p className="text-[11px] text-slate-500 dark:text-slate-400">
                   {authMode === 'login' 
-                    ? 'Access your private legal audits & inspection history' 
+                    ? (authMethod === 'otp' 
+                        ? 'Instant citizen login with single-use 6-digit email code' 
+                        : 'Access your private legal audits & inspection history') 
                     : authMode === 'register' 
                       ? 'Secure, encrypted citizen authentication' 
                       : 'Enter your email to receive a password reset link'}
                 </p>
               </div>
             </div>
+
+            {/* Login Method Tabs (Mail Verification vs Password) */}
+            {authMode === 'login' && (
+              <div className="flex rounded-xl bg-slate-100 dark:bg-slate-800 p-1 mb-4 text-xs font-bold">
+                <button
+                  type="button"
+                  onClick={() => { setAuthMethod('otp'); setAuthError(''); setAuthSuccessMsg(''); }}
+                  className={`flex-1 py-1.5 rounded-lg transition-all flex items-center justify-center gap-1.5 cursor-pointer ${
+                    authMethod === 'otp'
+                      ? 'bg-white dark:bg-slate-900 text-blue-600 dark:text-blue-400 shadow-2xs'
+                      : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
+                  }`}
+                >
+                  <Mail className="w-3.5 h-3.5" />
+                  <span>Mail Code (OTP)</span>
+                  <span className="text-[9px] px-1.5 py-0.2 rounded-full bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 font-extrabold uppercase">Verified</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => { setAuthMethod('password'); setAuthError(''); setAuthSuccessMsg(''); }}
+                  className={`flex-1 py-1.5 rounded-lg transition-all flex items-center justify-center gap-1.5 cursor-pointer ${
+                    authMethod === 'password'
+                      ? 'bg-white dark:bg-slate-900 text-blue-600 dark:text-blue-400 shadow-2xs'
+                      : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
+                  }`}
+                >
+                  <Lock className="w-3.5 h-3.5" />
+                  <span>Password</span>
+                </button>
+              </div>
+            )}
 
             {authError && (
               <div className="mb-4 p-3 rounded-xl bg-rose-50 dark:bg-rose-950/40 text-rose-900 dark:text-rose-200 border border-rose-200 dark:border-rose-800 text-xs flex items-center gap-2">
@@ -4293,98 +4451,249 @@ Between: Municipal Corporation of Greater Mumbai (Authority) AND TechCorp Soluti
               </div>
             )}
 
-            <form onSubmit={handleAuth} className="space-y-4">
-              {authMode === 'register' && (
-                <div>
-                  <label className="block text-[11px] font-bold uppercase tracking-wider mb-1.5 text-slate-700 dark:text-slate-300">
-                    Full Name
-                  </label>
-                  <input 
-                    type="text" 
-                    required 
-                    value={authName}
-                    onChange={e => setAuthName(e.target.value)}
-                    placeholder="e.g. Aarav Sharma"
-                    className="w-full px-3.5 py-2.5 text-xs rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500/20 shadow-2xs"
-                  />
-                </div>
-              )}
-
-              <div>
-                <label className="block text-[11px] font-bold uppercase tracking-wider mb-1.5 text-slate-700 dark:text-slate-300">
-                  Email Address
-                </label>
-                <input 
-                  type="email" 
-                  required 
-                  value={authEmail}
-                  onChange={e => setAuthEmail(e.target.value)}
-                  placeholder="name@domain.com"
-                  className="w-full px-3.5 py-2.5 text-xs rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500/20 shadow-2xs"
-                />
+            {authSuccessMsg && (
+              <div className="mb-4 p-3 rounded-xl bg-emerald-50 dark:bg-emerald-950/40 text-emerald-900 dark:text-emerald-200 border border-emerald-200 dark:border-emerald-800 text-xs flex items-center gap-2">
+                <CheckCircle className="w-4 h-4 text-emerald-600 shrink-0" />
+                <span>{authSuccessMsg}</span>
               </div>
+            )}
 
-              {authMode !== 'reset' && (
-                <div>
-                  <div className="flex items-center justify-between mb-1.5">
-                    <label className="text-[11px] font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300">
-                      Password
-                    </label>
-                    {authMode === 'login' && (
+            {/* FLOW 1: MAIL VERIFICATION CODE (OTP) LOGIN */}
+            {authMode === 'login' && authMethod === 'otp' ? (
+              <div className="space-y-4">
+                {otpStep === 'input_email' ? (
+                  <form onSubmit={handleSendOtp} className="space-y-4">
+                    <div>
+                      <label className="block text-[11px] font-bold uppercase tracking-wider mb-1.5 text-slate-700 dark:text-slate-300">
+                        Email Address
+                      </label>
+                      <div className="relative">
+                        <input 
+                          type="email" 
+                          required 
+                          value={authEmail}
+                          onChange={e => setAuthEmail(e.target.value)}
+                          placeholder="name@domain.com"
+                          className="w-full pl-9 pr-3.5 py-2.5 text-xs rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500/20 shadow-2xs"
+                        />
+                        <Mail className="w-4 h-4 text-slate-400 absolute left-3 top-3" />
+                      </div>
+                      <p className="text-[10px] text-slate-500 dark:text-slate-400 mt-1.5">
+                        We will send a 6-digit verification code to authenticate your citizen account.
+                      </p>
+                    </div>
+
+                    <button
+                      type="submit"
+                      disabled={authLoading || !authEmail.trim()}
+                      className="w-full py-3.5 bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-white font-bold text-xs uppercase tracking-wider rounded-xl shadow-xs hover:shadow transition-all cursor-pointer flex items-center justify-center gap-2"
+                    >
+                      {authLoading ? (
+                        <span>Sending Code...</span>
+                      ) : (
+                        <>
+                          <Mail className="w-4 h-4" />
+                          <span>Send Verification Code</span>
+                        </>
+                      )}
+                    </button>
+                  </form>
+                ) : (
+                  <form onSubmit={handleVerifyOtp} className="space-y-4">
+                    <div className="p-3 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 flex items-center justify-between text-xs">
+                      <div>
+                        <span className="text-slate-500">Code sent to: </span>
+                        <strong className="text-slate-900 dark:text-white">{authEmail}</strong>
+                      </div>
                       <button
                         type="button"
-                        onClick={() => { setAuthMode('reset'); setAuthError(''); }}
-                        className="text-[11px] font-semibold text-blue-600 dark:text-blue-400 hover:underline cursor-pointer"
+                        onClick={() => { setOtpStep('input_email'); setOtpCode(''); setOtpDevCode(null); setAuthError(''); setAuthSuccessMsg(''); }}
+                        className="text-blue-600 dark:text-blue-400 font-bold hover:underline cursor-pointer text-[11px]"
                       >
-                        Forgot password?
+                        Change
                       </button>
+                    </div>
+
+                    {/* Developer Sandbox Instant Auto-Fill Banner */}
+                    {otpDevCode && (
+                      <div 
+                        onClick={() => setOtpCode(otpDevCode)}
+                        className="p-2.5 rounded-xl bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800 text-amber-900 dark:text-amber-200 text-xs flex items-center justify-between cursor-pointer hover:bg-amber-100 dark:hover:bg-amber-900/40 transition-colors"
+                        title="Click to auto-fill development sandbox code"
+                      >
+                        <div className="flex items-center gap-2">
+                          <Sparkles className="w-4 h-4 text-amber-600 shrink-0" />
+                          <span><strong>Local Sandbox Code:</strong> <span className="font-mono font-bold tracking-widest">{otpDevCode}</span></span>
+                        </div>
+                        <span className="text-[10px] font-bold underline text-amber-700 dark:text-amber-300">Auto-fill</span>
+                      </div>
                     )}
+
+                    <div>
+                      <label className="block text-[11px] font-bold uppercase tracking-wider mb-1.5 text-center text-slate-700 dark:text-slate-300">
+                        Enter 6-Digit Verification Code
+                      </label>
+                      <input 
+                        type="text" 
+                        required 
+                        maxLength={6}
+                        autoFocus
+                        value={otpCode}
+                        onChange={e => setOtpCode(e.target.value.replace(/\D/g, ''))}
+                        placeholder="••••••"
+                        className="w-full py-3 text-center text-2xl font-mono font-extrabold tracking-[0.4em] rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 placeholder-slate-300 dark:placeholder-slate-600 focus:outline-none focus:ring-2 focus:ring-blue-500/20 shadow-2xs"
+                      />
+                    </div>
+
+                    <div className="flex items-center justify-between text-xs">
+                      <span className="text-slate-500 text-[11px]">Valid for 10 minutes</span>
+                      {otpCooldown > 0 ? (
+                        <span className="text-[11px] text-slate-400 font-semibold">Resend in {otpCooldown}s</span>
+                      ) : (
+                        <button
+                          type="button"
+                          onClick={handleSendOtp}
+                          disabled={authLoading}
+                          className="text-[11px] font-bold text-blue-600 dark:text-blue-400 hover:underline cursor-pointer flex items-center gap-1"
+                        >
+                          <RefreshCw className="w-3 h-3" /> Resend Code
+                        </button>
+                      )}
+                    </div>
+
+                    <button
+                      type="submit"
+                      disabled={authLoading || otpCode.length !== 6}
+                      className="w-full py-3.5 bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 text-white font-bold text-xs uppercase tracking-wider rounded-xl shadow-xs hover:shadow transition-all cursor-pointer flex items-center justify-center gap-2"
+                    >
+                      {authLoading ? (
+                        <span>Verifying...</span>
+                      ) : (
+                        <>
+                          <ShieldCheck className="w-4 h-4" />
+                          <span>Verify Code & Sign In</span>
+                        </>
+                      )}
+                    </button>
+                  </form>
+                )}
+              </div>
+            ) : (
+              /* FLOW 2: PASSWORD LOGIN / REGISTER / RESET */
+              <form onSubmit={handleAuth} className="space-y-4">
+                {authMode === 'register' && (
+                  <div>
+                    <label className="block text-[11px] font-bold uppercase tracking-wider mb-1.5 text-slate-700 dark:text-slate-300">
+                      Full Name
+                    </label>
+                    <input 
+                      type="text" 
+                      required 
+                      value={authName}
+                      onChange={e => setAuthName(e.target.value)}
+                      placeholder="e.g. Aarav Sharma"
+                      className="w-full px-3.5 py-2.5 text-xs rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500/20 shadow-2xs"
+                    />
                   </div>
+                )}
+
+                <div>
+                  <label className="block text-[11px] font-bold uppercase tracking-wider mb-1.5 text-slate-700 dark:text-slate-300">
+                    Email Address
+                  </label>
                   <input 
-                    type="password" 
+                    type="email" 
                     required 
-                    value={authPassword}
-                    onChange={e => setAuthPassword(e.target.value)}
-                    placeholder={authMode === 'register' ? 'Minimum 6 characters' : '••••••••••••'}
+                    value={authEmail}
+                    onChange={e => setAuthEmail(e.target.value)}
+                    placeholder="name@domain.com"
                     className="w-full px-3.5 py-2.5 text-xs rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500/20 shadow-2xs"
                   />
                 </div>
-              )}
 
-              <button
-                type="submit"
-                disabled={authLoading}
-                className="w-full py-3.5 bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-white font-bold text-xs uppercase tracking-wider rounded-xl shadow-xs hover:shadow transition-all cursor-pointer flex items-center justify-center gap-2 mt-2"
-              >
-                {authLoading ? (
-                  <span>Processing...</span>
-                ) : authMode === 'login' ? (
-                  'Sign In'
-                ) : authMode === 'register' ? (
-                  'Create Account'
-                ) : (
-                  'Send Reset Link'
+                {authMode !== 'reset' && (
+                  <div>
+                    <div className="flex items-center justify-between mb-1.5">
+                      <label className="text-[11px] font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300">
+                        Password
+                      </label>
+                      {authMode === 'login' && (
+                        <button
+                          type="button"
+                          onClick={() => { setAuthMode('reset'); setAuthError(''); setAuthSuccessMsg(''); }}
+                          className="text-[11px] font-semibold text-blue-600 dark:text-blue-400 hover:underline cursor-pointer"
+                        >
+                          Forgot password?
+                        </button>
+                      )}
+                    </div>
+                    <input 
+                      type="password" 
+                      required 
+                      value={authPassword}
+                      onChange={e => setAuthPassword(e.target.value)}
+                      placeholder={authMode === 'register' ? 'Minimum 6 characters' : '••••••••••••'}
+                      className="w-full px-3.5 py-2.5 text-xs rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500/20 shadow-2xs"
+                    />
+                  </div>
                 )}
-              </button>
-            </form>
 
-            <div className="mt-5 pt-4 border-t border-slate-100 dark:border-slate-800 text-center text-xs text-slate-500">
+                <button
+                  type="submit"
+                  disabled={authLoading}
+                  className="w-full py-3.5 bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-white font-bold text-xs uppercase tracking-wider rounded-xl shadow-xs hover:shadow transition-all cursor-pointer flex items-center justify-center gap-2 mt-2"
+                >
+                  {authLoading ? (
+                    <span>Processing...</span>
+                  ) : authMode === 'login' ? (
+                    'Sign In with Password'
+                  ) : authMode === 'register' ? (
+                    'Create Account'
+                  ) : (
+                    'Send Password Reset Link'
+                  )}
+                </button>
+              </form>
+            )}
+
+            {/* Google OAuth Option */}
+            <div className="relative my-4">
+              <div className="absolute inset-0 flex items-center"><div className="w-full border-t border-slate-200 dark:border-slate-800" /></div>
+              <div className="relative flex justify-center text-[10px] uppercase font-bold text-slate-400"><span className="bg-white dark:bg-slate-900 px-2">Or continue with</span></div>
+            </div>
+
+            <button
+              type="button"
+              onClick={handleGoogleSignIn}
+              disabled={authLoading}
+              className="w-full py-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 text-xs font-bold transition-all flex items-center justify-center gap-2 cursor-pointer shadow-2xs"
+            >
+              <svg className="w-4 h-4" viewBox="0 0 24 24">
+                <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" />
+                <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" />
+                <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z" />
+                <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z" />
+              </svg>
+              <span>Google Account</span>
+            </button>
+
+            <div className="mt-4 pt-3 border-t border-slate-100 dark:border-slate-800 text-center text-xs text-slate-500">
               {authMode === 'login' ? (
                 <span>
                   Don't have an account?{' '}
-                  <button type="button" onClick={() => { setAuthMode('register'); setAuthError(''); }} className="text-blue-600 dark:text-blue-400 font-bold hover:underline cursor-pointer">
+                  <button type="button" onClick={() => { setAuthMode('register'); setAuthError(''); setAuthSuccessMsg(''); }} className="text-blue-600 dark:text-blue-400 font-bold hover:underline cursor-pointer">
                     Register here
                   </button>
                 </span>
               ) : authMode === 'register' ? (
                 <span>
                   Already have an account?{' '}
-                  <button type="button" onClick={() => { setAuthMode('login'); setAuthError(''); }} className="text-blue-600 dark:text-blue-400 font-bold hover:underline cursor-pointer">
-                    Sign in
+                  <button type="button" onClick={() => { setAuthMode('login'); setAuthMethod('otp'); setAuthError(''); setAuthSuccessMsg(''); }} className="text-blue-600 dark:text-blue-400 font-bold hover:underline cursor-pointer">
+                    Sign in with Mail Code
                   </button>
                 </span>
               ) : (
-                <button type="button" onClick={() => { setAuthMode('login'); setAuthError(''); }} className="text-blue-600 dark:text-blue-400 font-bold hover:underline cursor-pointer">
+                <button type="button" onClick={() => { setAuthMode('login'); setAuthMethod('otp'); setAuthError(''); setAuthSuccessMsg(''); }} className="text-blue-600 dark:text-blue-400 font-bold hover:underline cursor-pointer">
                   ← Back to Sign In
                 </button>
               )}

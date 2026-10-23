@@ -4,7 +4,7 @@ Stores: users, uploaded document metadata, Q&A history,
         subscription plans, user subscriptions, usage tracking,
         and payment transactions.
 """
-from sqlalchemy import create_engine, Column, String, Integer, Text, DateTime, ForeignKey, text
+from sqlalchemy import create_engine, Column, String, Integer, Text, DateTime, ForeignKey, Boolean, text
 from sqlalchemy.orm import declarative_base, sessionmaker, relationship
 from datetime import datetime
 import hashlib
@@ -23,6 +23,7 @@ class User(Base):
     email = Column(String, unique=True, nullable=False)
     password_hash = Column(String, nullable=False)
     role = Column(String, default="user")  # "user" or "admin"
+    is_verified = Column(Boolean, default=False)
     created_at = Column(DateTime, default=datetime.utcnow)
     profile = Column(Text, nullable=True)  # JSON string of user profile for scheme matching
 
@@ -144,6 +145,17 @@ class PaymentWebhookEvent(Base):
     created_at = Column(DateTime, default=datetime.utcnow)
 
 
+class EmailVerification(Base):
+    __tablename__ = "email_verifications"
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    email = Column(String, index=True, nullable=False)
+    code = Column(String(6), nullable=False)
+    purpose = Column(String, default="login")  # "login", "register", "verify"
+    expires_at = Column(DateTime, nullable=False)
+    is_used = Column(Boolean, default=False)
+    created_at = Column(DateTime, default=datetime.utcnow)
+
+
 def init_db():
     """Create all tables in the database and seed initial subscription plans."""
     Base.metadata.create_all(bind=engine)
@@ -152,6 +164,14 @@ def init_db():
     try:
         with engine.connect() as conn:
             conn.execute(text("ALTER TABLE documents ADD COLUMN file_hash VARCHAR"))
+            conn.commit()
+    except Exception:
+        pass  # Column already exists
+
+    # Safe migration: ensure is_verified column exists on users table
+    try:
+        with engine.connect() as conn:
+            conn.execute(text("ALTER TABLE users ADD COLUMN is_verified BOOLEAN DEFAULT 0"))
             conn.commit()
     except Exception:
         pass  # Column already exists

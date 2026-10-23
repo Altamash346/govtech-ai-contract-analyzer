@@ -42,3 +42,12 @@ BUSINESS_AI_QUERY_LIMIT    = int(os.getenv("BUSINESS_AI_QUERY_LIMIT", "250"))
 RAZORPAY_KEY_ID            = os.getenv("RAZORPAY_KEY_ID", "rzp_test_placeholder")
 RAZORPAY_KEY_SECRET        = os.getenv("RAZORPAY_KEY_SECRET", "rzp_secret_placeholder")
 RAZORPAY_WEBHOOK_SECRET    = os.getenv("RAZORPAY_WEBHOOK_SECRET", "rzp_webhook_placeholder")
+
+# ─── Email & SMTP Configuration ──────────────────────────────────────────────
+SMTP_HOST                  = os.getenv("SMTP_HOST", "")
+SMTP_PORT                  = int(os.getenv("SMTP_PORT", "587"))
+SMTP_USER                  = os.getenv("SMTP_USER", "")
+SMTP_PASSWORD              = os.getenv("SMTP_PASSWORD", "")
+SMTP_FROM                  = os.getenv("SMTP_FROM", "noreply@jandristi.gov.in")
+SMTP_USE_TLS              = os.getenv("SMTP_USE_TLS", "true").lower() == "true"
+

@@ -9,6 +9,7 @@ import {
   signOut,
   onAuthStateChanged,
   sendPasswordResetEmail,
+  sendEmailVerification,
   updateProfile
 } from 'firebase/auth';
 
@@ -144,6 +145,21 @@ export async function resetUserPassword(email) {
   try {
     await sendPasswordResetEmail(auth, email);
     return { success: true, message: 'Password reset link sent to your email.' };
+  } catch (error) {
+    return { success: false, error: error.message };
+  }
+}
+
+/**
+ * Send email verification link to current authenticated Firebase user
+ */
+export async function sendFirebaseEmailVerification() {
+  if (!auth.currentUser) {
+    return { success: false, error: 'No active user found.' };
+  }
+  try {
+    await sendEmailVerification(auth.currentUser);
+    return { success: true, message: 'Verification email sent. Please check your inbox and spam folder.' };
   } catch (error) {
     return { success: false, error: error.message };
   }

@@ -4,8 +4,9 @@ Provides REST endpoints for the React frontend, calling all existing Python AI e
 """
 import os
 import json
+import secrets
 import tempfile
-from datetime import datetime
+from datetime import datetime, timedelta
 from typing import Optional
 
 from fastapi import FastAPI, UploadFile, File, Form, HTTPException, Depends, Request
@@ -16,6 +17,7 @@ from pydantic import BaseModel
 import config
 import database as db
 import subscription_service
+import email_service
 import ingestion
 import analysis
 import rag
@@ -61,6 +63,126 @@ class FirebaseAuthRequest(BaseModel):
     email: str
     name: Optional[str] = "Citizen User"
 
+class SendCodeRequest(BaseModel):
+    email: str
+    purpose: Optional[str] = "login"  # "login", "register", "verify"
+
+class VerifyCodeRequest(BaseModel):
+    email: str
+    code: str
+    purpose: Optional[str] = "login"
+    name: Optional[str] = None
+
+@app.post("/api/auth/send-verification-code")
+def send_verification_code(req: SendCodeRequest):
+    """
+    Generates a secure 6-digit verification code and emails it to the user.
+    Falls back gracefully to local developer sandbox mode if SMTP is not configured.
+    """
+    email = req.email.strip().lower()
+    if not email or "@" not in email or "." not in email:
+        raise HTTPException(status_code=400, detail="Please enter a valid email address.")
+
+    session = db.SessionLocal()
+    try:
+        # Invalidate previous unused codes for this email and purpose
+        session.query(db.EmailVerification).filter(
+            db.EmailVerification.email == email,
+            db.EmailVerification.purpose == req.purpose,
+            db.EmailVerification.is_used == False
+        ).update({"is_used": True})
+
+        # Generate secure 6-digit code
+        code = f"{secrets.randbelow(900000) + 100000}"
+        expires_at = datetime.utcnow() + timedelta(minutes=10)
+
+        record = db.EmailVerification(
+            email=email,
+            code=code,
+            purpose=req.purpose,
+            expires_at=expires_at,
+            is_used=False
+        )
+        session.add(record)
+        session.commit()
+
+        # Send via email service (SMTP or dev sandbox)
+        res = email_service.send_verification_email(email, code, req.purpose)
+        return {
+            "success": True,
+            "message": res.get("message", f"Verification code sent to {email}"),
+            "dev_mode": res.get("dev_mode", False),
+            "dev_code": res.get("code") if res.get("dev_mode") else None,
+            "expires_in_seconds": 600
+        }
+    finally:
+        session.close()
+
+@app.post("/api/auth/verify-code")
+def verify_code(req: VerifyCodeRequest):
+    """
+    Verifies the 6-digit email verification code.
+    If valid, marks email as verified and signs the user in (or auto-registers new account).
+    """
+    email = req.email.strip().lower()
+    code = req.code.strip()
+
+    if not email or not code:
+        raise HTTPException(status_code=400, detail="Email and 6-digit verification code are required.")
+
+    session = db.SessionLocal()
+    try:
+        now = datetime.utcnow()
+        record = session.query(db.EmailVerification).filter(
+            db.EmailVerification.email == email,
+            db.EmailVerification.code == code,
+            db.EmailVerification.is_used == False,
+            db.EmailVerification.expires_at > now
+        ).order_by(db.EmailVerification.id.desc()).first()
+
+        if not record:
+            raise HTTPException(status_code=400, detail="Invalid or expired verification code. Please request a new code.")
+
+        # Mark code as consumed
+        record.is_used = True
+
+        # Check existing user or auto-provision
+        user = session.query(db.User).filter_by(email=email).first()
+        if not user:
+            name = req.name or email.split("@")[0].title()
+            user = db.User(
+                name=name,
+                email=email,
+                password_hash=db.hash_password(f"email_verified_{secrets.token_hex(16)}"),
+                role="user",
+                is_verified=True
+            )
+            session.add(user)
+            session.commit()
+            subscription_service.get_or_create_user_subscription(session, user.id)
+        else:
+            user.is_verified = True
+            if req.name and (not user.name or user.name == "Citizen User"):
+                user.name = req.name
+            session.commit()
+
+        subscription_service.get_or_create_user_subscription(session, user.id)
+
+        user_data = {
+            "id": user.id,
+            "name": user.name,
+            "email": user.email,
+            "role": user.role,
+            "is_verified": bool(user.is_verified)
+        }
+        return {
+            "success": True,
+            "message": "Email verified successfully!",
+            "user": user_data
+        }
+    finally:
+        session.close()
+
 @app.post("/api/auth/firebase")
 def firebase_auth(req: FirebaseAuthRequest):
     if not req.email:
@@ -72,7 +194,8 @@ def firebase_auth(req: FirebaseAuthRequest):
             name=req.name or req.email.split("@")[0].title(),
             email=req.email,
             password_hash=db.hash_password(f"firebase_{req.uid}"),
-            role="user"
+            role="user",
+            is_verified=True
         )
         session.add(user)
         session.commit()
@@ -82,7 +205,8 @@ def firebase_auth(req: FirebaseAuthRequest):
         "name": user.name,
         "email": user.email,
         "role": user.role,
-        "firebase_uid": req.uid
+        "firebase_uid": req.uid,
+        "is_verified": bool(user.is_verified)
     }
     session.close()
     return {"success": True, "user": user_data}
@@ -100,7 +224,8 @@ def login(req: LoginRequest):
                 "id": user.id,
                 "name": user.name,
                 "email": user.email,
-                "role": user.role
+                "role": user.role,
+                "is_verified": bool(user.is_verified)
             }
         }
     session.close()
@@ -119,7 +244,8 @@ def register(req: RegisterRequest):
         name=req.name,
         email=req.email,
         password_hash=db.hash_password(req.password),
-        role="user"
+        role="user",
+        is_verified=False
     )
     session.add(new_user)
     session.commit()
@@ -129,7 +255,8 @@ def register(req: RegisterRequest):
         "id": new_user.id,
         "name": new_user.name,
         "email": new_user.email,
-        "role": new_user.role
+        "role": new_user.role,
+        "is_verified": False
     }
     session.close()
     return {"success": True, "message": "Account created successfully.", "user_id": user_id, "user": user_data}
