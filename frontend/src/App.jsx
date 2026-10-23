@@ -472,6 +472,16 @@ export default function App() {
       return () => clearInterval(interval);
     }
   }, []);
+
+  // Cleanup any legacy placeholder Firebase config from localStorage
+  useEffect(() => {
+    try {
+      const stored = localStorage.getItem('gov_firebase_config');
+      if (stored && (stored.includes('your-project') || stored.includes('Dummy') || stored.includes('...'))) {
+        localStorage.removeItem('gov_firebase_config');
+      }
+    } catch (e) {}
+  }, []);
   
   // Auth Modal & Mail Verification (OTP) State
   const [showAuthModal, setShowAuthModal] = useState(false);

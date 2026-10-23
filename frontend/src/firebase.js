@@ -14,12 +14,12 @@ import {
 } from 'firebase/auth';
 
 const FALLBACK_CONFIG = {
-  apiKey: "AIzaSyDummyKeyForGovTechAiAnalyzer",
-  authDomain: "govtech-ai-contract-analyzer.firebaseapp.com",
-  projectId: "govtech-ai-contract-analyzer",
-  storageBucket: "govtech-ai-contract-analyzer.appspot.com",
-  messagingSenderId: "102938475610",
-  appId: "1:102938475610:web:987654321abcdef"
+  apiKey: "AIzaSyA2sp9VwaFr3Kx4e8Uivq1kN4TLCqhiw9o",
+  authDomain: "jandrishti-15147.firebaseapp.com",
+  projectId: "jandrishti-15147",
+  storageBucket: "jandrishti-15147.firebasestorage.app",
+  messagingSenderId: "590612149482",
+  appId: "1:590612149482:web:ccb4a8dd7f01d926639393"
 };
 
 export function isValidFirebaseKey(key, domain, projectId) {
@@ -47,11 +47,11 @@ export function getFirebaseConfig() {
   if (envKey && isValidFirebaseKey(envKey, import.meta.env.VITE_FIREBASE_AUTH_DOMAIN, import.meta.env.VITE_FIREBASE_PROJECT_ID)) {
     return {
       apiKey: envKey.trim(),
-      authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN || "govtech-ai-contract-analyzer.firebaseapp.com",
-      projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID || "govtech-ai-contract-analyzer",
-      storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET || "govtech-ai-contract-analyzer.appspot.com",
-      messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID || "102938475610",
-      appId: import.meta.env.VITE_FIREBASE_APP_ID || "1:102938475610:web:987654321abcdef"
+      authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN || "jandrishti-15147.firebaseapp.com",
+      projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID || "jandrishti-15147",
+      storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET || "jandrishti-15147.firebasestorage.app",
+      messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID || "590612149482",
+      appId: import.meta.env.VITE_FIREBASE_APP_ID || "1:590612149482:web:ccb4a8dd7f01d926639393"
     };
   }
 
