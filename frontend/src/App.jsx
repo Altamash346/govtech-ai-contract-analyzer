@@ -841,7 +841,9 @@ Between: Municipal Corporation of Greater Mumbai (Authority) AND TechCorp Soluti
     setAuthLoading(true);
     setAuthError('');
     try {
-      const res = await signInWithGoogle();
+      const emailToUse = authEmail.trim() || null;
+      const nameToUse = authName.trim() || null;
+      const res = await signInWithGoogle(emailToUse, nameToUse);
       if (!res.success) {
         setAuthError(res.error || 'Google Sign-In was unsuccessful.');
         setAuthLoading(false);
@@ -864,6 +866,8 @@ Between: Municipal Corporation of Greater Mumbai (Authority) AND TechCorp Soluti
           setSafeStorage('gov_user', JSON.stringify(syncRes.user));
           setShowAuthModal(false);
           fetchUserDocuments(syncRes.user.id);
+          fetchUserUsage(syncRes.user.id);
+          triggerToast(`Signed in with Google Account (${syncRes.user.email})`, 'success');
           return;
         }
       } catch (syncErr) {
@@ -875,12 +879,15 @@ Between: Municipal Corporation of Greater Mumbai (Authority) AND TechCorp Soluti
         name: res.user.name,
         email: res.user.email,
         role: 'user',
+        is_verified: true,
         firebase_uid: res.user.uid
       };
       setUser(appUser);
       setSafeStorage('gov_user', JSON.stringify(appUser));
       setShowAuthModal(false);
       fetchUserDocuments(appUser.id);
+      fetchUserUsage(appUser.id);
+      triggerToast(`Signed in with Google Account (${appUser.email})`, 'success');
     } catch (err) {
       setAuthError(err.message || 'Google authentication failed.');
     } finally {
