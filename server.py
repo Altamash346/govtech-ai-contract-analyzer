@@ -261,6 +261,32 @@ def register(req: RegisterRequest):
     session.close()
     return {"success": True, "message": "Account created successfully.", "user_id": user_id, "user": user_data}
 
+class SaveFirebaseConfigRequest(BaseModel):
+    apiKey: str
+    authDomain: Optional[str] = ""
+    projectId: Optional[str] = ""
+    storageBucket: Optional[str] = ""
+    messagingSenderId: Optional[str] = ""
+    appId: Optional[str] = ""
+
+@app.post("/api/auth/save-firebase-config")
+def save_firebase_config(req: SaveFirebaseConfigRequest):
+    """Saves real Firebase client configuration into frontend/.env for Google OAuth."""
+    env_path = os.path.join(os.path.dirname(__file__), "frontend", ".env")
+    lines = [
+        "# JanDristi Frontend Environment Variables",
+        "VITE_API_BASE=http://localhost:8000/api",
+        f"VITE_FIREBASE_API_KEY={req.apiKey.strip()}",
+        f"VITE_FIREBASE_AUTH_DOMAIN={req.authDomain.strip()}",
+        f"VITE_FIREBASE_PROJECT_ID={req.projectId.strip()}",
+        f"VITE_FIREBASE_STORAGE_BUCKET={req.storageBucket.strip()}",
+        f"VITE_FIREBASE_MESSAGING_SENDER_ID={req.messagingSenderId.strip()}",
+        f"VITE_FIREBASE_APP_ID={req.appId.strip()}",
+    ]
+    with open(env_path, "w", encoding="utf-8") as f:
+        f.write("\n".join(lines) + "\n")
+    return {"success": True, "message": "Firebase configuration saved successfully to frontend/.env"}
+
 # ─── Document Processing / Upload ─────────────────────────────────────────────
 @app.post("/api/upload")
 async def upload_document(

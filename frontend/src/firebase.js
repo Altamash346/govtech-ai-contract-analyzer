@@ -1,5 +1,5 @@
-// frontend/src/firebase.js — Firebase Authentication Client
-import { initializeApp, getApps, getApp } from 'firebase/app';
+// frontend/src/firebase.js — Real Google OAuth & Firebase Authentication Client
+import { initializeApp, getApps, getApp, deleteApp } from 'firebase/app';
 import { 
   getAuth, 
   signInWithPopup, 
@@ -13,47 +13,70 @@ import {
   updateProfile
 } from 'firebase/auth';
 
-const firebaseConfig = {
-  apiKey: import.meta.env.VITE_FIREBASE_API_KEY || "AIzaSyDummyKeyForGovTechAiAnalyzer",
-  authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN || "govtech-ai-contract-analyzer.firebaseapp.com",
-  projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID || "govtech-ai-contract-analyzer",
-  storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET || "govtech-ai-contract-analyzer.appspot.com",
-  messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID || "102938475610",
-  appId: import.meta.env.VITE_FIREBASE_APP_ID || "1:102938475610:web:987654321abcdef"
-};
+export function getFirebaseConfig() {
+  try {
+    const raw = localStorage.getItem('gov_firebase_config');
+    if (raw) {
+      const parsed = JSON.parse(raw);
+      if (parsed.apiKey && parsed.apiKey.startsWith('AIzaSy')) {
+        return parsed;
+      }
+    }
+  } catch (e) {}
 
-// Initialize Firebase safely
-const app = getApps().length > 0 ? getApp() : initializeApp(firebaseConfig);
-export const auth = getAuth(app);
-export const googleProvider = new GoogleAuthProvider();
-googleProvider.setCustomParameters({ prompt: 'select_account' });
+  return {
+    apiKey: import.meta.env.VITE_FIREBASE_API_KEY || "",
+    authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN || "govtech-ai-contract-analyzer.firebaseapp.com",
+    projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID || "govtech-ai-contract-analyzer",
+    storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET || "govtech-ai-contract-analyzer.appspot.com",
+    messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID || "102938475610",
+    appId: import.meta.env.VITE_FIREBASE_APP_ID || "1:102938475610:web:987654321abcdef"
+  };
+}
 
 export function isFirebaseConfigured() {
-  const key = import.meta.env.VITE_FIREBASE_API_KEY || '';
+  const cfg = getFirebaseConfig();
+  const key = cfg.apiKey || '';
   return Boolean(key && !key.includes('Dummy') && key.startsWith('AIzaSy'));
 }
 
+// Initialize Firebase app safely
+let app = getApps().length > 0 ? getApp() : initializeApp(getFirebaseConfig());
+export let auth = getAuth(app);
+export const googleProvider = new GoogleAuthProvider();
+googleProvider.setCustomParameters({ prompt: 'select_account' });
+
 /**
- * Sign in using Google OAuth Popup
- * Supports live Firebase OAuth when configured, with a seamless zero-friction
- * local development fallback when running offline or without custom Firebase API keys.
+ * Dynamically reinitialize Firebase with real credentials provided by citizen / developer
  */
-export async function signInWithGoogle(customEmail = null, customName = null) {
+export async function reinitializeFirebase(newConfig) {
+  try {
+    localStorage.setItem('gov_firebase_config', JSON.stringify(newConfig));
+    const currentApps = getApps();
+    for (const a of currentApps) {
+      await deleteApp(a);
+    }
+    app = initializeApp(newConfig);
+    auth = getAuth(app);
+    return { success: true };
+  } catch (err) {
+    console.error('Error reinitializing Firebase:', err);
+    return { success: false, error: err.message };
+  }
+}
+
+/**
+ * Sign in using official Google OAuth Popup (verifies actual Google account)
+ */
+export async function signInWithGoogle() {
   if (!isFirebaseConfigured()) {
-    const email = customEmail && customEmail.includes('@') ? customEmail.trim() : 'citizen.google@gmail.com';
-    const name = customName || email.split('@')[0].replace(/[._]/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
-    const uid = `google_user_${Math.abs(email.split('').reduce((acc, c) => acc + c.charCodeAt(0), 0))}`;
     return {
-      success: true,
-      isFallback: true,
-      user: {
-        uid,
-        email,
-        name,
-        photoURL: 'https://lh3.googleusercontent.com/a/default-user=s96-c',
-      }
+      success: false,
+      needsSetup: true,
+      error: 'Google Sign-In requires your Firebase project credentials to verify real Google accounts.'
     };
   }
+
   try {
     const result = await signInWithPopup(auth, googleProvider);
     return {
@@ -66,26 +89,20 @@ export async function signInWithGoogle(customEmail = null, customName = null) {
       }
     };
   } catch (error) {
-    console.warn('Google Sign-In Notice:', error);
+    console.error('Google Sign-In Error:', error);
+    let msg = error.message;
     if (error.code === 'auth/popup-closed-by-user') {
-      return { success: false, error: 'Sign-in cancelled. Popup was closed before completing.' };
+      msg = 'Sign-in cancelled. Popup was closed before completing.';
     } else if (error.code === 'auth/popup-blocked') {
-      return { success: false, error: 'Sign-in popup was blocked by your browser. Please allow popups for this site.' };
+      msg = 'Sign-in popup was blocked by your browser. Please allow popups for this site.';
+    } else if (error.code === 'auth/unauthorized-domain') {
+      msg = 'This domain (localhost) is not yet in Authorized Domains in Firebase Console > Authentication > Settings > Authorized domains.';
+    } else if (error.code === 'auth/operation-not-allowed') {
+      msg = 'Google provider is not enabled. Go to Firebase Console > Authentication > Sign-in method > Enable Google.';
+    } else if (error.code === 'auth/invalid-api-key' || error.code === 'auth/api-key-not-valid') {
+      msg = 'Firebase API key is invalid. Please verify your Web App configuration.';
     }
-    // If Firebase key is rejected by Google or domain not whitelisted, seamlessly fall back
-    const email = customEmail && customEmail.includes('@') ? customEmail.trim() : 'citizen.google@gmail.com';
-    const name = customName || email.split('@')[0].replace(/[._]/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
-    const uid = `google_user_${Math.abs(email.split('').reduce((acc, c) => acc + c.charCodeAt(0), 0))}`;
-    return {
-      success: true,
-      isFallback: true,
-      user: {
-        uid,
-        email,
-        name,
-        photoURL: 'https://lh3.googleusercontent.com/a/default-user=s96-c',
-      }
-    };
+    return { success: false, error: msg, code: error.code };
   }
 }
 

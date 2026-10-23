@@ -13,7 +13,9 @@ import {
   loginWithEmail, 
   registerWithEmail, 
   resetUserPassword, 
-  logoutFirebase 
+  logoutFirebase,
+  reinitializeFirebase,
+  isFirebaseConfigured
 } from './firebase';
 
 const RENDER_BACKEND = 'https://govtech-ai-contract-analyzer-platform.onrender.com/api';
@@ -484,6 +486,14 @@ export default function App() {
   const [otpDevCode, setOtpDevCode] = useState(null);
   const [otpCooldown, setOtpCooldown] = useState(0);
 
+  // Real Google OAuth / Firebase Configuration Dialog State
+  const [showFirebaseSetupModal, setShowFirebaseSetupModal] = useState(false);
+  const [firebaseSetupApiKey, setFirebaseSetupApiKey] = useState('');
+  const [firebaseSetupAuthDomain, setFirebaseSetupAuthDomain] = useState('');
+  const [firebaseSetupProjectId, setFirebaseSetupProjectId] = useState('');
+  const [firebaseSetupAppId, setFirebaseSetupAppId] = useState('');
+  const [firebaseSnippetInput, setFirebaseSnippetInput] = useState('');
+
   useEffect(() => {
     if (otpCooldown <= 0) return;
     const interval = setInterval(() => {
@@ -836,16 +846,76 @@ Between: Municipal Corporation of Greater Mumbai (Authority) AND TechCorp Soluti
     }
   }, [user]);
 
-  // Google Firebase Authentication Handlers
+  // Real Google OAuth & Firebase Authentication Handlers
+  const handleParseFirebaseSnippet = (snippet) => {
+    setFirebaseSnippetInput(snippet);
+    const extract = (key) => {
+      const match = snippet.match(new RegExp(`${key}["']?\\s*:\\s*["']([^"']+)["']`));
+      return match ? match[1] : '';
+    };
+    const apiKey = extract('apiKey');
+    const authDomain = extract('authDomain');
+    const projectId = extract('projectId');
+    const appId = extract('appId');
+    if (apiKey) setFirebaseSetupApiKey(apiKey);
+    if (authDomain) setFirebaseSetupAuthDomain(authDomain);
+    if (projectId) setFirebaseSetupProjectId(projectId);
+    if (appId) setFirebaseSetupAppId(appId);
+  };
+
+  const handleSaveFirebaseSetup = async (e) => {
+    if (e) e.preventDefault();
+    const key = firebaseSetupApiKey.trim();
+    if (!key || !key.startsWith('AIzaSy')) {
+      setAuthError('Please enter a valid Firebase Web API Key (begins with AIzaSy).');
+      return;
+    }
+    const projId = firebaseSetupProjectId.trim() || 'govtech-ai-contract-analyzer';
+    const newConfig = {
+      apiKey: key,
+      authDomain: firebaseSetupAuthDomain.trim() || `${projId}.firebaseapp.com`,
+      projectId: projId,
+      storageBucket: `${projId}.appspot.com`,
+      messagingSenderId: "102938475610",
+      appId: firebaseSetupAppId.trim() || `1:102938475610:web:${key.slice(-10)}`
+    };
+
+    const reinitRes = await reinitializeFirebase(newConfig);
+    if (!reinitRes.success) {
+      setAuthError(`Configuration error: ${reinitRes.error}`);
+      return;
+    }
+
+    // Persist configuration in backend frontend/.env
+    safeFetch(`${API_BASE}/auth/save-firebase-config`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(newConfig)
+    }).catch(console.warn);
+
+    setShowFirebaseSetupModal(false);
+    triggerToast('Google OAuth connected! Launching Google Sign-In...', 'success');
+    setTimeout(() => {
+      handleGoogleSignIn();
+    }, 350);
+  };
+
   const handleGoogleSignIn = async () => {
+    if (!isFirebaseConfigured()) {
+      setShowFirebaseSetupModal(true);
+      return;
+    }
+
     setAuthLoading(true);
     setAuthError('');
     try {
-      const emailToUse = authEmail.trim() || null;
-      const nameToUse = authName.trim() || null;
-      const res = await signInWithGoogle(emailToUse, nameToUse);
+      const res = await signInWithGoogle();
       if (!res.success) {
-        setAuthError(res.error || 'Google Sign-In was unsuccessful.');
+        if (res.needsSetup) {
+          setShowFirebaseSetupModal(true);
+        } else {
+          setAuthError(res.error || 'Google Sign-In was unsuccessful.');
+        }
         setAuthLoading(false);
         return;
       }
@@ -867,7 +937,7 @@ Between: Municipal Corporation of Greater Mumbai (Authority) AND TechCorp Soluti
           setShowAuthModal(false);
           fetchUserDocuments(syncRes.user.id);
           fetchUserUsage(syncRes.user.id);
-          triggerToast(`Signed in with Google Account (${syncRes.user.email})`, 'success');
+          triggerToast(`Signed in with verified Google Account (${syncRes.user.email})`, 'success');
           return;
         }
       } catch (syncErr) {
@@ -887,7 +957,7 @@ Between: Municipal Corporation of Greater Mumbai (Authority) AND TechCorp Soluti
       setShowAuthModal(false);
       fetchUserDocuments(appUser.id);
       fetchUserUsage(appUser.id);
-      triggerToast(`Signed in with Google Account (${appUser.email})`, 'success');
+      triggerToast(`Signed in with verified Google Account (${appUser.email})`, 'success');
     } catch (err) {
       setAuthError(err.message || 'Google authentication failed.');
     } finally {
@@ -5258,6 +5328,110 @@ Between: Municipal Corporation of Greater Mumbai (Authority) AND TechCorp Soluti
                 Keep Plan
               </button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── REAL GOOGLE OAUTH / FIREBASE SETUP MODAL ── */}
+      {showFirebaseSetupModal && (
+        <div className="fixed inset-0 bg-black/80 backdrop-blur-xs z-[60] flex items-center justify-center p-4">
+          <div className={`max-w-lg w-full rounded-2xl p-6 sm:p-7 shadow-2xl border relative ${isDark ? 'bg-slate-900 border-slate-800 text-white' : 'bg-white border-slate-200 text-slate-900'}`}>
+            <button
+              type="button"
+              onClick={() => setShowFirebaseSetupModal(false)}
+              className="absolute right-4 top-4 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 p-1.5 rounded-xl cursor-pointer"
+            >
+              <X className="w-5 h-5" />
+            </button>
+
+            <div className="flex items-center gap-3 mb-4">
+              <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center text-white shadow-md">
+                <svg className="w-5 h-5" viewBox="0 0 24 24">
+                  <path fill="#ffffff" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" />
+                  <path fill="#ffffff" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" />
+                  <path fill="#ffffff" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z" />
+                  <path fill="#ffffff" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z" />
+                </svg>
+              </div>
+              <div>
+                <h3 className="font-bold text-base font-display">Connect Real Google Sign-In</h3>
+                <p className="text-[11px] text-slate-500 dark:text-slate-400">
+                  Google requires connecting your free Firebase project to verify actual Google accounts via OAuth.
+                </p>
+              </div>
+            </div>
+
+            <div className="p-3 rounded-xl bg-blue-50 dark:bg-blue-950/40 border border-blue-200 dark:border-blue-900 text-xs text-blue-900 dark:text-blue-200 mb-4 space-y-1">
+              <div className="font-bold flex items-center gap-1.5 text-blue-800 dark:text-blue-300">
+                <Sparkles className="w-3.5 h-3.5" /> Quick Setup (2 Minutes):
+              </div>
+              <ol className="list-decimal list-inside space-y-1 text-[11px] text-slate-600 dark:text-slate-300 pl-1">
+                <li>Go to <a href="https://console.firebase.google.com/" target="_blank" rel="noreferrer" className="text-blue-600 dark:text-blue-400 underline font-semibold">Firebase Console</a> & click <strong>Add project</strong> (free).</li>
+                <li>Under <strong>Authentication &gt; Sign-in method</strong>, enable <strong>Google</strong>.</li>
+                <li>Go to <strong>Project Settings &gt; General &gt; Your apps</strong>, click <strong>Web (&lt;/&gt;)</strong>, and copy the config.</li>
+                <li>Paste the config snippet below and click <strong>Save & Launch Google Sign-In</strong>!</li>
+              </ol>
+            </div>
+
+            <form onSubmit={handleSaveFirebaseSetup} className="space-y-3.5">
+              <div>
+                <label className="block text-[11px] font-bold uppercase tracking-wider mb-1 text-slate-700 dark:text-slate-300">
+                  Paste Entire Firebase Config Snippet (Auto-Extracts)
+                </label>
+                <textarea
+                  rows={2}
+                  value={firebaseSnippetInput}
+                  onChange={e => handleParseFirebaseSnippet(e.target.value)}
+                  placeholder={'const firebaseConfig = {\n  apiKey: "AIzaSy...",\n  authDomain: "...",\n  projectId: "..."\n};'}
+                  className="w-full p-2.5 text-xs font-mono rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-slate-100 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
+                />
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                <div>
+                  <label className="block text-[10px] font-bold uppercase tracking-wider mb-1 text-slate-600 dark:text-slate-400">
+                    Firebase API Key *
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    value={firebaseSetupApiKey}
+                    onChange={e => setFirebaseSetupApiKey(e.target.value)}
+                    placeholder="AIzaSy..."
+                    className="w-full px-3 py-2 text-xs rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 placeholder-slate-400 font-mono"
+                  />
+                </div>
+                <div>
+                  <label className="block text-[10px] font-bold uppercase tracking-wider mb-1 text-slate-600 dark:text-slate-400">
+                    Project ID
+                  </label>
+                  <input
+                    type="text"
+                    value={firebaseSetupProjectId}
+                    onChange={e => setFirebaseSetupProjectId(e.target.value)}
+                    placeholder="your-app-id"
+                    className="w-full px-3 py-2 text-xs rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 placeholder-slate-400"
+                  />
+                </div>
+              </div>
+
+              <div className="flex items-center justify-end gap-2.5 pt-2">
+                <button
+                  type="button"
+                  onClick={() => setShowFirebaseSetupModal(false)}
+                  className="px-4 py-2 text-xs font-bold text-slate-500 hover:text-slate-800 dark:hover:text-slate-200 cursor-pointer"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="px-5 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs uppercase tracking-wider shadow-sm transition-all cursor-pointer flex items-center gap-1.5"
+                >
+                  <Check className="w-3.5 h-3.5" />
+                  <span>Save & Open Google Sign-In</span>
+                </button>
+              </div>
+            </form>
           </div>
         </div>
       )}
