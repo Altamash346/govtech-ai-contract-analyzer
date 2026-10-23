@@ -239,7 +239,7 @@ export default function App() {
     setTimeout(() => setSubscriptionToast(null), 4500);
   };
 
-  const fetchUserUsage = async (userId = user?.id) => {
+  const fetchUserUsage = async (userId = (user?.id || 1)) => {
     if (!userId) return;
     try {
       const data = await safeFetch(`${API_BASE}/subscription/usage?user_id=${userId}`);
@@ -816,6 +816,7 @@ Between: Municipal Corporation of Greater Mumbai (Authority) AND TechCorp Soluti
       fetchUserDocuments(user.id);
       fetchUserUsage(user.id);
     } else {
+      fetchUserUsage(1);
       setDocuments([]);
       setCurrentDoc(null);
     }
@@ -1145,7 +1146,7 @@ Between: Municipal Corporation of Greater Mumbai (Authority) AND TechCorp Soluti
           question: userText,
           index_dir: currentDoc.index_dir,
           doc_id: currentDoc.id,
-          user_id: user ? user.id : null,
+          user_id: user ? user.id : 1,
           ai_mode: aiMode
         })
       });
@@ -1154,7 +1155,13 @@ Between: Municipal Corporation of Greater Mumbai (Authority) AND TechCorp Soluti
         text: data.answer,
         citations: data.citations || []
       }]);
+      // Live refresh of question quota
+      fetchUserUsage(user?.id || 1);
     } catch (err) {
+      if (err.message && (err.message.includes('rate limit') || err.message.includes('429'))) {
+        setPricingFeatureNotice('15 AI Questions Monthly Limit Reached. Upgrade for higher limits.');
+        setShowPricingModal(true);
+      }
       setMessages(prev => [...prev, { sender: 'ai', text: `Error: ${err.message}` }]);
     } finally {
       setIsChatLoading(false);
@@ -2642,6 +2649,9 @@ Between: Municipal Corporation of Greater Mumbai (Authority) AND TechCorp Soluti
                     <span className="font-bold truncate text-white">{currentDoc.filename}</span>
                   </div>
                   <div className="flex items-center gap-2 shrink-0">
+                    <span className="text-[10px] bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 px-2.5 py-1 rounded-full font-bold uppercase tracking-wider">
+                      {usageData.ai_queries_remaining !== undefined ? usageData.ai_queries_remaining : 15} / {usageData.ai_query_limit || 15} Qs Left
+                    </span>
                     <span className="text-[10px] bg-white/10 px-2.5 py-1 rounded-full font-semibold text-blue-200">
                       {aiMode === 'fast' ? 'Fast AI Engine' : 'High Security Engine'}
                     </span>
@@ -4548,15 +4558,27 @@ Between: Municipal Corporation of Greater Mumbai (Authority) AND TechCorp Soluti
 
                   <div className="p-2.5 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-xs mb-4">
                     <div className="flex justify-between font-bold text-[11px] mb-1">
-                      <span>Monthly Allowance</span>
+                      <span>Monthly Uploads</span>
                       <span className="text-blue-600 font-extrabold">
-                        {usageData.plan_id === 'free' ? `${usageData.uploads_used}/5 Uploads` : '5 Uploads/mo'}
+                        {usageData.plan_id === 'free' ? `${usageData.uploads_used}/5 Docs` : '5 Docs/mo'}
+                      </span>
+                    </div>
+                    <div className="w-full bg-slate-100 dark:bg-slate-800 rounded-full h-1.5 overflow-hidden mb-2.5">
+                      <div
+                        className="h-1.5 rounded-full bg-blue-600"
+                        style={{ width: usageData.plan_id === 'free' ? `${Math.min(100, (usageData.uploads_used / 5) * 100)}%` : '0%' }}
+                      />
+                    </div>
+                    <div className="flex justify-between font-bold text-[11px] mb-1">
+                      <span>AI Questions Allowance</span>
+                      <span className="text-emerald-600 font-extrabold">
+                        {usageData.plan_id === 'free' ? `${usageData.ai_queries_used ?? 0}/15 Questions` : '15 Questions/mo'}
                       </span>
                     </div>
                     <div className="w-full bg-slate-100 dark:bg-slate-800 rounded-full h-1.5 overflow-hidden">
                       <div
-                        className="h-1.5 rounded-full bg-blue-600"
-                        style={{ width: usageData.plan_id === 'free' ? `${Math.min(100, (usageData.uploads_used / 5) * 100)}%` : '0%' }}
+                        className="h-1.5 rounded-full bg-emerald-600"
+                        style={{ width: usageData.plan_id === 'free' ? `${Math.min(100, ((usageData.ai_queries_used ?? 0) / 15) * 100)}%` : '0%' }}
                       />
                     </div>
                   </div>
@@ -4565,10 +4587,10 @@ Between: Municipal Corporation of Greater Mumbai (Authority) AND TechCorp Soluti
                     <li className="flex items-center gap-2"><CheckCircle className="w-4 h-4 text-emerald-600 shrink-0" /> <span><strong>5 monthly document uploads</strong></span></li>
                     <li className="flex items-center gap-2"><CheckCircle className="w-4 h-4 text-emerald-600 shrink-0" /> <span>Basic government scheme directory</span></li>
                     <li className="flex items-center gap-2"><CheckCircle className="w-4 h-4 text-emerald-600 shrink-0" /> <span>Basic contract summaries & risk detection</span></li>
-                    <li className="flex items-center gap-2"><CheckCircle className="w-4 h-4 text-emerald-600 shrink-0" /> <span>15 AI questions per month</span></li>
+                    <li className="flex items-center gap-2"><CheckCircle className="w-4 h-4 text-emerald-600 shrink-0" /> <span><strong>15 AI questions per month</strong></span></li>
+                    <li className="flex items-center gap-2"><CheckCircle className="w-4 h-4 text-emerald-600 shrink-0" /> <span><strong>Downloadable official PDF audit reports</strong></span></li>
                     <li className="flex items-center gap-2"><CheckCircle className="w-4 h-4 text-emerald-600 shrink-0" /> <span>22 Indian regional languages</span></li>
                     <li className="flex items-center gap-2 text-slate-400"><X className="w-4 h-4 shrink-0 text-slate-400" /> <span className="line-through">Interactive page citations</span></li>
-                    <li className="flex items-center gap-2 text-slate-400"><X className="w-4 h-4 shrink-0 text-slate-400" /> <span className="line-through">Downloadable audit reports</span></li>
                     <li className="flex items-center gap-2 text-slate-400"><X className="w-4 h-4 shrink-0 text-slate-400" /> <span className="line-through">Word redlining with tracked changes</span></li>
                   </ul>
                 </div>

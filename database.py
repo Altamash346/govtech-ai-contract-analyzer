@@ -172,9 +172,9 @@ def init_db():
                     "upload_limit_label": f"{config.FREE_MONTHLY_UPLOADS} monthly",
                     "scheme_discovery": True,
                     "contract_analysis": "Basic",
-                    "ai_qa": "Limited",
+                    "ai_qa": "15 questions/month",
                     "page_citations": "Basic availability",
-                    "audit_reports": "Limited",
+                    "audit_reports": "Yes",
                     "advanced_clause_analysis": "Limited",
                     "word_redlining": False,
                     "workflow": "Basic"
