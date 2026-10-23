@@ -13,25 +13,39 @@ import {
   updateProfile
 } from 'firebase/auth';
 
+const FALLBACK_CONFIG = {
+  apiKey: "AIzaSyDummyKeyForGovTechAiAnalyzer",
+  authDomain: "govtech-ai-contract-analyzer.firebaseapp.com",
+  projectId: "govtech-ai-contract-analyzer",
+  storageBucket: "govtech-ai-contract-analyzer.appspot.com",
+  messagingSenderId: "102938475610",
+  appId: "1:102938475610:web:987654321abcdef"
+};
+
 export function getFirebaseConfig() {
   try {
-    const raw = localStorage.getItem('gov_firebase_config');
+    const raw = typeof window !== 'undefined' ? localStorage.getItem('gov_firebase_config') : null;
     if (raw) {
       const parsed = JSON.parse(raw);
-      if (parsed.apiKey && parsed.apiKey.startsWith('AIzaSy')) {
+      if (parsed.apiKey && parsed.apiKey.startsWith('AIzaSy') && !parsed.apiKey.includes('Dummy')) {
         return parsed;
       }
     }
   } catch (e) {}
 
-  return {
-    apiKey: import.meta.env.VITE_FIREBASE_API_KEY || "",
-    authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN || "govtech-ai-contract-analyzer.firebaseapp.com",
-    projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID || "govtech-ai-contract-analyzer",
-    storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET || "govtech-ai-contract-analyzer.appspot.com",
-    messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID || "102938475610",
-    appId: import.meta.env.VITE_FIREBASE_APP_ID || "1:102938475610:web:987654321abcdef"
-  };
+  const envKey = import.meta.env.VITE_FIREBASE_API_KEY;
+  if (envKey && envKey.trim() && envKey.startsWith('AIzaSy') && !envKey.includes('Dummy')) {
+    return {
+      apiKey: envKey.trim(),
+      authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN || "govtech-ai-contract-analyzer.firebaseapp.com",
+      projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID || "govtech-ai-contract-analyzer",
+      storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET || "govtech-ai-contract-analyzer.appspot.com",
+      messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID || "102938475610",
+      appId: import.meta.env.VITE_FIREBASE_APP_ID || "1:102938475610:web:987654321abcdef"
+    };
+  }
+
+  return FALLBACK_CONFIG;
 }
 
 export function isFirebaseConfigured() {
@@ -40,18 +54,34 @@ export function isFirebaseConfigured() {
   return Boolean(key && !key.includes('Dummy') && key.startsWith('AIzaSy'));
 }
 
-// Initialize Firebase app safely
-let app = getApps().length > 0 ? getApp() : initializeApp(getFirebaseConfig());
-export let auth = getAuth(app);
+// Safely initialize Firebase app & auth without ever crashing top-level import
+let app;
+try {
+  app = getApps().length > 0 ? getApp() : initializeApp(getFirebaseConfig());
+} catch (e) {
+  console.warn('Firebase app init notice:', e);
+}
+
+export let auth = null;
+try {
+  auth = app ? getAuth(app) : null;
+} catch (e) {
+  console.warn('Firebase auth init notice:', e);
+}
+
 export const googleProvider = new GoogleAuthProvider();
-googleProvider.setCustomParameters({ prompt: 'select_account' });
+try {
+  googleProvider.setCustomParameters({ prompt: 'select_account' });
+} catch (e) {}
 
 /**
  * Dynamically reinitialize Firebase with real credentials provided by citizen / developer
  */
 export async function reinitializeFirebase(newConfig) {
   try {
-    localStorage.setItem('gov_firebase_config', JSON.stringify(newConfig));
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('gov_firebase_config', JSON.stringify(newConfig));
+    }
     const currentApps = getApps();
     for (const a of currentApps) {
       await deleteApp(a);
@@ -69,7 +99,7 @@ export async function reinitializeFirebase(newConfig) {
  * Sign in using official Google OAuth Popup (verifies actual Google account)
  */
 export async function signInWithGoogle() {
-  if (!isFirebaseConfigured()) {
+  if (!isFirebaseConfigured() || !auth) {
     return {
       success: false,
       needsSetup: true,
@@ -110,7 +140,7 @@ export async function signInWithGoogle() {
  * Sign in with Email and Password
  */
 export async function loginWithEmail(email, password) {
-  if (!isFirebaseConfigured()) {
+  if (!isFirebaseConfigured() || !auth) {
     return { success: false, isFallback: true, code: 'auth/api-key-not-valid' };
   }
   try {
@@ -144,7 +174,7 @@ export async function loginWithEmail(email, password) {
  * Register a new user with strong password
  */
 export async function registerWithEmail(name, email, password) {
-  if (!isFirebaseConfigured()) {
+  if (!isFirebaseConfigured() || !auth) {
     return { success: false, isFallback: true, code: 'auth/api-key-not-valid' };
   }
   try {
@@ -179,6 +209,9 @@ export async function registerWithEmail(name, email, password) {
  * Send password reset email
  */
 export async function resetUserPassword(email) {
+  if (!auth) {
+    return { success: false, error: 'Authentication service is not initialized.' };
+  }
   try {
     await sendPasswordResetEmail(auth, email);
     return { success: true, message: 'Password reset link sent to your email.' };
@@ -191,7 +224,7 @@ export async function resetUserPassword(email) {
  * Send email verification link to current authenticated Firebase user
  */
 export async function sendFirebaseEmailVerification() {
-  if (!auth.currentUser) {
+  if (!auth || !auth.currentUser) {
     return { success: false, error: 'No active user found.' };
   }
   try {
@@ -206,6 +239,9 @@ export async function sendFirebaseEmailVerification() {
  * Sign out
  */
 export async function logoutFirebase() {
+  if (!auth) {
+    return { success: true };
+  }
   try {
     await signOut(auth);
     return { success: true };
