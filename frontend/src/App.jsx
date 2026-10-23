@@ -6,7 +6,7 @@ import {
   Calendar, DollarSign, Layers, ArrowRight, Sparkles, Cpu, Lock, PhoneCall,
   ExternalLink, Award, CheckCircle2, ChevronDown, BookOpen, Activity, AlertCircle,
   FileCheck, HelpCircle, VolumeX, Copy, Check, LayoutGrid, PieChart, Zap, Play, Pause,
-  ShieldAlert, Bot, X, Menu
+  ShieldAlert, Bot, X, Menu, Crown, CreditCard, Unlock
 } from 'lucide-react';
 import { 
   signInWithGoogle, 
@@ -132,6 +132,59 @@ function removeSafeStorage(key) {
   } catch (e) {}
 }
 
+// ── PRO LOCKED PAYWALL COMPONENT (FOR FREE CITIZEN TIER) ──
+function ProLockedPaywall({ title, moduleTag, description, bulletPoints, onUpgrade, isDark, onBackToAudit }) {
+  return (
+    <div className={`relative overflow-hidden rounded-2xl border p-8 sm:p-12 shadow-xl text-center max-w-3xl mx-auto my-6 transition-all ${
+      isDark 
+        ? 'border-amber-700/60 bg-gradient-to-br from-[#0f172a] via-[#1e1b4b]/50 to-[#0f172a] text-white' 
+        : 'border-amber-300/80 bg-gradient-to-br from-amber-50/70 via-white to-orange-50/40 text-slate-900'
+    }`}>
+      <div className="absolute top-0 right-1/4 w-64 h-64 bg-amber-400/10 rounded-full blur-3xl pointer-events-none" />
+      <div className="relative z-10 flex flex-col items-center">
+        <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-amber-400 to-orange-500 text-white flex items-center justify-center shadow-lg shadow-orange-500/20 mb-5">
+          <Crown className="w-8 h-8 text-white" />
+        </div>
+        <span className="text-[11px] font-extrabold tracking-widest uppercase px-3 py-1 rounded-full bg-amber-100 dark:bg-amber-950/80 text-amber-800 dark:text-amber-300 border border-amber-300 dark:border-amber-700/80 mb-3">
+          {moduleTag || 'PRO MODULE'}
+        </span>
+        <h3 className="text-2xl sm:text-3xl font-extrabold font-display tracking-tight mb-3">
+          Unlock {title}
+        </h3>
+        <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-300 max-w-xl mx-auto leading-relaxed mb-6 font-normal">
+          {description} Free Citizen accounts are limited to Clause Risk Auditing (up to 5 PDFs/month). Upgrade to JanDristi Pro to activate all sovereign legal modules without limits.
+        </p>
+        <div className="w-full max-w-md bg-white/80 dark:bg-slate-900/80 backdrop-blur-sm rounded-xl p-4 border border-amber-200/80 dark:border-slate-800 mb-8 text-left space-y-2.5 shadow-2xs">
+          <div className="text-[11px] font-bold uppercase tracking-wider text-slate-400 mb-1">Included with JanDristi Pro:</div>
+          {bulletPoints.map((pt, i) => (
+            <div key={i} className="flex items-center gap-2 text-xs font-semibold text-slate-800 dark:text-slate-200">
+              <CheckCircle className="w-4 h-4 text-emerald-600 dark:text-emerald-400 shrink-0" />
+              <span>{pt}</span>
+            </div>
+          ))}
+        </div>
+        <div className="flex flex-col sm:flex-row items-center gap-3 w-full sm:w-auto">
+          <button
+            type="button"
+            onClick={onUpgrade}
+            className="w-full sm:w-auto px-8 py-3.5 bg-gradient-to-r from-[#ea580c] to-[#f97316] hover:from-[#c2410c] hover:to-[#ea580c] text-white font-bold text-xs uppercase tracking-wider rounded-xl shadow-lg hover:shadow-xl transition-all cursor-pointer flex items-center justify-center gap-2"
+          >
+            <Sparkles className="w-4 h-4 text-amber-200" />
+            <span>Upgrade to JanDristi Pro (₹999/mo)</span>
+          </button>
+          <button
+            type="button"
+            onClick={onBackToAudit}
+            className="w-full sm:w-auto px-6 py-3.5 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-700 border border-slate-300 dark:border-slate-700 font-bold text-xs uppercase tracking-wider rounded-xl transition-all cursor-pointer"
+          >
+            Back to Free Clause Audit
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export default function App() {
   const [theme, setTheme] = useState(() => getSafeStorage('gov_theme', 'bright'));
   const [aiMode, setAiMode] = useState(() => getSafeStorage('gov_aimode', 'fast'));
@@ -145,6 +198,230 @@ export default function App() {
     } catch (e) {}
     return null;
   });
+
+  // ── Subscription & Quota State (Server-enforced: Free 5, Personal 30, Small Business 100) ──
+  const [billingCycle, setBillingCycle] = useState('monthly'); // 'monthly' | 'annual'
+  const [showPricingModal, setShowPricingModal] = useState(false);
+  const [pricingFeatureNotice, setPricingFeatureNotice] = useState(null);
+  const [subscriptionToast, setSubscriptionToast] = useState(null);
+  const [isProcessingPayment, setIsProcessingPayment] = useState(false);
+  const [sandboxCheckout, setSandboxCheckout] = useState(null);
+  const [showCancelConfirm, setShowCancelConfirm] = useState(false);
+
+  const [usageData, setUsageData] = useState({
+    user_id: null,
+    plan_id: 'free',
+    plan_name: 'Free Plan',
+    billing_cycle: 'monthly',
+    subscription_status: 'active',
+    payment_status: 'none',
+    monthly_upload_limit: 5,
+    uploads_used: 0,
+    uploads_remaining: 5,
+    total_successful_uploads: 0,
+    ai_query_limit: 15,
+    ai_queries_used: 0,
+    ai_queries_remaining: 15,
+    current_period_end: null,
+    renewal_date: null,
+    next_quota_reset_date: null,
+    cancel_at_period_end: false,
+    features: {}
+  });
+
+  const isPro = usageData.plan_id === 'personal' || usageData.plan_id === 'small_business' || user?.role === 'admin';
+  const isBusiness = usageData.plan_id === 'small_business' || user?.role === 'admin';
+  const monthlyUploads = usageData.uploads_used;
+  const FREE_MONTHLY_LIMIT = usageData.monthly_upload_limit || 5;
+
+  const triggerToast = (msg, type = 'success') => {
+    setSubscriptionToast({ msg, type });
+    setTimeout(() => setSubscriptionToast(null), 4500);
+  };
+
+  const fetchUserUsage = async (userId = user?.id) => {
+    if (!userId) return;
+    try {
+      const data = await safeFetch(`${API_BASE}/subscription/usage?user_id=${userId}`);
+      if (data && data.plan_id) {
+        setUsageData(data);
+      }
+    } catch (e) {
+      console.warn("Could not fetch usage summary:", e);
+    }
+  };
+
+  const handleInitiateCheckout = async (targetPlanId) => {
+    if (!user?.id) {
+      setShowAuthModal(true);
+      setAuthError('Please sign in or create an account to activate a subscription.');
+      return;
+    }
+    if (targetPlanId === usageData.plan_id && usageData.subscription_status === 'active' && !usageData.cancel_at_period_end) {
+      triggerToast(`You are already subscribed to the ${usageData.plan_name}.`, 'info');
+      return;
+    }
+
+    setIsProcessingPayment(true);
+    try {
+      const order = await safeFetch(`${API_BASE}/subscription/checkout`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          user_id: user.id,
+          plan_id: targetPlanId,
+          billing_cycle: billingCycle
+        })
+      });
+
+      // Check if Razorpay live SDK is loaded and credentials are not default placeholder
+      const isRazorpayConfigured = order.key_id && order.key_id !== 'rzp_test_placeholder';
+      if (isRazorpayConfigured && typeof window !== 'undefined' && window.Razorpay) {
+        const options = {
+          key: order.key_id,
+          amount: order.amount,
+          currency: order.currency || 'INR',
+          name: 'JanDristi AI',
+          description: `${order.plan_name} (${order.billing_cycle})`,
+          order_id: order.order_id,
+          prefill: {
+            name: user.name || 'Citizen User',
+            email: user.email || 'citizen@jandristi.in'
+          },
+          theme: {
+            color: '#0f3d68'
+          },
+          handler: async (response) => {
+            await handleVerifyPayment({
+              user_id: user.id,
+              order_id: response.razorpay_order_id || order.order_id,
+              payment_id: response.razorpay_payment_id,
+              signature: response.razorpay_signature
+            });
+          },
+          modal: {
+            ondismiss: () => {
+              setIsProcessingPayment(false);
+            }
+          }
+        };
+        const rzp = new window.Razorpay(options);
+        rzp.open();
+      } else {
+        // Fallback to seamless integrated sandbox checkout modal for local zero-cost evaluation
+        setSandboxCheckout(order);
+      }
+    } catch (err) {
+      triggerToast(`Checkout error: ${err.message}`, 'error');
+    } finally {
+      setIsProcessingPayment(false);
+    }
+  };
+
+  const handleVerifyPayment = async ({ user_id, order_id, payment_id, signature }) => {
+    setIsProcessingPayment(true);
+    try {
+      const res = await safeFetch(`${API_BASE}/subscription/verify-payment`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          user_id,
+          order_id,
+          payment_id,
+          signature
+        })
+      });
+
+      setSandboxCheckout(null);
+      setShowPricingModal(false);
+      setPricingFeatureNotice(null);
+      await fetchUserUsage(user_id);
+      triggerToast(`🎉 ${res.message || 'Subscription successfully activated!'}`, 'success');
+    } catch (err) {
+      triggerToast(`Payment verification declined: ${err.message}`, 'error');
+    } finally {
+      setIsProcessingPayment(false);
+    }
+  };
+
+  const handleCancelSubscription = async () => {
+    if (!user?.id) return;
+    setIsProcessingPayment(true);
+    try {
+      const res = await safeFetch(`${API_BASE}/subscription/cancel`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ user_id: user.id })
+      });
+      setShowCancelConfirm(false);
+      await fetchUserUsage(user.id);
+      triggerToast(res.message || 'Subscription cancelled. Full access remains active until period end.', 'info');
+    } catch (err) {
+      triggerToast(`Cancellation failed: ${err.message}`, 'error');
+    } finally {
+      setIsProcessingPayment(false);
+    }
+  };
+
+  const handleTestActivate = async (planId, cycle = 'monthly') => {
+    if (!user?.id) {
+      setShowAuthModal(true);
+      setAuthError('Sign in to switch plans.');
+      return;
+    }
+    setIsProcessingPayment(true);
+    try {
+      const res = await safeFetch(`${API_BASE}/subscription/test-activate`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          user_id: user.id,
+          plan_id: planId,
+          billing_cycle: cycle
+        })
+      });
+      setUsageData(res);
+      setShowPricingModal(false);
+      setPricingFeatureNotice(null);
+      triggerToast(`⚡ Switched to ${res.plan_name} (${res.monthly_upload_limit} uploads/mo)`, 'success');
+    } catch (err) {
+      triggerToast(`Activation error: ${err.message}`, 'error');
+    } finally {
+      setIsProcessingPayment(false);
+    }
+  };
+
+  const handleSelectModule = (moduleId, targetRef = null) => {
+    // Audit, Welfare Schemes, and Q&A Chat are ALWAYS accessible to all citizens!
+    if (moduleId === 'schemes' || moduleId === 'audit' || moduleId === 'chat') {
+      setActiveTab(moduleId);
+      setIsMenuOpen(false);
+      if (targetRef?.current) {
+        setTimeout(() => targetRef.current.scrollIntoView({ behavior: 'smooth' }), 50);
+      }
+      return;
+    }
+
+    // Word Redlining is exclusive to Small Business plan
+    if (moduleId === 'redline' && !isBusiness) {
+      setPricingFeatureNotice('Word (.docx) Redlining & Suggested Clause Amendments is exclusive to the Small Business Plan (₹149/mo).');
+      setShowPricingModal(true);
+      return;
+    }
+
+    // Courtroom / Multi-agent debate is available on Personal and Small Business
+    if (moduleId === 'courtroom' && usageData.plan_id === 'free' && user?.role !== 'admin') {
+      setPricingFeatureNotice('3-Agent AI Courtroom Deliberation is available on Personal (₹49/mo) and Small Business (₹149/mo) plans.');
+      setShowPricingModal(true);
+      return;
+    }
+
+    setActiveTab(moduleId);
+    setIsMenuOpen(false);
+    if (targetRef?.current) {
+      setTimeout(() => targetRef.current.scrollIntoView({ behavior: 'smooth' }), 50);
+    }
+  };
 
   const changeSiteLanguage = (langCode) => {
     setSiteLang(langCode);
@@ -537,6 +814,7 @@ Between: Municipal Corporation of Greater Mumbai (Authority) AND TechCorp Soluti
 
     if (user?.id) {
       fetchUserDocuments(user.id);
+      fetchUserUsage(user.id);
     } else {
       setDocuments([]);
       setCurrentDoc(null);
@@ -745,6 +1023,26 @@ Between: Municipal Corporation of Greater Mumbai (Authority) AND TechCorp Soluti
     setDebateResult(null);
     setTranslatedText('');
     setRecommendationsData(null);
+    setUsageData({
+      user_id: null,
+      plan_id: 'free',
+      plan_name: 'Free Plan',
+      billing_cycle: 'monthly',
+      subscription_status: 'active',
+      payment_status: 'none',
+      monthly_upload_limit: 5,
+      uploads_used: 0,
+      uploads_remaining: 5,
+      total_successful_uploads: 0,
+      ai_query_limit: 15,
+      ai_queries_used: 0,
+      ai_queries_remaining: 15,
+      current_period_end: null,
+      renewal_date: null,
+      next_quota_reset_date: null,
+      cancel_at_period_end: false,
+      features: {}
+    });
   };
 
   const handleReanalyze = async (docId) => {
@@ -777,6 +1075,16 @@ Between: Municipal Corporation of Greater Mumbai (Authority) AND TechCorp Soluti
       return;
     }
 
+    // Server-enforced Quota Check
+    if (usageData.uploads_remaining <= 0 && usageData.monthly_upload_limit > 0) {
+      const msg = usageData.plan_id === 'free'
+        ? `You have used ${usageData.uploads_used} of your ${usageData.monthly_upload_limit} free document uploads. Upgrade to Personal for ₹49/month to continue analysing documents.`
+        : `Monthly upload limit reached (${usageData.uploads_used}/${usageData.monthly_upload_limit} documents). Upgrade your plan to continue.`;
+      setPricingFeatureNotice(msg);
+      setShowPricingModal(true);
+      return;
+    }
+
     setIsUploading(true);
     setUploadStage('Uploading document to AI Analyzer pipeline...');
 
@@ -799,9 +1107,20 @@ Between: Municipal Corporation of Greater Mumbai (Authority) AND TechCorp Soluti
       setMessages([]);
       scrollTo(uploadRef);
 
+      if (data.usage) {
+        setUsageData(data.usage);
+      } else {
+        fetchUserUsage(user.id);
+      }
       fetchUserDocuments(user.id);
     } catch (err) {
-      alert(`Analysis error: ${err.message}`);
+      const errorMsg = err.message || '';
+      if (errorMsg.includes('403') || errorMsg.toLowerCase().includes('limit reached') || errorMsg.toLowerCase().includes('free document uploads')) {
+        setPricingFeatureNotice(errorMsg);
+        setShowPricingModal(true);
+      } else {
+        alert(`Analysis error: ${errorMsg}`);
+      }
     } finally {
       setIsUploading(false);
       setUploadStage('');
@@ -1101,19 +1420,20 @@ Between: Municipal Corporation of Greater Mumbai (Authority) AND TechCorp Soluti
       </div>
 
       {/* ── Header Top Utility Bar ── */}
-      <div className={`border-b text-xs py-1.5 px-4 sm:px-8 transition-colors ${isDark ? 'bg-[#070B14]/90 border-slate-800/80 text-slate-400' : 'bg-slate-50/90 border-slate-200/80 text-slate-600'}`}>
+      <div className="border-b text-xs py-1.5 px-4 sm:px-8 transition-colors bg-[#07162C] border-blue-900/50 text-slate-300">
         <div className="max-w-7xl mx-auto flex flex-wrap items-center justify-between gap-2">
           <div className="flex items-center space-x-3">
-            <span className="font-bold uppercase tracking-wider text-xs text-blue-600 dark:text-blue-400">भारत सरकार · Government of India</span>
-            <span className="hidden md:inline text-slate-300 dark:text-slate-700">|</span>
-            <span className="hidden md:inline font-medium text-slate-500 dark:text-slate-400">Legal Metrology & Contract Intelligence Platform</span>
+            <span className="font-extrabold uppercase tracking-wider text-xs text-[#FF9933] flex items-center gap-1.5">
+              <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+              भारत सरकार · Government of India
+            </span>
+            <span className="hidden md:inline text-blue-800">|</span>
+            <span className="hidden md:inline font-medium text-slate-300">Legal Metrology & Contract Intelligence Platform</span>
           </div>
           <div className="flex items-center space-x-2.5 sm:space-x-3">
             {/* Indian Language Selector */}
-            <div className={`flex items-center gap-1.5 px-2.5 py-1 rounded-lg border text-[11px] font-semibold transition-all ${
-              isDark ? 'bg-slate-900 border-slate-800 text-slate-200' : 'bg-white border-slate-200 text-slate-700 shadow-2xs'
-            }`}>
-              <Globe className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400 shrink-0" />
+            <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg border border-blue-900/60 bg-[#0C223D] text-slate-200 text-[11px] font-semibold transition-all shadow-2xs">
+              <Globe className="w-3.5 h-3.5 text-[#FF9933] shrink-0" />
               <select
                 value={siteLang}
                 onChange={(e) => changeSiteLanguage(e.target.value)}
@@ -1121,7 +1441,7 @@ Between: Municipal Corporation of Greater Mumbai (Authority) AND TechCorp Soluti
                 className="bg-transparent border-none text-[11px] font-semibold focus:outline-none cursor-pointer pr-1 text-inherit"
               >
                 {INDIAN_LANGUAGES.map((l) => (
-                  <option key={l.code} value={l.code} className={isDark ? 'bg-slate-900 text-white' : 'bg-white text-slate-900'}>
+                  <option key={l.code} value={l.code} className="bg-[#0C223D] text-white">
                     {l.native} ({l.name})
                   </option>
                 ))}
@@ -1131,22 +1451,22 @@ Between: Municipal Corporation of Greater Mumbai (Authority) AND TechCorp Soluti
             {/* Processing Mode Switcher */}
             <div className="flex items-center gap-1.5">
               <span className="text-[10px] uppercase font-bold text-slate-400 hidden sm:inline">AI Engine:</span>
-              <div className={`flex items-center rounded-lg p-0.5 border text-[11px] font-semibold ${isDark ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200 shadow-2xs'}`}>
+              <div className="flex items-center rounded-lg p-0.5 border border-blue-900/60 bg-[#0C223D] text-[11px] font-semibold shadow-2xs">
                 <button
                   type="button"
                   onClick={() => setAiMode('fast')}
-                  className={`flex items-center gap-1 px-2.5 py-1 rounded-md transition-all cursor-pointer ${aiMode === 'fast' ? 'bg-blue-600 text-white shadow-2xs font-bold' : 'text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-slate-200'}`}
+                  className={`flex items-center gap-1 px-2.5 py-1 rounded-md transition-all cursor-pointer ${aiMode === 'fast' ? 'bg-blue-600 text-white shadow-2xs font-bold' : 'text-slate-400 hover:text-white'}`}
                   title="Fast processing mode"
                 >
-                  <Zap className="w-3 h-3" /> Fast
+                  <Zap className="w-3 h-3 text-amber-300" /> Fast
                 </button>
                 <button
                   type="button"
                   onClick={() => setAiMode('secure')}
-                  className={`flex items-center gap-1 px-2.5 py-1 rounded-md transition-all cursor-pointer ${aiMode === 'secure' ? 'bg-slate-800 text-white dark:bg-slate-700 shadow-2xs font-bold' : 'text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-slate-200'}`}
+                  className={`flex items-center gap-1 px-2.5 py-1 rounded-md transition-all cursor-pointer ${aiMode === 'secure' ? 'bg-slate-700 text-white shadow-2xs font-bold' : 'text-slate-400 hover:text-white'}`}
                   title="High security mode (local private inference)"
                 >
-                  <Lock className="w-3 h-3" /> Secure
+                  <Lock className="w-3 h-3 text-emerald-300" /> Secure
                 </button>
               </div>
             </div>
@@ -1154,7 +1474,7 @@ Between: Municipal Corporation of Greater Mumbai (Authority) AND TechCorp Soluti
             {/* Bright / Dark Mode */}
             <button
               onClick={() => setTheme(isDark ? 'bright' : 'dark')}
-              className={`p-1.5 rounded-lg border transition-all cursor-pointer ${isDark ? 'bg-slate-900 border-slate-800 text-amber-400 hover:bg-slate-800' : 'bg-white border-slate-200 text-slate-700 hover:bg-slate-50 shadow-2xs'}`}
+              className="p-1.5 rounded-lg border border-blue-900/60 bg-[#0C223D] text-amber-300 hover:bg-blue-950 transition-all cursor-pointer shadow-2xs"
               title="Toggle Bright/Dark mode"
             >
               {isDark ? <Sun className="w-3.5 h-3.5" /> : <Moon className="w-3.5 h-3.5" />}
@@ -1163,64 +1483,107 @@ Between: Municipal Corporation of Greater Mumbai (Authority) AND TechCorp Soluti
         </div>
       </div>
 
-      {/* ── Main Navigation Header ── */}
-      <header className={`border-b sticky top-0 z-40 backdrop-blur-xl transition-colors ${isDark ? 'bg-[#090D16]/90 border-slate-800/80' : 'bg-white/90 border-slate-200/80 shadow-[0_1px_3px_rgba(0,0,0,0.03)]'}`}>
+      {/* ── Main Navigation Header (Rich Sovereign Navy) ── */}
+      <header className="border-b sticky top-0 z-40 backdrop-blur-xl transition-colors bg-gradient-to-r from-[#0A1E36] via-[#0F2D4A] to-[#0A1E36] border-blue-900/60 shadow-lg text-white">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3 flex items-center justify-between">
           <div className="flex items-center space-x-3.5">
             <div className="relative">
               <img
                 src="/logo.png"
                 alt="JanDristi Logo"
-                className="w-10 h-10 rounded-xl object-contain bg-white shadow-sm border border-slate-200/80 dark:border-slate-700 p-0.5"
+                className="w-10 h-10 rounded-xl object-contain bg-white shadow-sm border border-blue-800 p-0.5"
               />
             </div>
             <div>
-              <div className="text-[10px] font-bold tracking-widest uppercase text-blue-600 dark:text-blue-400">
+              <div className="text-[10px] font-extrabold tracking-widest uppercase text-[#FF9933]">
                 LEGAL & WELFARE INTELLIGENCE
               </div>
-              <div className="text-xl font-extrabold font-display tracking-tight text-slate-900 dark:text-white">
+              <div className="text-xl font-extrabold font-display tracking-tight text-white">
                 JanDristi
               </div>
             </div>
           </div>
 
           {/* Quick Jump Links */}
-          <nav className="hidden lg:flex items-center space-x-6 text-xs font-semibold text-slate-600 dark:text-slate-300">
-            <button onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })} className="hover:text-blue-600 dark:hover:text-blue-400 transition-colors cursor-pointer">
+          <nav className="hidden lg:flex items-center space-x-2 text-xs font-semibold text-slate-200">
+            <button onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })} className="hover:text-white hover:bg-white/10 px-2.5 py-1.5 rounded-lg transition-colors cursor-pointer">
               Home
             </button>
-            <button onClick={() => scrollTo(uploadRef)} className="hover:text-blue-600 dark:hover:text-blue-400 transition-colors cursor-pointer">
+            <button onClick={() => { setActiveTab('audit'); scrollTo(uploadRef); }} className="hover:text-white hover:bg-white/10 px-2.5 py-1.5 rounded-lg transition-colors cursor-pointer">
               Upload & Audit
             </button>
-            <button onClick={() => scrollTo(chatRef)} className="hover:text-blue-600 dark:hover:text-blue-400 transition-colors cursor-pointer">
-              Q&A Chat
+            <button onClick={() => handleSelectModule('chat', chatRef)} className="hover:text-white hover:bg-white/10 px-2.5 py-1.5 rounded-lg transition-colors cursor-pointer flex items-center gap-1">
+              <span>Q&A Chat</span>
             </button>
-            <button onClick={() => scrollTo(debateRef)} className="hover:text-blue-600 dark:hover:text-blue-400 transition-colors cursor-pointer">
-              AI Debate
+            <button onClick={() => handleSelectModule('courtroom', debateRef)} className="hover:text-white hover:bg-white/10 px-2.5 py-1.5 rounded-lg transition-colors cursor-pointer flex items-center gap-1">
+              <span>AI Debate</span>
+              {!isPro && <span className="text-[9px] px-1 rounded bg-amber-500/20 text-amber-300 border border-amber-500/40 font-extrabold">PRO</span>}
             </button>
-            <button onClick={() => scrollTo(redlineRef)} className="hover:text-blue-600 dark:hover:text-blue-400 transition-colors cursor-pointer">
-              Redline
+            <button onClick={() => handleSelectModule('redline', redlineRef)} className="hover:text-white hover:bg-white/10 px-2.5 py-1.5 rounded-lg transition-colors cursor-pointer flex items-center gap-1">
+              <span>Redline</span>
+              {!isPro && <span className="text-[9px] px-1 rounded bg-amber-500/20 text-amber-300 border border-amber-500/40 font-extrabold">PRO</span>}
             </button>
-            <button onClick={() => scrollTo(schemesRef)} className="hover:text-blue-600 dark:hover:text-blue-400 transition-colors cursor-pointer">
-              Schemes
+            <button onClick={() => handleSelectModule('schemes', schemesRef)} className="hover:text-white hover:bg-white/10 px-2.5 py-1.5 rounded-lg transition-colors cursor-pointer flex items-center gap-1">
+              <span>Schemes</span>
             </button>
-            <button onClick={() => scrollTo(historyRef)} className="hover:text-blue-600 dark:hover:text-blue-400 transition-colors cursor-pointer">
-              History
+            <button onClick={() => handleSelectModule('history', historyRef)} className="hover:text-white hover:bg-white/10 px-2.5 py-1.5 rounded-lg transition-colors cursor-pointer flex items-center gap-1">
+              <span>History</span>
+              {!isPro && <span className="text-[9px] px-1 rounded bg-amber-500/20 text-amber-300 border border-amber-500/40 font-extrabold">PRO</span>}
+            </button>
+            <button
+              onClick={() => { setPricingFeatureNotice(null); setShowPricingModal(true); }}
+              className="text-amber-400 hover:text-amber-300 hover:bg-white/10 px-2.5 py-1.5 rounded-lg transition-colors cursor-pointer flex items-center gap-1 font-bold"
+            >
+              <Crown className="w-3.5 h-3.5 text-amber-400" />
+              <span>Pricing</span>
             </button>
           </nav>
 
           {/* Auth Button & Hamburger Menu (=) */}
           <div className="flex items-center gap-2 sm:gap-3">
+            {/* Subscription Plan Badge */}
+            <button
+              type="button"
+              onClick={() => { setPricingFeatureNotice(null); setShowPricingModal(true); }}
+              className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer shadow-2xs border ${
+                usageData.plan_id === 'small_business'
+                  ? 'bg-purple-900/40 border-purple-400/50 text-purple-200 hover:border-purple-300'
+                  : usageData.plan_id === 'personal'
+                    ? 'bg-emerald-900/40 border-emerald-400/50 text-emerald-200 hover:border-emerald-300'
+                    : 'bg-amber-500/20 border-amber-400/40 text-amber-200 hover:bg-amber-500/30'
+              }`}
+              title={`Active Plan: ${usageData.plan_name} (${usageData.uploads_used}/${usageData.monthly_upload_limit} uploads) — Click to manage`}
+            >
+              <Crown className={`w-3.5 h-3.5 ${
+                usageData.plan_id === 'small_business' ? 'text-purple-300' :
+                usageData.plan_id === 'personal' ? 'text-emerald-300' : 'text-amber-300'
+              }`} />
+              <span className="font-extrabold text-white">
+                {usageData.plan_id === 'small_business' ? `Business (${usageData.uploads_used}/${usageData.monthly_upload_limit})` :
+                 usageData.plan_id === 'personal' ? `Personal (${usageData.uploads_used}/${usageData.monthly_upload_limit})` :
+                 `Free (${usageData.uploads_used}/${usageData.monthly_upload_limit})`}
+              </span>
+              {usageData.plan_id === 'free' && (
+                <span className="hidden sm:inline-block ml-0.5 text-[10px] px-1.5 py-0.5 rounded-md bg-[#EA580C] text-white font-black uppercase tracking-wider shadow-xs">
+                  Upgrade ₹49
+                </span>
+              )}
+              {usageData.cancel_at_period_end && (
+                <span className="hidden sm:inline-block ml-0.5 text-[9px] px-1 py-0.2 rounded bg-rose-500 text-white font-bold uppercase">
+                  Cancels
+                </span>
+              )}
+            </button>
             {user ? (
               <div className="flex items-center space-x-2.5">
                 <div className="text-right hidden sm:block">
-                  <div className="text-xs font-bold text-slate-900 dark:text-white truncate max-w-[130px]">{user.name}</div>
-                  <div className="text-[10px] text-slate-400 truncate max-w-[130px]">{user.email}</div>
+                  <div className="text-xs font-bold text-white truncate max-w-[130px]">{user.name}</div>
+                  <div className="text-[10px] text-blue-200 truncate max-w-[130px]">{user.email}</div>
                 </div>
                 <button
                   type="button"
                   onClick={handleLogout}
-                  className="p-2 rounded-xl text-slate-500 hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/30 transition-all cursor-pointer border border-transparent hover:border-rose-200 dark:hover:border-rose-900/50"
+                  className="p-2 rounded-xl text-slate-300 hover:text-rose-400 hover:bg-rose-950/40 transition-all cursor-pointer border border-transparent hover:border-rose-900/50"
                   title="Logout"
                 >
                   <LogOut className="w-4 h-4" />
@@ -1231,14 +1594,14 @@ Between: Municipal Corporation of Greater Mumbai (Authority) AND TechCorp Soluti
                 <button
                   type="button"
                   onClick={() => { setAuthMode('login'); setAuthError(''); setShowAuthModal(true); }}
-                  className="px-3.5 py-2 text-xs font-bold text-slate-700 dark:text-slate-200 hover:text-blue-600 dark:hover:text-blue-400 transition-colors cursor-pointer"
+                  className="px-3.5 py-2 text-xs font-bold text-slate-200 hover:text-white transition-colors cursor-pointer"
                 >
                   Log in
                 </button>
                 <button
                   type="button"
                   onClick={() => { setAuthMode('register'); setAuthError(''); setShowAuthModal(true); }}
-                  className="px-4 py-2 bg-[#0f3d68] hover:bg-[#0a2744] text-white text-xs font-bold rounded-xl shadow-xs hover:shadow transition-all cursor-pointer"
+                  className="px-4 py-2 bg-[#ea580c] hover:bg-[#c2410c] text-white text-xs font-bold rounded-xl shadow-xs hover:shadow transition-all cursor-pointer"
                 >
                   Get started
                 </button>
@@ -1249,11 +1612,11 @@ Between: Municipal Corporation of Greater Mumbai (Authority) AND TechCorp Soluti
             <button
               type="button"
               onClick={() => setIsMenuOpen(prev => !prev)}
-              className="p-2 sm:p-2.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900 hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-800 dark:text-slate-200 transition-all cursor-pointer flex items-center justify-center shadow-2xs"
+              className="p-2 sm:p-2.5 rounded-xl border border-blue-800/80 bg-white/10 hover:bg-white/20 text-white transition-all cursor-pointer flex items-center justify-center shadow-2xs"
               title="Workspace Modules Menu (=)"
               aria-label="Toggle navigation menu"
             >
-              {isMenuOpen ? <X className="w-5 h-5 text-rose-500" /> : <Menu className="w-5 h-5" />}
+              {isMenuOpen ? <X className="w-5 h-5 text-rose-400" /> : <Menu className="w-5 h-5" />}
             </button>
           </div>
         </div>
@@ -1284,8 +1647,8 @@ Between: Municipal Corporation of Greater Mumbai (Authority) AND TechCorp Soluti
                   { id: 'chat', label: 'Ask AI (Q&A)', ref: chatRef, icon: MessageSquare, desc: 'Interactive legal assistant & RAG intelligence' },
                   { id: 'courtroom', label: 'AI Courtroom', ref: debateRef, icon: Scale, desc: '3-Agent legal debate (Critic, Defender, Judge)' },
                   { id: 'redline', label: 'PDF Redline', ref: redlineRef, icon: Edit3, desc: 'Track changes, clause revisions & Word export', count: docRisks.length > 0 ? docRisks.length : null, countColor: 'bg-amber-500' },
-                  { id: 'schemes', label: 'Welfare Schemes', ref: schemesRef, icon: Landmark, desc: 'Social security & citizen entitlement discovery', count: schemes.length || '12', countColor: 'bg-emerald-500' },
-                  { id: 'translate', label: 'Indian Translator', ref: multilingualRef, icon: Globe, desc: '17 Indian languages with legal precision' },
+                  { id: 'schemes', label: 'Welfare Schemes', ref: schemesRef, icon: Landmark, desc: 'Social security & citizen entitlement discovery', count: schemes.length || '96', countColor: 'bg-emerald-500' },
+                  { id: 'translate', label: 'Indian Translator', ref: multilingualRef, icon: Globe, desc: '22 Indian languages with legal precision' },
                   { id: 'history', label: 'Documents & Records', ref: historyRef, icon: Folder, desc: 'Inspection history & verified compliance records', count: documents.length || null, countColor: 'bg-blue-500' },
                   { id: 'all', label: 'Full Dashboard View', ref: uploadRef, icon: LayoutGrid, desc: 'Display all modules unified on a single screen' },
                 ].map(module => {
@@ -1295,15 +1658,7 @@ Between: Municipal Corporation of Greater Mumbai (Authority) AND TechCorp Soluti
                     <button
                       key={module.id}
                       type="button"
-                      onClick={() => {
-                        setActiveTab(module.id);
-                        setIsMenuOpen(false);
-                        setTimeout(() => {
-                          if (module.ref?.current) {
-                            module.ref.current.scrollIntoView({ behavior: 'smooth' });
-                          }
-                        }, 50);
-                      }}
+                      onClick={() => handleSelectModule(module.id, module.ref)}
                       className={`text-left p-4 rounded-xl border transition-all cursor-pointer flex flex-col justify-between group ${
                         isActive
                           ? 'border-blue-500 bg-blue-50/70 dark:bg-blue-950/30 dark:border-blue-500/80 ring-1 ring-blue-500/30'
@@ -1384,12 +1739,12 @@ Between: Municipal Corporation of Greater Mumbai (Authority) AND TechCorp Soluti
           </div>
 
           {/* Dynamic Minimalist Headline */}
-          <h1 className="font-display font-extrabold text-4xl sm:text-6xl lg:text-7xl leading-[1.08] tracking-tight text-slate-900 dark:text-white mb-6 max-w-4xl mx-auto">
-            <span className="block mb-1 sm:mb-2">Legal contracts,</span>
-            <span className="relative inline-block min-w-[240px] sm:min-w-[340px] h-[1.22em] overflow-hidden align-bottom">
+          <h1 className="font-display font-extrabold text-4xl sm:text-6xl lg:text-7xl leading-[1.2] sm:leading-[1.24] tracking-tight text-slate-900 dark:text-white mb-6 max-w-4xl mx-auto">
+            <span className="block mb-2 sm:mb-3">Legal contracts,</span>
+            <span className="relative inline-block min-w-[280px] sm:min-w-[480px] lg:min-w-[580px] h-[1.42em] sm:h-[1.48em] overflow-hidden align-middle px-3 pb-2 pt-1">
               <span
                 key={rotatingWordIdx}
-                className={`block absolute inset-0 ${wordVisible ? 'word-slide-in' : 'word-slide-out'}`}
+                className={`block absolute inset-0 ${wordVisible ? 'word-slide-in' : 'word-slide-out'} whitespace-nowrap`}
                 style={{ color: ROTATING_WORDS[rotatingWordIdx].color }}
               >
                 {ROTATING_WORDS[rotatingWordIdx].text}
@@ -1398,27 +1753,27 @@ Between: Municipal Corporation of Greater Mumbai (Authority) AND TechCorp Soluti
               <svg
                 className={`absolute bottom-0 left-0 w-full ${wordVisible ? 'swoosh-animate' : ''}`}
                 height="10"
-                viewBox="0 0 340 10"
+                viewBox="0 0 500 10"
                 fill="none"
                 aria-hidden="true"
               >
                 <path
                   className="swoosh-path"
-                  d="M4 7 C 60 2, 150 9, 230 4 S 310 2, 336 6"
+                  d="M6 7 C 100 2, 250 9, 360 4 S 460 2, 494 6"
                   stroke={ROTATING_WORDS[rotatingWordIdx].color}
                   strokeWidth="3.2"
                   strokeLinecap="round"
                 />
               </svg>
             </span>
-            <span className="block mt-2 sm:mt-3 text-2xl sm:text-4xl lg:text-5xl font-bold text-slate-700 dark:text-slate-300">
+            <span className="block mt-4 sm:mt-6 text-2xl sm:text-4xl lg:text-5xl font-bold text-slate-700 dark:text-slate-300">
               analysed in seconds by sovereign AI.
             </span>
           </h1>
 
           {/* Subheading */}
           <p className="text-base sm:text-lg text-slate-600 dark:text-slate-300 leading-relaxed max-w-2xl mx-auto mb-9 font-normal">
-            Automated statutory risk auditing, multi-agent legal deliberation, and citizen entitlement discovery across India — in 17 Indian languages.
+            Automated statutory risk auditing, multi-agent legal deliberation, and citizen entitlement discovery across India — in 22 Indian languages.
           </p>
 
           {/* CTA Action Buttons Cluster */}
@@ -1486,13 +1841,10 @@ Between: Municipal Corporation of Greater Mumbai (Authority) AND TechCorp Soluti
                 onClick={() => { setActiveTab('audit'); scrollTo(uploadRef); }}
                 className="p-3.5 rounded-xl border border-slate-200/70 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800/40 hover:border-emerald-300 dark:hover:border-emerald-700 transition-all cursor-pointer group"
               >
-                <div className="flex items-center justify-between mb-2">
+                <div className="flex items-center mb-2">
                   <div className="w-8 h-8 rounded-lg bg-emerald-50 dark:bg-emerald-950/50 text-emerald-600 dark:text-emerald-400 flex items-center justify-center">
                     <Shield className="w-4 h-4" />
                   </div>
-                  <span className="text-[10px] font-extrabold text-emerald-600 dark:text-emerald-400 px-1.5 py-0.5 rounded bg-emerald-100/60 dark:bg-emerald-950/80">
-                    82/100
-                  </span>
                 </div>
                 <div className="text-xs font-bold text-slate-900 dark:text-slate-100 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">
                   Clause Risk Audit
@@ -1503,7 +1855,7 @@ Between: Municipal Corporation of Greater Mumbai (Authority) AND TechCorp Soluti
               </div>
 
               <div
-                onClick={() => { setActiveTab('courtroom'); scrollTo(debateRef); }}
+                onClick={() => handleSelectModule('courtroom', debateRef)}
                 className="p-3.5 rounded-xl border border-slate-200/70 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800/40 hover:border-amber-300 dark:hover:border-amber-700 transition-all cursor-pointer group"
               >
                 <div className="flex items-center justify-between mb-2">
@@ -1523,7 +1875,7 @@ Between: Municipal Corporation of Greater Mumbai (Authority) AND TechCorp Soluti
               </div>
 
               <div
-                onClick={() => { setActiveTab('schemes'); scrollTo(schemesRef); }}
+                onClick={() => handleSelectModule('schemes', schemesRef)}
                 className="p-3.5 rounded-xl border border-slate-200/70 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800/40 hover:border-blue-300 dark:hover:border-blue-700 transition-all cursor-pointer group"
               >
                 <div className="flex items-center justify-between mb-2">
@@ -1531,7 +1883,7 @@ Between: Municipal Corporation of Greater Mumbai (Authority) AND TechCorp Soluti
                     <Landmark className="w-4 h-4" />
                   </div>
                   <span className="text-[10px] font-extrabold text-blue-600 dark:text-blue-400 px-1.5 py-0.5 rounded bg-blue-100/60 dark:bg-blue-950/80">
-                    100+ SCHEMES
+                    96 SCHEMES
                   </span>
                 </div>
                 <div className="text-xs font-bold text-slate-900 dark:text-slate-100 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">
@@ -1543,7 +1895,7 @@ Between: Municipal Corporation of Greater Mumbai (Authority) AND TechCorp Soluti
               </div>
 
               <div
-                onClick={() => { setActiveTab('translate'); scrollTo(multilingualRef); }}
+                onClick={() => handleSelectModule('translate', multilingualRef)}
                 className="p-3.5 rounded-xl border border-slate-200/70 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800/40 hover:border-purple-300 dark:hover:border-purple-700 transition-all cursor-pointer group"
               >
                 <div className="flex items-center justify-between mb-2">
@@ -1551,7 +1903,7 @@ Between: Municipal Corporation of Greater Mumbai (Authority) AND TechCorp Soluti
                     <Globe className="w-4 h-4" />
                   </div>
                   <span className="text-[10px] font-extrabold text-purple-600 dark:text-purple-400 px-1.5 py-0.5 rounded bg-purple-100/60 dark:bg-purple-950/80">
-                    17 LANGS
+                    22 LANGS
                   </span>
                 </div>
                 <div className="text-xs font-bold text-slate-900 dark:text-slate-100 group-hover:text-purple-600 dark:group-hover:text-purple-400 transition-colors">
@@ -1586,13 +1938,10 @@ Between: Municipal Corporation of Greater Mumbai (Authority) AND TechCorp Soluti
             </div>
           </div>
 
-          {/* Minimalist Trust & Disclaimer Footer Line */}
+          {/* Minimalist Trust Footer Line */}
           <div className="mt-8 flex flex-wrap items-center justify-center gap-x-6 gap-y-2 text-xs text-slate-500 dark:text-slate-400">
-            <span className="flex items-center gap-1.5"><CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 shrink-0" /> PDF / DOCX / TXT & Scanned OCR</span>
+            <span className="flex items-center gap-1.5"><CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 shrink-0" /> PDF & Scanned OCR</span>
             <span className="flex items-center gap-1.5"><Shield className="w-3.5 h-3.5 text-blue-600 shrink-0" /> Automated Clause Severity Analysis</span>
-            <span className="flex items-center gap-1.5 text-amber-600 dark:text-amber-400 italic">
-              <AlertCircle className="w-3.5 h-3.5 shrink-0" /> General information, not legal counsel
-            </span>
           </div>
 
         </div>
@@ -1620,7 +1969,7 @@ Between: Municipal Corporation of Greater Mumbai (Authority) AND TechCorp Soluti
                 num: '01',
                 title: 'Upload Document',
                 icon: Upload,
-                desc: 'Upload any PDF, DOCX, or scanned contract, municipal tender, lease agreement, or government scheme notice.',
+                desc: 'Upload any native digital or scanned PDF contract, municipal tender, lease agreement, or government scheme notice.',
                 color: '#0f3d68',
                 badge: 'OCR & PII Shield'
               },
@@ -1636,9 +1985,9 @@ Between: Municipal Corporation of Greater Mumbai (Authority) AND TechCorp Soluti
                 num: '03',
                 title: 'Act & Entitle',
                 icon: CheckCircle2,
-                desc: 'Export redlined Word documents, debate clauses, translate into 17 Indian languages, and claim matched citizen welfare benefits.',
+                desc: 'Export redlined Word documents, debate clauses, translate into 22 Indian languages, and claim matched citizen welfare benefits.',
                 color: '#059669',
-                badge: '17+ Languages'
+                badge: '22 Languages'
               }
             ].map((step, idx) => {
               const StepIcon = step.icon;
@@ -1691,6 +2040,122 @@ Between: Municipal Corporation of Greater Mumbai (Authority) AND TechCorp Soluti
           </div>
 
           <div className="max-w-3xl mx-auto">
+            {/* ── SUBSCRIPTION USAGE METER (SERVER-ENFORCED TIERS) ── */}
+            <div className={`p-4 sm:p-5 rounded-2xl border mb-6 transition-all ${
+              usageData.uploads_remaining <= 0
+                ? 'border-rose-300 dark:border-rose-800/80 bg-rose-50/80 dark:bg-rose-950/30 text-rose-900 dark:text-rose-200 shadow-2xs'
+                : usageData.plan_id === 'small_business'
+                  ? 'border-purple-300 dark:border-purple-800/80 bg-gradient-to-r from-purple-50/80 via-indigo-50/50 to-white dark:from-purple-950/30 dark:via-slate-900 dark:to-slate-900 shadow-2xs'
+                  : usageData.plan_id === 'personal'
+                    ? 'border-emerald-300 dark:border-emerald-800/80 bg-gradient-to-r from-emerald-50/80 via-teal-50/50 to-white dark:from-emerald-950/30 dark:via-slate-900 dark:to-slate-900 shadow-2xs'
+                    : 'border-amber-300 dark:border-amber-800/80 bg-gradient-to-r from-amber-50/80 via-orange-50/40 to-white dark:from-amber-950/30 dark:via-slate-900 dark:to-slate-900 shadow-2xs'
+            }`}>
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-2.5">
+                <div className="flex items-center gap-2.5">
+                  <div className={`w-8 h-8 rounded-xl flex items-center justify-center font-black text-xs shrink-0 ${
+                    usageData.uploads_remaining <= 0
+                      ? 'bg-rose-600 text-white shadow-xs'
+                      : usageData.plan_id === 'small_business'
+                        ? 'bg-purple-600 text-white shadow-xs'
+                        : usageData.plan_id === 'personal'
+                          ? 'bg-emerald-600 text-white shadow-xs'
+                          : 'bg-amber-500 text-white shadow-xs'
+                  }`}>
+                    {usageData.uploads_used}
+                  </div>
+                  <div>
+                    <div className="font-bold text-xs sm:text-sm text-slate-900 dark:text-white flex items-center gap-2">
+                      <span>{usageData.plan_name}</span>
+                      <span className={`text-[10px] font-extrabold uppercase px-2 py-0.5 rounded-full ${
+                        usageData.uploads_remaining <= 0
+                          ? 'bg-rose-100 dark:bg-rose-900/60 text-rose-800 dark:text-rose-200'
+                          : usageData.plan_id === 'small_business'
+                            ? 'bg-purple-100 dark:bg-purple-900/60 text-purple-800 dark:text-purple-200'
+                            : usageData.plan_id === 'personal'
+                              ? 'bg-emerald-100 dark:bg-emerald-900/60 text-emerald-800 dark:text-emerald-200'
+                              : 'bg-amber-100 dark:bg-amber-900/60 text-amber-800 dark:text-amber-200'
+                      }`}>
+                        {usageData.uploads_used} / {usageData.monthly_upload_limit} USED THIS MONTH
+                      </span>
+                    </div>
+                    <div className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">
+                      {usageData.uploads_remaining <= 0
+                        ? usageData.plan_id === 'free'
+                          ? 'You have used 5 of your 5 free document uploads. Upgrade to Personal for ₹49/month to continue analysing documents.'
+                          : `Monthly quota reached (${usageData.uploads_used}/${usageData.monthly_upload_limit}). Upgrade your plan to continue.`
+                        : `${usageData.uploads_remaining} document ${usageData.uploads_remaining === 1 ? 'upload' : 'uploads'} remaining this billing cycle (resets on 1st of next month).`
+                      }
+                    </div>
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-2 self-end sm:self-auto shrink-0">
+                  {usageData.plan_id !== 'small_business' && (
+                    <button
+                      type="button"
+                      onClick={() => { setPricingFeatureNotice(null); setShowPricingModal(true); }}
+                      className="px-3 py-1.5 bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-600 hover:to-orange-700 text-white font-bold text-xs rounded-xl shadow-xs hover:shadow transition-all flex items-center gap-1.5 cursor-pointer"
+                    >
+                      <Sparkles className="w-3.5 h-3.5 text-amber-200" />
+                      <span>{usageData.plan_id === 'free' ? 'Upgrade Plan (₹49/mo)' : 'Upgrade to Business'}</span>
+                    </button>
+                  )}
+                  {usageData.plan_id === 'small_business' && (
+                    <button
+                      type="button"
+                      onClick={() => { setPricingFeatureNotice(null); setShowPricingModal(true); }}
+                      className="px-3 py-1.5 bg-purple-600 hover:bg-purple-700 text-white font-bold text-xs rounded-xl shadow-xs transition-all cursor-pointer"
+                    >
+                      <span>Manage Plan</span>
+                    </button>
+                  )}
+                </div>
+              </div>
+
+              {/* Progress bar */}
+              <div className="w-full bg-slate-200 dark:bg-slate-700/80 rounded-full h-2 overflow-hidden mt-1">
+                <div
+                  className={`h-2 rounded-full transition-all duration-500 ${
+                    usageData.uploads_remaining <= 0
+                      ? 'bg-rose-500' 
+                      : (usageData.uploads_used / (usageData.monthly_upload_limit || 1)) >= 0.7 
+                        ? 'bg-amber-500' 
+                        : 'bg-emerald-500'
+                  }`}
+                  style={{ width: `${Math.min(100, (usageData.uploads_used / (usageData.monthly_upload_limit || 1)) * 100)}%` }}
+                />
+              </div>
+            </div>
+
+            {/* Quota Exhausted Warning Banner */}
+            {usageData.uploads_remaining <= 0 && (
+              <div className="mb-6 p-4 sm:p-5 rounded-2xl border border-rose-300 dark:border-rose-800 bg-rose-50/90 dark:bg-rose-950/40 text-rose-900 dark:text-rose-200 flex flex-col sm:flex-row sm:items-center justify-between gap-4 shadow-sm animate-pulse">
+                <div className="flex items-start gap-3">
+                  <div className="w-9 h-9 rounded-xl bg-rose-600 text-white flex items-center justify-center shrink-0 shadow-xs">
+                    <AlertTriangle className="w-5 h-5" />
+                  </div>
+                  <div>
+                    <div className="font-extrabold text-sm text-rose-900 dark:text-rose-100">
+                      Upload Limit Reached
+                    </div>
+                    <div className="text-xs text-rose-700 dark:text-rose-300 mt-0.5 leading-relaxed">
+                      {usageData.plan_id === 'free'
+                        ? 'You have used 5 of your 5 free document uploads. Upgrade to Personal for ₹49/month to continue analysing documents.'
+                        : `Monthly upload limit reached (${usageData.uploads_used}/${usageData.monthly_upload_limit} documents). Upgrade to Small Business for ₹149/month to continue.`}
+                    </div>
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => { setPricingFeatureNotice(null); setShowPricingModal(true); }}
+                  className="px-4 py-2.5 bg-rose-600 hover:bg-rose-700 text-white font-bold text-xs uppercase tracking-wider rounded-xl shadow-md transition-all cursor-pointer flex items-center justify-center gap-1.5 shrink-0"
+                >
+                  <Crown className="w-4 h-4 text-amber-200" />
+                  <span>{usageData.plan_id === 'free' ? 'Upgrade to Personal' : 'Upgrade Plan'}</span>
+                </button>
+              </div>
+            )}
+
             <div className={`p-6 sm:p-8 rounded-2xl border border-slate-200/90 dark:border-slate-800 shadow-[0_2px_12px_rgba(15,23,42,0.04)] dark:shadow-none transition-all ${isDark ? 'bg-slate-900/90' : 'bg-white'}`}>
               <form onSubmit={handleUpload} className="space-y-6">
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -1768,10 +2233,26 @@ Between: Municipal Corporation of Greater Mumbai (Authority) AND TechCorp Soluti
 
                 <button
                   type="submit"
-                  disabled={!uploadFile || isUploading}
-                  className="w-full py-3.5 bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-white font-bold text-xs uppercase tracking-wider rounded-xl shadow-xs hover:shadow transition-all cursor-pointer"
+                  disabled={(!uploadFile && monthlyUploads < FREE_MONTHLY_LIMIT) || isUploading}
+                  onClick={(e) => {
+                    if (!isPro && monthlyUploads >= FREE_MONTHLY_LIMIT) {
+                      e.preventDefault();
+                      setPricingFeatureNotice(`Monthly Upload Limit (${FREE_MONTHLY_LIMIT}/${FREE_MONTHLY_LIMIT} PDFs Used)`);
+                      setShowPricingModal(true);
+                    }
+                  }}
+                  className={`w-full py-3.5 text-white font-bold text-xs uppercase tracking-wider rounded-xl shadow-xs hover:shadow transition-all cursor-pointer ${
+                    !isPro && monthlyUploads >= FREE_MONTHLY_LIMIT
+                      ? 'bg-gradient-to-r from-rose-600 to-amber-600 hover:from-rose-700 hover:to-amber-700 font-extrabold'
+                      : 'bg-blue-600 hover:bg-blue-700 disabled:opacity-50'
+                  }`}
                 >
-                  {isUploading ? 'ANALYZING DOCUMENT...' : 'PROCESS & ANALYZE DOCUMENT'}
+                  {isUploading 
+                    ? 'ANALYZING DOCUMENT...' 
+                    : !isPro && monthlyUploads >= FREE_MONTHLY_LIMIT
+                      ? 'UPGRADE TO PRO TO ANALYZE (5/5 LIMIT REACHED)'
+                      : 'PROCESS & ANALYZE DOCUMENT'
+                  }
                 </button>
               </form>
             </div>
@@ -2234,6 +2715,21 @@ Between: Municipal Corporation of Greater Mumbai (Authority) AND TechCorp Soluti
             </p>
           </div>
 
+          {!isPro ? (
+            <ProLockedPaywall
+              title="3-Agent Multi-Agent Courtroom Deliberation"
+              moduleTag="PRO · MODULE 3"
+              description="Simulate judicial review where three specialized AI personas scrutinize disputed contract terms from opposing perspectives before delivering a balanced verdict."
+              bulletPoints={[
+                "The Critic identifies every vulnerability and unmitigated loophole",
+                "The Defender presents industry-standard commercial counterarguments",
+                "The Judge delivers authoritative statutory arbitration with fair amendments"
+              ]}
+              onUpgrade={() => { setPricingFeatureNotice('3-Agent AI Courtroom Debate'); setShowPricingModal(true); }}
+              isDark={isDark}
+              onBackToAudit={() => { setActiveTab('audit'); scrollTo(uploadRef); }}
+            />
+          ) : (
           <div className="max-w-3xl mx-auto">
             {!currentDoc ? (
               <div className={`p-10 rounded-2xl border border-dashed border-slate-300 dark:border-slate-700 text-center text-slate-500 text-xs ${isDark ? 'bg-slate-900/40' : 'bg-white'}`}>
@@ -2355,6 +2851,7 @@ Between: Municipal Corporation of Greater Mumbai (Authority) AND TechCorp Soluti
               </div>
             )}
           </div>
+          )}
         </div>
       </section>
 
@@ -2373,7 +2870,21 @@ Between: Municipal Corporation of Greater Mumbai (Authority) AND TechCorp Soluti
             </p>
           </div>
 
-          {!currentDoc ? (
+          {!isPro ? (
+            <ProLockedPaywall
+              title="Tracked-Change Redline Document Generator"
+              moduleTag="PRO · MODULE 4"
+              description="AI automatically recommends contract modifications with color-coded tracked changes and exports them directly into formatted Microsoft Word (.docx) files."
+              bulletPoints={[
+                "Instant replacement clause generation with statutory fairness rationale",
+                "Direct Microsoft Word (.docx) export with strikethrough & green revisions",
+                "Custom user prompts (e.g. 'Cap liability to 5% and add 14-day cure period')"
+              ]}
+              onUpgrade={() => { setPricingFeatureNotice('Word (.docx) Redlining & Tracked Changes'); setShowPricingModal(true); }}
+              isDark={isDark}
+              onBackToAudit={() => { setActiveTab('audit'); scrollTo(uploadRef); }}
+            />
+          ) : !currentDoc ? (
             <div className={`max-w-2xl mx-auto p-12 rounded-2xl border border-dashed border-slate-300 dark:border-slate-700 text-center ${isDark ? 'bg-slate-900/40' : 'bg-white'}`}>
               <div className="w-14 h-14 mx-auto mb-4 rounded-2xl bg-rose-50 dark:bg-rose-950/40 flex items-center justify-center text-rose-600 dark:text-rose-400">
                 <FileText className="w-7 h-7" />
@@ -2572,7 +3083,6 @@ Between: Municipal Corporation of Greater Mumbai (Authority) AND TechCorp Soluti
       {/* ── SECTION 7: NATIONAL WELFARE SCHEME DIRECTORY & CITIZEN RECOMMENDER ── */}
       <section ref={schemesRef} className={`py-16 border-b border-slate-200/80 dark:border-slate-800/80 ${activeTab !== 'schemes' && activeTab !== 'all' ? 'hidden' : ''}`}>
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          
           <div className="flex flex-wrap items-end justify-between mb-8 gap-4">
             <div>
               <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[11px] font-bold uppercase tracking-wider bg-emerald-50 text-emerald-700 dark:bg-emerald-950/60 dark:text-emerald-300 mb-2.5 border border-emerald-200/80 dark:border-emerald-900/60">
@@ -3080,6 +3590,21 @@ Between: Municipal Corporation of Greater Mumbai (Authority) AND TechCorp Soluti
             </p>
           </div>
 
+          {!isPro ? (
+            <ProLockedPaywall
+              title="22 Indian Regional Language Summaries & Voice Readout"
+              moduleTag="PRO · MODULE 6"
+              description="Plain-language legal summaries and clause-by-clause translations across 22 official Indian languages with integrated regional voice synthesis."
+              bulletPoints={[
+                "High-precision legal translation preserving statutory contractual meaning",
+                "Native browser voice audio synthesis (TTS) for Indian languages",
+                "Covers Hindi, Marathi, Bengali, Tamil, Telugu, Gujarati, Kannada, and more"
+              ]}
+              onUpgrade={() => { setPricingFeatureNotice('22 Indian Regional Language Translation'); setShowPricingModal(true); }}
+              isDark={isDark}
+              onBackToAudit={() => { setActiveTab('audit'); scrollTo(uploadRef); }}
+            />
+          ) : (
           <div className={`max-w-3xl mx-auto p-6 sm:p-8 rounded-2xl border border-slate-200/90 dark:border-slate-800 shadow-[0_2px_12px_rgba(15,23,42,0.04)] ${isDark ? 'bg-slate-900' : 'bg-white'}`}>
             {!currentDoc ? (
               <div className="text-center p-8 text-xs text-slate-500">
@@ -3161,6 +3686,7 @@ Between: Municipal Corporation of Greater Mumbai (Authority) AND TechCorp Soluti
               </div>
             )}
           </div>
+          )}
         </div>
       </section>
 
@@ -3179,6 +3705,21 @@ Between: Municipal Corporation of Greater Mumbai (Authority) AND TechCorp Soluti
             </p>
           </div>
 
+          {!isPro ? (
+            <ProLockedPaywall
+              title="Document Repository & Knowledge Graph Vault"
+              moduleTag="PRO · MODULE 7"
+              description="Private archival storage of all past audited agreements, compliance logs, and visual interactive entity-relationship knowledge graphs."
+              bulletPoints={[
+                "Force-directed interactive knowledge graph mapping parties, dates, and amounts",
+                "Permanent compliance inspection records and audit trail verification",
+                "1-click historical report re-analysis and multi-contract comparison"
+              ]}
+              onUpgrade={() => { setPricingFeatureNotice('Document Repository & Knowledge Vault'); setShowPricingModal(true); }}
+              isDark={isDark}
+              onBackToAudit={() => { setActiveTab('audit'); scrollTo(uploadRef); }}
+            />
+          ) : (
           <div className="max-w-3xl mx-auto space-y-3.5">
             {documents.length === 0 ? (
               <div className={`p-10 rounded-2xl border border-dashed border-slate-300 dark:border-slate-700 text-center text-slate-400 text-xs ${isDark ? 'bg-slate-900/40' : 'bg-white'}`}>
@@ -3215,6 +3756,7 @@ Between: Municipal Corporation of Greater Mumbai (Authority) AND TechCorp Soluti
               ))
             )}
           </div>
+          )}
         </div>
       </section>
 
@@ -3434,7 +3976,7 @@ Between: Municipal Corporation of Greater Mumbai (Authority) AND TechCorp Soluti
                     id: 'translate',
                     cat: 'Citizens',
                     icon: Globe,
-                    title: '17 Indian Languages',
+                    title: '22 Indian Languages',
                     desc: 'Plain-language summaries and translation across Indian regional languages with legal precision.',
                     tab: 'translate',
                     ref: multilingualRef,
@@ -3458,12 +4000,7 @@ Between: Municipal Corporation of Greater Mumbai (Authority) AND TechCorp Soluti
                       <button
                         key={module.id}
                         type="button"
-                        onClick={() => {
-                          setActiveTab(module.tab);
-                          setTimeout(() => {
-                            module.ref?.current?.scrollIntoView({ behavior: 'smooth' });
-                          }, 50);
-                        }}
+                        onClick={() => handleSelectModule(module.tab, module.ref)}
                         className="reveal-hidden text-left p-4 sm:p-4.5 rounded-xl border bg-white dark:bg-slate-900/80 border-slate-200/90 dark:border-slate-800 feature-card cursor-pointer group flex flex-col justify-between hover:border-blue-400 dark:hover:border-blue-600 shadow-2xs hover:shadow-xs transition-all"
                         style={{ animationDelay: `${i * 0.06}s` }}
                       >
@@ -3475,9 +4012,16 @@ Between: Municipal Corporation of Greater Mumbai (Authority) AND TechCorp Soluti
                             >
                               <ModIcon className="w-4 h-4" style={{ color: module.color }} />
                             </div>
-                            <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400">
-                              {module.cat}
-                            </span>
+                            <div className="flex items-center gap-1.5">
+                              {module.id !== 'audit' && !isPro && (
+                                <span className="text-[9px] font-extrabold uppercase px-1.5 py-0.5 rounded bg-amber-500/10 text-amber-700 dark:text-amber-400 border border-amber-500/30 flex items-center gap-1">
+                                  <Lock className="w-2.5 h-2.5" /> PRO
+                                </span>
+                              )}
+                              <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400">
+                                {module.cat}
+                              </span>
+                            </div>
                           </div>
                           
                           <h3 className="font-bold text-xs sm:text-sm text-slate-900 dark:text-white mb-1 font-display group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">
@@ -3508,7 +4052,7 @@ Between: Municipal Corporation of Greater Mumbai (Authority) AND TechCorp Soluti
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="grid grid-cols-2 md:grid-cols-4 gap-8 text-center">
             {[
-              { num: '17+', label: 'Indian Regional Languages', icon: Globe },
+              { num: '22', label: 'Official Indian Languages', icon: Globe },
               { num: '3-Agent', label: 'Courtroom Deliberation Engine', icon: Scale },
               { num: '100%', label: 'In-Country Sovereign AI Processing', icon: Lock },
               { num: 'DPDP', label: 'Act 2023 Statutory Compliance', icon: Shield }
@@ -3552,7 +4096,7 @@ Between: Municipal Corporation of Greater Mumbai (Authority) AND TechCorp Soluti
             {[
               {
                 q: 'What types of documents can JanDristi analyze?',
-                a: 'JanDristi supports commercial agreements, municipal e-tenders, procurement contracts, employment agreements, residential/commercial leases, NDAs, and government policy directives in PDF, DOCX, and TXT formats. Both digital PDFs and scanned image documents are supported through OCR.'
+                a: 'JanDristi supports commercial agreements, municipal e-tenders, procurement contracts, employment agreements, residential/commercial leases, NDAs, and government policy directives in PDF format. Both native digital PDFs and scanned image-based PDFs are supported through OCR.'
               },
               {
                 q: 'How does the PII Shield protect sensitive personal data?',
@@ -3568,7 +4112,7 @@ Between: Municipal Corporation of Greater Mumbai (Authority) AND TechCorp Soluti
               },
               {
                 q: 'Which Indian regional languages are supported?',
-                a: 'JanDristi natively supports 17 Indian constitutional languages including Hindi, Marathi, Bengali, Tamil, Telugu, Gujarati, Kannada, Malayalam, Punjabi, Odia, Assamese, and Urdu. Summaries and clause explanations are translated while preserving legal precision.'
+                a: 'JanDristi natively supports all 22 official 8th Schedule Indian languages including Hindi, Marathi, Bengali, Tamil, Telugu, Gujarati, Kannada, Malayalam, Punjabi, Odia, Assamese, Urdu, Sanskrit, Nepali, Sindhi, Maithili, Konkani, Dogri, Manipuri, Santali, and Bhojpuri. Summaries and clause explanations are translated while preserving legal precision.'
               },
               {
                 q: 'Does JanDristi provide legal advice?',
@@ -3854,7 +4398,7 @@ Between: Municipal Corporation of Greater Mumbai (Authority) AND TechCorp Soluti
         </button>
 
         <button
-          onClick={() => { setActiveTab('chat'); window.scrollTo({ top: 400, behavior: 'smooth' }); }}
+          onClick={() => handleSelectModule('chat', chatRef)}
           className={`flex flex-col items-center justify-center py-1.5 px-3 min-w-[58px] rounded-xl text-[10px] font-bold transition-all cursor-pointer ${
             activeTab === 'chat'
               ? 'text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-950/50 shadow-2xs'
@@ -3866,7 +4410,7 @@ Between: Municipal Corporation of Greater Mumbai (Authority) AND TechCorp Soluti
         </button>
 
         <button
-          onClick={() => { setActiveTab('courtroom'); window.scrollTo({ top: 400, behavior: 'smooth' }); }}
+          onClick={() => handleSelectModule('courtroom', debateRef)}
           className={`flex flex-col items-center justify-center py-1.5 px-3 min-w-[58px] rounded-xl text-[10px] font-bold transition-all cursor-pointer ${
             activeTab === 'courtroom'
               ? 'text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-950/50 shadow-2xs'
@@ -3878,7 +4422,7 @@ Between: Municipal Corporation of Greater Mumbai (Authority) AND TechCorp Soluti
         </button>
 
         <button
-          onClick={() => { setActiveTab('redline'); window.scrollTo({ top: 400, behavior: 'smooth' }); }}
+          onClick={() => handleSelectModule('redline', redlineRef)}
           className={`flex flex-col items-center justify-center py-1.5 px-3 min-w-[58px] rounded-xl text-[10px] font-bold transition-all cursor-pointer ${
             activeTab === 'redline'
               ? 'text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-950/50 shadow-2xs'
@@ -3890,7 +4434,7 @@ Between: Municipal Corporation of Greater Mumbai (Authority) AND TechCorp Soluti
         </button>
 
         <button
-          onClick={() => { setActiveTab('schemes'); window.scrollTo({ top: 400, behavior: 'smooth' }); }}
+          onClick={() => handleSelectModule('schemes', schemesRef)}
           className={`flex flex-col items-center justify-center py-1.5 px-3 min-w-[58px] rounded-xl text-[10px] font-bold transition-all cursor-pointer ${
             activeTab === 'schemes'
               ? 'text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-950/50 shadow-2xs'
@@ -3901,6 +4445,484 @@ Between: Municipal Corporation of Greater Mumbai (Authority) AND TechCorp Soluti
           <span>Schemes</span>
         </button>
       </nav>
+
+      {/* ── TOAST NOTIFICATION ── */}
+      {subscriptionToast && (
+        <div className="fixed bottom-20 right-6 z-50 flex items-center gap-3 px-4 py-3 rounded-xl shadow-2xl border backdrop-blur-md transition-all animate-bounce bg-slate-900/95 text-white border-slate-700">
+          <Sparkles className="w-4 h-4 text-amber-400 shrink-0" />
+          <span className="text-xs font-semibold">{subscriptionToast.msg}</span>
+        </div>
+      )}
+
+      {/* ── SUBSCRIPTION & PRICING MODAL (FREE ₹0, PERSONAL ₹49, SMALL BUSINESS ₹149) ── */}
+      {showPricingModal && (
+        <div className="fixed inset-0 bg-black/80 backdrop-blur-xs z-50 flex items-center justify-center p-4 overflow-y-auto">
+          <div className={`max-w-5xl w-full rounded-2xl p-6 sm:p-8 shadow-2xl border relative my-8 transition-all ${isDark ? 'bg-slate-900 border-slate-800 text-white' : 'bg-white border-slate-200 text-slate-900'}`}>
+            <button
+              type="button"
+              onClick={() => { setShowPricingModal(false); setPricingFeatureNotice(null); }}
+              className="absolute right-4 top-4 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 p-1.5 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800 transition-all cursor-pointer"
+              aria-label="Close modal"
+            >
+              <X className="w-5 h-5" />
+            </button>
+
+            <div className="text-center max-w-2xl mx-auto mb-6">
+              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full text-[11px] font-bold uppercase tracking-wider bg-orange-50 text-orange-700 dark:bg-orange-950/60 dark:text-orange-300 border border-orange-200/80 dark:border-orange-900/60 mb-2 shadow-2xs">
+                <Crown className="w-3.5 h-3.5 text-orange-500" />
+                <span>Affordable Sovereign Legal Intelligence</span>
+              </div>
+              <h2 className="text-2xl sm:text-3xl font-extrabold font-display tracking-tight text-slate-900 dark:text-white">
+                Transparent Plans for Every Indian Citizen & Business
+              </h2>
+              <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 mt-1">
+                From citizens reviewing rental agreements to contractors and small businesses auditing high-value tenders.
+              </p>
+
+              {/* Billing Cycle Switcher (Monthly vs Annual - Save ~15%) */}
+              <div className="flex items-center justify-center gap-3 mt-4">
+                <span className={`text-xs font-bold ${billingCycle === 'monthly' ? 'text-blue-600 dark:text-blue-400' : 'text-slate-400'}`}>
+                  Monthly Billing
+                </span>
+                <button
+                  type="button"
+                  onClick={() => setBillingCycle(prev => prev === 'monthly' ? 'annual' : 'monthly')}
+                  className="relative inline-flex h-6 w-12 shrink-0 cursor-pointer rounded-full border-2 border-transparent bg-slate-300 dark:bg-slate-700 transition-colors duration-200 ease-in-out focus:outline-none"
+                  role="switch"
+                  aria-checked={billingCycle === 'annual'}
+                >
+                  <span
+                    className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${
+                      billingCycle === 'annual' ? 'translate-x-6 bg-blue-600' : 'translate-x-0'
+                    }`}
+                  />
+                </button>
+                <span className={`text-xs font-bold flex items-center gap-1.5 ${billingCycle === 'annual' ? 'text-blue-600 dark:text-blue-400' : 'text-slate-400'}`}>
+                  <span>Annual Billing</span>
+                  <span className="px-2 py-0.5 rounded-full text-[10px] bg-emerald-100 dark:bg-emerald-950/80 text-emerald-700 dark:text-emerald-300 font-extrabold">
+                    SAVE ~15%
+                  </span>
+                </span>
+              </div>
+            </div>
+
+            {pricingFeatureNotice && (
+              <div className="mb-6 p-4 rounded-xl border border-amber-300 dark:border-amber-700/80 bg-amber-50 dark:bg-amber-950/40 text-amber-900 dark:text-amber-200 text-xs flex items-center gap-3">
+                <div className="w-8 h-8 rounded-lg bg-amber-500/20 text-amber-600 dark:text-amber-400 flex items-center justify-center shrink-0">
+                  <Lock className="w-4 h-4" />
+                </div>
+                <div>
+                  <span className="font-bold">Plan Upgrade Required: </span>
+                  <span>{pricingFeatureNotice}</span>
+                </div>
+              </div>
+            )}
+
+            {/* 3-Card Grid */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-5 items-stretch mb-6">
+              
+              {/* Card 1: Free Citizen Tier */}
+              <div className={`p-5 rounded-2xl border flex flex-col justify-between transition-all ${
+                usageData.plan_id === 'free'
+                  ? 'border-blue-500 ring-2 ring-blue-500/20 bg-blue-50/20 dark:bg-blue-950/20'
+                  : 'border-slate-200 dark:border-slate-800 bg-slate-50/40 dark:bg-slate-800/20'
+              }`}>
+                <div>
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">
+                      Free Plan
+                    </span>
+                    {usageData.plan_id === 'free' && (
+                      <span className="text-[10px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full bg-blue-600 text-white">
+                        ACTIVE PLAN
+                      </span>
+                    )}
+                  </div>
+                  <div className="flex items-baseline gap-1 mb-1">
+                    <span className="text-3xl font-extrabold font-grotesk text-slate-900 dark:text-white">₹0</span>
+                    <span className="text-xs font-semibold text-slate-500">/ forever</span>
+                  </div>
+                  <p className="text-[11px] text-slate-500 dark:text-slate-400 mb-4 leading-relaxed">
+                    Designed for ordinary citizens and first-time users reviewing rental leases and contracts.
+                  </p>
+
+                  <div className="p-2.5 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-xs mb-4">
+                    <div className="flex justify-between font-bold text-[11px] mb-1">
+                      <span>Monthly Allowance</span>
+                      <span className="text-blue-600 font-extrabold">
+                        {usageData.plan_id === 'free' ? `${usageData.uploads_used}/5 Uploads` : '5 Uploads/mo'}
+                      </span>
+                    </div>
+                    <div className="w-full bg-slate-100 dark:bg-slate-800 rounded-full h-1.5 overflow-hidden">
+                      <div
+                        className="h-1.5 rounded-full bg-blue-600"
+                        style={{ width: usageData.plan_id === 'free' ? `${Math.min(100, (usageData.uploads_used / 5) * 100)}%` : '0%' }}
+                      />
+                    </div>
+                  </div>
+
+                  <ul className="space-y-2 text-xs text-slate-600 dark:text-slate-300 mb-6">
+                    <li className="flex items-center gap-2"><CheckCircle className="w-4 h-4 text-emerald-600 shrink-0" /> <span><strong>5 monthly document uploads</strong></span></li>
+                    <li className="flex items-center gap-2"><CheckCircle className="w-4 h-4 text-emerald-600 shrink-0" /> <span>Basic government scheme directory</span></li>
+                    <li className="flex items-center gap-2"><CheckCircle className="w-4 h-4 text-emerald-600 shrink-0" /> <span>Basic contract summaries & risk detection</span></li>
+                    <li className="flex items-center gap-2"><CheckCircle className="w-4 h-4 text-emerald-600 shrink-0" /> <span>15 AI questions per month</span></li>
+                    <li className="flex items-center gap-2"><CheckCircle className="w-4 h-4 text-emerald-600 shrink-0" /> <span>22 Indian regional languages</span></li>
+                    <li className="flex items-center gap-2 text-slate-400"><X className="w-4 h-4 shrink-0 text-slate-400" /> <span className="line-through">Interactive page citations</span></li>
+                    <li className="flex items-center gap-2 text-slate-400"><X className="w-4 h-4 shrink-0 text-slate-400" /> <span className="line-through">Downloadable audit reports</span></li>
+                    <li className="flex items-center gap-2 text-slate-400"><X className="w-4 h-4 shrink-0 text-slate-400" /> <span className="line-through">Word redlining with tracked changes</span></li>
+                  </ul>
+                </div>
+
+                <div>
+                  {usageData.plan_id === 'free' ? (
+                    <button
+                      type="button"
+                      disabled
+                      className="w-full py-2.5 rounded-xl bg-slate-200 dark:bg-slate-800 text-slate-500 font-bold text-xs uppercase tracking-wider cursor-default text-center"
+                    >
+                      Current Free Plan
+                    </button>
+                  ) : (
+                    <button
+                      type="button"
+                      onClick={() => handleTestActivate('free')}
+                      className="w-full py-2.5 rounded-xl bg-white dark:bg-slate-800 hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 border border-slate-300 dark:border-slate-700 font-bold text-xs uppercase tracking-wider transition-all cursor-pointer text-center"
+                    >
+                      Downgrade to Free
+                    </button>
+                  )}
+                </div>
+              </div>
+
+              {/* Card 2: Personal Plan */}
+              <div className={`p-5 rounded-2xl border flex flex-col justify-between relative overflow-hidden transition-all ${
+                usageData.plan_id === 'personal'
+                  ? 'border-emerald-500 ring-2 ring-emerald-500/30 bg-emerald-50/20 dark:bg-emerald-950/20'
+                  : 'border-blue-500/60 ring-1 ring-blue-500/20 bg-gradient-to-b from-blue-500/5 via-transparent to-transparent'
+              }`}>
+                <div>
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="text-xs font-bold uppercase tracking-wider text-blue-600 dark:text-blue-400 flex items-center gap-1">
+                      <User className="w-3.5 h-3.5" />
+                      <span>Personal Plan</span>
+                    </span>
+                    <span className="text-[10px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full bg-blue-600 text-white shadow-2xs">
+                      {usageData.plan_id === 'personal' ? 'ACTIVE' : 'POPULAR'}
+                    </span>
+                  </div>
+                  <div className="flex items-baseline gap-1 mb-1">
+                    <span className="text-3xl font-extrabold font-grotesk text-slate-900 dark:text-white">
+                      ₹{billingCycle === 'annual' ? '499' : '49'}
+                    </span>
+                    <span className="text-xs font-semibold text-slate-500">
+                      /{billingCycle === 'annual' ? 'year (₹41.5/mo)' : 'month'}
+                    </span>
+                  </div>
+                  <p className="text-[11px] text-slate-500 dark:text-slate-400 mb-4 leading-relaxed">
+                    Designed for students, individuals, advocates, and families needing regular contract reviews.
+                  </p>
+
+                  <div className="p-2.5 rounded-xl bg-blue-500/10 border border-blue-500/20 text-blue-900 dark:text-blue-200 text-xs font-bold flex items-center gap-1.5 mb-4">
+                    <Sparkles className="w-4 h-4 text-blue-600 shrink-0" />
+                    <span>30 DOCUMENT UPLOADS / BILLING MONTH</span>
+                  </div>
+
+                  <ul className="space-y-2 text-xs text-slate-700 dark:text-slate-200 mb-6 font-medium">
+                    <li className="flex items-center gap-2"><CheckCircle className="w-4 h-4 text-emerald-600 shrink-0" /> <span><strong>30 document uploads</strong> per billing month</span></li>
+                    <li className="flex items-center gap-2"><CheckCircle className="w-4 h-4 text-emerald-600 shrink-0" /> <span>Contract summaries and risk detection</span></li>
+                    <li className="flex items-center gap-2"><CheckCircle className="w-4 h-4 text-emerald-600 shrink-0" /> <span>AI questions with page citations</span></li>
+                    <li className="flex items-center gap-2"><CheckCircle className="w-4 h-4 text-emerald-600 shrink-0" /> <span><strong>Downloadable official PDF audit reports</strong></span></li>
+                    <li className="flex items-center gap-2"><CheckCircle className="w-4 h-4 text-emerald-600 shrink-0" /> <span>Multilingual summaries in 22 languages</span></li>
+                    <li className="flex items-center gap-2"><CheckCircle className="w-4 h-4 text-emerald-600 shrink-0" /> <span>Saved document history and results</span></li>
+                    <li className="flex items-center gap-2"><CheckCircle className="w-4 h-4 text-emerald-600 shrink-0" /> <span>60 AI questions per month</span></li>
+                    <li className="flex items-center gap-2 text-slate-400"><X className="w-4 h-4 shrink-0 text-slate-400" /> <span className="line-through">Word redlining with tracked changes</span></li>
+                  </ul>
+                </div>
+
+                <div>
+                  {usageData.plan_id === 'personal' ? (
+                    <div className="space-y-2">
+                      <div className="w-full py-2.5 rounded-xl bg-emerald-600 text-white font-bold text-xs uppercase tracking-wider flex items-center justify-center gap-1.5 shadow-xs">
+                        <Check className="w-4 h-4" />
+                        <span>Active Personal Plan</span>
+                      </div>
+                      {!usageData.cancel_at_period_end ? (
+                        <button
+                          type="button"
+                          onClick={() => setShowCancelConfirm(true)}
+                          className="w-full py-1 text-[11px] text-rose-500 hover:text-rose-700 underline text-center cursor-pointer"
+                        >
+                          Cancel Subscription
+                        </button>
+                      ) : (
+                        <div className="text-[10px] text-amber-500 font-bold text-center">
+                          Cancels at end of period (access remains)
+                        </div>
+                      )}
+                    </div>
+                  ) : (
+                    <button
+                      type="button"
+                      disabled={isProcessingPayment}
+                      onClick={() => handleInitiateCheckout('personal')}
+                      className="w-full py-3 bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs uppercase tracking-wider rounded-xl shadow-md transition-all cursor-pointer flex items-center justify-center gap-2"
+                    >
+                      <Crown className="w-4 h-4 text-amber-200" />
+                      <span>Upgrade to Personal — ₹{billingCycle === 'annual' ? '499/yr' : '49/mo'}</span>
+                    </button>
+                  )}
+                </div>
+              </div>
+
+              {/* Card 3: Small Business Plan */}
+              <div className={`p-5 rounded-2xl border flex flex-col justify-between relative overflow-hidden transition-all ${
+                usageData.plan_id === 'small_business'
+                  ? 'border-purple-500 ring-2 ring-purple-500/30 bg-purple-50/20 dark:bg-purple-950/20'
+                  : 'border-[#ea580c] ring-2 ring-orange-500/20 bg-gradient-to-b from-orange-500/5 via-transparent to-transparent'
+              }`}>
+                <div className="absolute top-0 right-0 w-28 h-28 bg-orange-500/10 rounded-full blur-2xl pointer-events-none" />
+
+                <div>
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="text-xs font-bold uppercase tracking-wider text-[#ea580c] flex items-center gap-1">
+                      <Building className="w-3.5 h-3.5" />
+                      <span>Small Business</span>
+                    </span>
+                    <span className="text-[10px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full bg-gradient-to-r from-[#ea580c] to-[#f97316] text-white shadow-2xs">
+                      {usageData.plan_id === 'small_business' ? 'ACTIVE' : 'ENTERPRISE AI'}
+                    </span>
+                  </div>
+                  <div className="flex items-baseline gap-1 mb-1">
+                    <span className="text-3xl font-extrabold font-grotesk text-slate-900 dark:text-white">
+                      ₹{billingCycle === 'annual' ? '1,499' : '149'}
+                    </span>
+                    <span className="text-xs font-semibold text-slate-500">
+                      /{billingCycle === 'annual' ? 'year (₹124.9/mo)' : 'month'}
+                    </span>
+                  </div>
+                  <p className="text-[11px] text-slate-500 dark:text-slate-400 mb-4 leading-relaxed">
+                    Designed for freelancers, startups, contractors, MSMEs, tender applicants, and legal teams.
+                  </p>
+
+                  <div className="p-2.5 rounded-xl bg-orange-500/10 border border-orange-500/20 text-orange-900 dark:text-orange-200 text-xs font-bold flex items-center gap-1.5 mb-4">
+                    <Sparkles className="w-4 h-4 text-orange-600 shrink-0" />
+                    <span>100 DOCUMENT UPLOADS / BILLING MONTH</span>
+                  </div>
+
+                  <ul className="space-y-2 text-xs text-slate-700 dark:text-slate-200 mb-6 font-medium">
+                    <li className="flex items-center gap-2"><CheckCircle className="w-4 h-4 text-emerald-600 shrink-0" /> <span><strong>100 document uploads</strong> per billing month</span></li>
+                    <li className="flex items-center gap-2"><CheckCircle className="w-4 h-4 text-emerald-600 shrink-0" /> <span>All Personal plan features included</span></li>
+                    <li className="flex items-center gap-2"><CheckCircle className="w-4 h-4 text-emerald-600 shrink-0" /> <span><strong>Advanced clause analysis & risk explanations</strong></span></li>
+                    <li className="flex items-center gap-2"><CheckCircle className="w-4 h-4 text-emerald-600 shrink-0" /> <span><strong>Suggested replacement clauses</strong></span></li>
+                    <li className="flex items-center gap-2"><CheckCircle className="w-4 h-4 text-emerald-600 shrink-0" /> <span><strong>Word redlining (.docx) & PDF audit reports</strong></span></li>
+                    <li className="flex items-center gap-2"><CheckCircle className="w-4 h-4 text-emerald-600 shrink-0" /> <span>Contract and tender procurement analysis</span></li>
+                    <li className="flex items-center gap-2"><CheckCircle className="w-4 h-4 text-emerald-600 shrink-0" /> <span>250 AI questions per billing month</span></li>
+                    <li className="flex items-center gap-2"><CheckCircle className="w-4 h-4 text-emerald-600 shrink-0" /> <span>Priority AI inference queue</span></li>
+                  </ul>
+                </div>
+
+                <div>
+                  {usageData.plan_id === 'small_business' ? (
+                    <div className="space-y-2">
+                      <div className="w-full py-2.5 rounded-xl bg-purple-600 text-white font-bold text-xs uppercase tracking-wider flex items-center justify-center gap-1.5 shadow-xs">
+                        <Check className="w-4 h-4" />
+                        <span>Active Small Business Plan</span>
+                      </div>
+                      {!usageData.cancel_at_period_end ? (
+                        <button
+                          type="button"
+                          onClick={() => setShowCancelConfirm(true)}
+                          className="w-full py-1 text-[11px] text-rose-500 hover:text-rose-700 underline text-center cursor-pointer"
+                        >
+                          Cancel Subscription
+                        </button>
+                      ) : (
+                        <div className="text-[10px] text-amber-500 font-bold text-center">
+                          Cancels at end of period (access remains)
+                        </div>
+                      )}
+                    </div>
+                  ) : (
+                    <button
+                      type="button"
+                      disabled={isProcessingPayment}
+                      onClick={() => handleInitiateCheckout('small_business')}
+                      className="w-full py-3 bg-gradient-to-r from-[#ea580c] to-[#f97316] hover:from-[#c2410c] hover:to-[#ea580c] text-white font-bold text-xs uppercase tracking-wider rounded-xl shadow-lg transition-all cursor-pointer flex items-center justify-center gap-2"
+                    >
+                      <Crown className="w-4 h-4 text-amber-200" />
+                      <span>Upgrade to Business — ₹{billingCycle === 'annual' ? '1,499/yr' : '149/mo'}</span>
+                    </button>
+                  )}
+                </div>
+              </div>
+
+            </div>
+
+            {/* Quick Sandbox Simulation Bar (Zero-cost Local Verification) */}
+            <div className="p-3.5 rounded-xl bg-slate-100 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700/80 mb-4 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs">
+              <div className="flex items-center gap-2 text-slate-700 dark:text-slate-300">
+                <Cpu className="w-4 h-4 text-blue-600" />
+                <span className="font-bold">Evaluation Sandbox:</span>
+                <span className="text-[11px] text-slate-500">Test plan quotas instantly without payment gateway:</span>
+              </div>
+              <div className="flex items-center gap-2 shrink-0">
+                <button
+                  type="button"
+                  onClick={() => handleTestActivate('free')}
+                  className={`px-2.5 py-1 rounded-lg text-[11px] font-bold border transition-all cursor-pointer ${
+                    usageData.plan_id === 'free' ? 'bg-blue-600 text-white border-blue-600' : 'bg-white dark:bg-slate-900 border-slate-300 dark:border-slate-700 hover:border-blue-400'
+                  }`}
+                >
+                  Free (5 Docs)
+                </button>
+                <button
+                  type="button"
+                  onClick={() => handleTestActivate('personal')}
+                  className={`px-2.5 py-1 rounded-lg text-[11px] font-bold border transition-all cursor-pointer ${
+                    usageData.plan_id === 'personal' ? 'bg-blue-600 text-white border-blue-600' : 'bg-white dark:bg-slate-900 border-slate-300 dark:border-slate-700 hover:border-blue-400'
+                  }`}
+                >
+                  Personal (30 Docs)
+                </button>
+                <button
+                  type="button"
+                  onClick={() => handleTestActivate('small_business')}
+                  className={`px-2.5 py-1 rounded-lg text-[11px] font-bold border transition-all cursor-pointer ${
+                    usageData.plan_id === 'small_business' ? 'bg-purple-600 text-white border-purple-600' : 'bg-white dark:bg-slate-900 border-slate-300 dark:border-slate-700 hover:border-purple-400'
+                  }`}
+                >
+                  Small Business (100 Docs)
+                </button>
+              </div>
+            </div>
+
+            <div className="pt-3 border-t border-slate-200 dark:border-slate-800 flex flex-col sm:flex-row items-center justify-between text-xs text-slate-500 dark:text-slate-400 gap-3">
+              <div className="flex items-center gap-2">
+                <Shield className="w-4 h-4 text-blue-600" />
+                <span>100% In-Country Sovereign Processing under DPDP Act 2023. Razorpay secure 256-bit SSL encryption.</span>
+              </div>
+              <button
+                type="button"
+                onClick={() => { setShowPricingModal(false); setPricingFeatureNotice(null); }}
+                className="font-bold text-slate-600 dark:text-slate-300 hover:underline cursor-pointer"
+              >
+                Close
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── RAZORPAY SANDBOX TEST MODAL (When live gateway keys not configured) ── */}
+      {sandboxCheckout && (
+        <div className="fixed inset-0 bg-black/85 backdrop-blur-sm z-[60] flex items-center justify-center p-4">
+          <div className={`max-w-md w-full rounded-2xl p-6 shadow-2xl border ${isDark ? 'bg-slate-900 border-slate-700 text-white' : 'bg-white border-slate-200 text-slate-900'}`}>
+            <div className="flex items-center justify-between pb-4 border-b border-slate-200 dark:border-slate-800">
+              <div className="flex items-center gap-2.5">
+                <div className="w-8 h-8 rounded-xl bg-blue-600 text-white flex items-center justify-center">
+                  <CreditCard className="w-4 h-4" />
+                </div>
+                <div>
+                  <h3 className="font-bold text-sm">Razorpay Checkout</h3>
+                  <p className="text-[11px] text-slate-500">Order: {sandboxCheckout.order_id}</p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setSandboxCheckout(null)}
+                className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 p-1 cursor-pointer"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <div className="py-4 space-y-3">
+              <div className="flex justify-between items-center text-xs p-3 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700">
+                <div>
+                  <div className="font-bold text-slate-900 dark:text-white">{sandboxCheckout.plan_name}</div>
+                  <div className="text-[11px] text-slate-500 capitalize">{sandboxCheckout.billing_cycle} billing</div>
+                </div>
+                <div className="text-right">
+                  <div className="text-base font-extrabold text-blue-600 dark:text-blue-400">₹{sandboxCheckout.amount_inr}</div>
+                  <div className="text-[10px] text-slate-400">incl. all taxes</div>
+                </div>
+              </div>
+
+              <div className="p-3 rounded-xl bg-blue-50 dark:bg-blue-950/40 border border-blue-200 dark:border-blue-800/60 text-xs text-blue-900 dark:text-blue-200">
+                <div className="font-bold flex items-center gap-1.5 mb-1">
+                  <Shield className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400" />
+                  <span>HMAC SHA-256 Payment Verification</span>
+                </div>
+                <p className="text-[11px] text-blue-700 dark:text-blue-300">
+                  Simulating payment. Clicking below generates valid cryptographic HMAC SHA-256 signatures verified by the FastAPI backend.
+                </p>
+              </div>
+            </div>
+
+            <div className="space-y-2 pt-2">
+              <button
+                type="button"
+                disabled={isProcessingPayment}
+                onClick={() => handleVerifyPayment({
+                  user_id: user.id,
+                  order_id: sandboxCheckout.order_id,
+                  payment_id: `pay_sandbox_${Date.now()}`,
+                  signature: `rzp_test_sig_${sandboxCheckout.order_id.replace('order_', '')}`
+                })}
+                className="w-full py-3 bg-[#0f3d68] hover:bg-[#0a2744] text-white font-bold text-xs uppercase tracking-wider rounded-xl shadow-md transition-all flex items-center justify-center gap-2 cursor-pointer"
+              >
+                {isProcessingPayment ? (
+                  <span>Verifying HMAC Signature...</span>
+                ) : (
+                  <>
+                    <Check className="w-4 h-4 text-emerald-300" />
+                    <span>Confirm Payment (₹{sandboxCheckout.amount_inr})</span>
+                  </>
+                )}
+              </button>
+              <button
+                type="button"
+                onClick={() => setSandboxCheckout(null)}
+                className="w-full py-2 text-xs text-slate-500 hover:text-slate-700 dark:hover:text-slate-300 cursor-pointer text-center"
+              >
+                Cancel Checkout
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── CANCELLATION CONFIRMATION MODAL ── */}
+      {showCancelConfirm && (
+        <div className="fixed inset-0 bg-black/80 backdrop-blur-xs z-[70] flex items-center justify-center p-4">
+          <div className={`max-w-md w-full rounded-2xl p-6 shadow-2xl border ${isDark ? 'bg-slate-900 border-slate-700 text-white' : 'bg-white border-slate-200 text-slate-900'}`}>
+            <div className="w-12 h-12 rounded-2xl bg-amber-100 dark:bg-amber-950/60 text-amber-600 flex items-center justify-center mb-4">
+              <AlertTriangle className="w-6 h-6" />
+            </div>
+            <h3 className="font-bold text-base mb-2">Cancel Subscription?</h3>
+            <p className="text-xs text-slate-500 dark:text-slate-400 mb-6 leading-relaxed">
+              You will continue to have full access to your <strong>{usageData.plan_name}</strong> features and upload allowance until the end of your billing period. After that, your account will smoothly return to the Free Tier.
+            </p>
+            <div className="flex gap-3">
+              <button
+                type="button"
+                disabled={isProcessingPayment}
+                onClick={handleCancelSubscription}
+                className="flex-1 py-2.5 rounded-xl bg-rose-600 hover:bg-rose-700 text-white font-bold text-xs cursor-pointer"
+              >
+                {isProcessingPayment ? 'Processing...' : 'Confirm Cancellation'}
+              </button>
+              <button
+                type="button"
+                onClick={() => setShowCancelConfirm(false)}
+                className="flex-1 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200 font-bold text-xs cursor-pointer"
+              >
+                Keep Plan
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
     </div>
   );

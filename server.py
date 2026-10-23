@@ -8,13 +8,14 @@ import tempfile
 from datetime import datetime
 from typing import Optional
 
-from fastapi import FastAPI, UploadFile, File, Form, HTTPException, Depends
+from fastapi import FastAPI, UploadFile, File, Form, HTTPException, Depends, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import Response, JSONResponse
 from pydantic import BaseModel
 
 import config
 import database as db
+import subscription_service
 import ingestion
 import analysis
 import rag
@@ -75,6 +76,7 @@ def firebase_auth(req: FirebaseAuthRequest):
         )
         session.add(user)
         session.commit()
+    subscription_service.get_or_create_user_subscription(session, user.id)
     user_data = {
         "id": user.id,
         "name": user.name,
@@ -89,8 +91,9 @@ def firebase_auth(req: FirebaseAuthRequest):
 def login(req: LoginRequest):
     session = db.SessionLocal()
     user = session.query(db.User).filter_by(email=req.email).first()
-    session.close()
     if user and db.verify_password(req.password, user.password_hash):
+        subscription_service.get_or_create_user_subscription(session, user.id)
+        session.close()
         return {
             "success": True,
             "user": {
@@ -100,6 +103,7 @@ def login(req: LoginRequest):
                 "role": user.role
             }
         }
+    session.close()
     raise HTTPException(status_code=401, detail="Invalid email or password.")
 
 @app.post("/api/auth/register")
@@ -120,6 +124,7 @@ def register(req: RegisterRequest):
     session.add(new_user)
     session.commit()
     user_id = new_user.id
+    subscription_service.get_or_create_user_subscription(session, user_id)
     user_data = {
         "id": new_user.id,
         "name": new_user.name,
@@ -139,15 +144,29 @@ async def upload_document(
 ):
     if not user_id:
         raise HTTPException(status_code=401, detail="Authentication required. Please log in to upload documents.")
-    suffix = os.path.splitext(file.filename)[1] or ".pdf"
-    with tempfile.NamedTemporaryFile(delete=False, suffix=suffix) as tmp:
-        contents = await file.read()
-        tmp.write(contents)
-        tmp_path = tmp.name
+    
+    contents = await file.read()
+    if not contents:
+        raise HTTPException(status_code=400, detail="Uploaded file is empty.")
+    
+    file_hash = subscription_service.compute_file_hash(contents)
 
+    # 1. Strict Server-Side Quota Verification before starting expensive AI processing
+    session = db.SessionLocal()
     try:
-        session = db.SessionLocal()
-        new_doc = db.Document(user_id=user_id, filename=file.filename, doc_type=doc_type)
+        subscription_service.verify_and_reserve_upload_quota(session, user_id, file_hash, file.filename)
+    except Exception:
+        session.close()
+        raise
+
+    suffix = os.path.splitext(file.filename)[1] or ".pdf"
+    tmp_path = None
+    try:
+        with tempfile.NamedTemporaryFile(delete=False, suffix=suffix) as tmp:
+            tmp.write(contents)
+            tmp_path = tmp.name
+
+        new_doc = db.Document(user_id=user_id, filename=file.filename, doc_type=doc_type, file_hash=file_hash)
         session.add(new_doc)
         session.commit()
         doc_id = new_doc.id
@@ -185,6 +204,11 @@ async def upload_document(
         new_doc.entities = json.dumps(entities)
         new_doc.faiss_index_path = result["index_dir"]
         session.commit()
+
+        # 2. Record successful upload: only called once the document is ingested & saved
+        # Failed uploads that raise exceptions will never reach this call!
+        subscription_service.record_successful_upload(session, user_id, file_hash)
+        usage_info = subscription_service.get_user_usage_summary(session, user_id)
         session.close()
 
         return {
@@ -201,13 +225,21 @@ async def upload_document(
                 "entities": entities,
                 "pii_shield": pii_shield_data,
                 "full_text": full_text
-            }
+            },
+            "usage": usage_info
         }
     except Exception as e:
+        session.rollback()
+        session.close()
+        if isinstance(e, HTTPException):
+            raise e
         raise HTTPException(status_code=500, detail=str(e))
     finally:
-        if os.path.exists(tmp_path):
-            os.unlink(tmp_path)
+        if tmp_path and os.path.exists(tmp_path):
+            try:
+                os.unlink(tmp_path)
+            except Exception:
+                pass
 
 # ─── Chat / Q&A ───────────────────────────────────────────────────────────────
 class ChatRequest(BaseModel):
@@ -221,6 +253,15 @@ class ChatRequest(BaseModel):
 def chat_with_doc(req: ChatRequest):
     if not os.path.exists(req.index_dir):
         raise HTTPException(status_code=400, detail="Document index directory not found.")
+    
+    # Enforce AI Question usage limit per billing period
+    if req.user_id:
+        session = db.SessionLocal()
+        try:
+            subscription_service.check_and_increment_ai_query(session, req.user_id)
+        finally:
+            session.close()
+
     result = rag.ask_question(req.question, req.index_dir, mode=req.ai_mode)
 
     if req.doc_id:
@@ -479,6 +520,119 @@ def download_audit_report(doc_id: int):
         media_type="application/pdf",
         headers={"Content-Disposition": f"attachment; filename=\"{clean_filename}\""}
     )
+
+# ─── Subscription, Usage & Payment Endpoints ─────────────────────────────────
+
+@app.get("/api/subscription/plans")
+def get_subscription_plans():
+    """Returns available subscription tiers, pricing, and feature matrices."""
+    session = db.SessionLocal()
+    try:
+        plans = session.query(db.SubscriptionPlan).filter_by(is_active=1).all()
+        result = []
+        for p in plans:
+            result.append({
+                "id": p.id,
+                "display_name": p.display_name,
+                "monthly_price_inr": p.monthly_price_inr,
+                "annual_price_inr": p.annual_price_inr,
+                "monthly_upload_limit": p.monthly_upload_limit,
+                "ai_query_limit": p.ai_query_limit,
+                "features": json.loads(p.features_json) if p.features_json else {}
+            })
+        return {"plans": result}
+    finally:
+        session.close()
+
+@app.get("/api/subscription/me")
+@app.get("/api/subscription/usage")
+def get_user_subscription_info(user_id: int):
+    """Returns user's current subscription, monthly usage, remaining quota, and renewal dates."""
+    if not user_id:
+        raise HTTPException(status_code=401, detail="User ID required.")
+    session = db.SessionLocal()
+    try:
+        summary = subscription_service.get_user_usage_summary(session, user_id)
+        return summary
+    finally:
+        session.close()
+
+class CheckoutRequest(BaseModel):
+    user_id: int
+    plan_id: str
+    billing_cycle: Optional[str] = "monthly"
+
+@app.post("/api/subscription/checkout")
+def checkout_order(req: CheckoutRequest):
+    """Initiates checkout order for Razorpay payment."""
+    session = db.SessionLocal()
+    try:
+        order = subscription_service.create_checkout_order(
+            session, req.user_id, req.plan_id, req.billing_cycle or "monthly"
+        )
+        return order
+    finally:
+        session.close()
+
+class VerifyPaymentRequest(BaseModel):
+    user_id: int
+    order_id: str
+    payment_id: str
+    signature: str
+
+@app.post("/api/subscription/verify-payment")
+def verify_payment(req: VerifyPaymentRequest):
+    """Verifies HMAC SHA-256 signature and activates paid plan."""
+    session = db.SessionLocal()
+    try:
+        result = subscription_service.activate_verified_subscription(
+            session, req.user_id, req.order_id, req.payment_id, req.signature
+        )
+        return result
+    finally:
+        session.close()
+
+class CancelSubscriptionRequest(BaseModel):
+    user_id: int
+
+@app.post("/api/subscription/cancel")
+def cancel_subscription(req: CancelSubscriptionRequest):
+    """Cancels paid subscription at period end while preserving access until end date."""
+    session = db.SessionLocal()
+    try:
+        result = subscription_service.cancel_user_subscription(session, req.user_id)
+        return result
+    finally:
+        session.close()
+
+class TestActivateRequest(BaseModel):
+    user_id: int
+    plan_id: str
+    billing_cycle: Optional[str] = "monthly"
+
+@app.post("/api/subscription/test-activate")
+def test_activate_subscription(req: TestActivateRequest):
+    """Sandbox testing endpoint to simulate plan activation without payment gateway."""
+    session = db.SessionLocal()
+    try:
+        result = subscription_service.test_activate_plan(
+            session, req.user_id, req.plan_id, req.billing_cycle or "monthly"
+        )
+        return result
+    finally:
+        session.close()
+
+@app.post("/api/payments/webhook")
+async def payment_webhook(request: Request):
+    """Idempotent Razorpay webhook processor."""
+    raw_body = await request.body()
+    signature = request.headers.get("X-Razorpay-Signature", "")
+    session = db.SessionLocal()
+    try:
+        result = subscription_service.process_webhook_event(session, raw_body, signature)
+        return result
+    finally:
+        session.close()
 
 if __name__ == "__main__":
     import uvicorn

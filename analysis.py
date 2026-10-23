@@ -507,9 +507,11 @@ def analyze_document_complete(full_text: str, mode: str = None) -> dict:
     Extracts summary, classified clauses, risk remediation, and key entities all at once.
     Normalizes outputs across both Gemini and Ollama for unified, consistent presentation.
     """
-    truncated = full_text[:7000] + ("..." if len(full_text) > 7000 else "")
+    # Increase context window to capture multi-page documents (Gemini supports 1M tokens; Ollama supports 8k-16k tokens)
+    max_chars = 35000 if (mode == "fast" or config.AI_PROCESSING_MODE == "fast") else 20000
+    truncated = full_text[:max_chars] + ("\n...[Document continues]" if len(full_text) > max_chars else "")
     prompt = f"""You are an elite legal contract and regulatory compliance analyst.
-Analyze the following document and return a comprehensive legal audit as a SINGLE valid JSON object.
+Analyze the following document and return a comprehensive legal audit as a SINGLE valid JSON object covering all major risks throughout the entire document.
 
 Your JSON output MUST have exactly these 4 top-level keys:
 
@@ -517,11 +519,11 @@ Your JSON output MUST have exactly these 4 top-level keys:
 2. "clauses": A list of extracted standard legal clauses. Each item must have:
    - "clause_type": (e.g., "Indemnity", "Termination", "Payment Terms", "Governing Law", "Confidentiality")
    - "summary": one-sentence plain English explanation
-   - "verbatim_excerpt": exact quote from the document (max 60 words)
-3. "risks": A list of identified risks, loopholes, or one-sided terms. Each item must have:
+   - "verbatim_excerpt": exact quote from the document (complete sentence or clause, 15-60 words)
+3. "risks": A comprehensive list of ALL identified risks, loopholes, liability imbalances, or compliance hazards across the document (aim for 3-8 distinct risks if present). Each item must have:
    - "risk_level": "High", "Medium", or "Low"
-   - "clause_type": type of clause (e.g., "Indemnity", "Termination", "Payment Terms", "Governing Law", "Liquidated Damages")
-   - "risky_excerpt": exact quote of the problematic text
+   - "clause_type": type of clause (e.g., "Indemnity", "Termination", "Payment Terms", "Governing Law", "Liquidated Damages", "Compliance")
+   - "risky_excerpt": EXACT verbatim quote of the problematic sentence or clause. CRITICAL REQUIREMENT: This MUST be a COMPLETE, grammatically coherent sentence or full clause (at least 12-40 words from starting capital letter to full stop). NEVER return an incomplete 2-5 word sentence fragment (like "the Union did not").
    - "why_risky": concise plain English explanation of the legal hazard
    - "severity_reasoning": specific, detailed rationale explaining WHY this clause is designated as High or Medium risk (e.g. explains what factors justify a High severity rating versus Medium, such as unlimited liability, absence of cure period, unilateral cancellation, or severe financial exposure)
    - "potential_impact": the tangible operational, financial, or legal consequences if accepted as-is
@@ -608,10 +610,42 @@ JSON:"""
                 else:
                     trigger_factors = ["Procedural ambiguity", "Unbalanced timelines"]
 
+            raw_excerpt = str(r.get("risky_excerpt", "")).strip()
+
+            # Automatic sentence-boundary expansion if the LLM returned a fragmented quote (< 8 words)
+            risky_excerpt = raw_excerpt
+            if raw_excerpt and len(raw_excerpt.split()) < 8 and raw_excerpt in full_text:
+                try:
+                    pos = full_text.find(raw_excerpt)
+                    if pos != -1:
+                        # Scan backwards up to 150 chars for sentence start or line start
+                        start_boundary = max(0, pos - 150)
+                        prefix = full_text[start_boundary:pos]
+                        # Look for sentence delimiters (., \n, ;)
+                        split_chars = [prefix.rfind('. '), prefix.rfind('.\n'), prefix.rfind('\n'), prefix.rfind('; ')]
+                        last_delim = max(split_chars)
+                        start_idx = (start_boundary + last_delim + (2 if last_delim != -1 and prefix[last_delim] == '.' else 1)) if last_delim != -1 else start_boundary
+
+                        # Scan forward up to 250 chars for sentence termination (. or \n)
+                        end_boundary = min(len(full_text), pos + len(raw_excerpt) + 250)
+                        suffix = full_text[pos + len(raw_excerpt):end_boundary]
+                        end_delim = suffix.find('. ')
+                        if end_delim == -1:
+                            end_delim = suffix.find('.\n')
+                        if end_delim == -1:
+                            end_delim = suffix.find('\n\n')
+                        end_idx = (pos + len(raw_excerpt) + end_delim + 1) if end_delim != -1 else min(len(full_text), pos + len(raw_excerpt) + 120)
+
+                        expanded = full_text[start_idx:end_idx].strip()
+                        if len(expanded.split()) >= len(raw_excerpt.split()) + 3:
+                            risky_excerpt = expanded
+                except Exception as exp_err:
+                    logger.debug(f"Excerpt expansion skipped: {exp_err}")
+
             risks.append({
                 "risk_level": lvl,
                 "clause_type": str(r.get("clause_type", "General Risk")).strip(),
-                "risky_excerpt": str(r.get("risky_excerpt", "")).strip(),
+                "risky_excerpt": risky_excerpt,
                 "why_risky": why_risky,
                 "severity_reasoning": severity_reasoning,
                 "potential_impact": potential_impact,

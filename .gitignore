@@ -25,6 +25,10 @@ frontend/dist/
 frontend/dist-ssr/
 node_modules/
 dist/
+frontend/android/**/build/
+frontend/android/.gradle/
+frontend/android/.idea/
+.gradle/
 
 # Operating System & IDE files
 .DS_Store

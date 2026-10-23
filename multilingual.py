@@ -6,9 +6,10 @@ from langchain_core.prompts import PromptTemplate
 logger = logging.getLogger(__name__)
 
 SUPPORTED_LANGUAGES = [
-    "English", "Hindi", "Marathi", "Tamil", "Telugu", 
-    "Bengali", "Gujarati", "Kannada", "Malayalam", 
-    "Punjabi", "Urdu"
+    "English", "Hindi", "Marathi", "Bengali", "Tamil", "Telugu", 
+    "Gujarati", "Kannada", "Malayalam", "Punjabi", "Odia", "Assamese", 
+    "Urdu", "Sanskrit", "Nepali", "Sindhi", "Maithili", "Konkani", 
+    "Dogri", "Manipuri", "Santali", "Bhojpuri"
 ]
 
 def _get_llm() -> OllamaLLM:

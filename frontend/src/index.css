@@ -60,18 +60,30 @@
 
 /* ── Rotating word animation ── */
 @keyframes wordSlideIn {
-  0% { opacity: 0; transform: translateY(100%) scaleY(0.8); }
-  100% { opacity: 1; transform: translateY(0) scaleY(1); }
+  0% { opacity: 0; transform: translateY(45%); }
+  100% { opacity: 1; transform: translateY(0); }
 }
 @keyframes wordSlideOut {
-  0% { opacity: 1; transform: translateY(0) scaleY(1); }
-  100% { opacity: 0; transform: translateY(-100%) scaleY(0.8); }
+  0% { opacity: 1; transform: translateY(0); }
+  100% { opacity: 0; transform: translateY(-45%); }
 }
 .word-slide-in {
   animation: wordSlideIn 0.45s cubic-bezier(0.16, 1, 0.3, 1) both;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+  white-space: nowrap;
 }
 .word-slide-out {
   animation: wordSlideOut 0.35s cubic-bezier(0.4, 0, 1, 1) both;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+  white-space: nowrap;
 }
 
 /* ── Gradient text animation ── */

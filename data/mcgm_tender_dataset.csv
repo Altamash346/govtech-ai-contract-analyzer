@@ -1,0 +1,249 @@
+contract_id,clause_category,clause_text,risk_level,risk_reason,suggested_remediation
+MCGM_Tender_01,Termination,MCGM may terminate this agreement at any time without cause by giving 7 days written notice.,High,Termination based on subjective opinion without objective standard or cure period.,"Require termination for cause only, with cure period."
+MCGM_Tender_01,Dispute Resolution,"Any dispute shall be referred to the Chief Engineer, whose decision shall be final.",High,"Engineer-in-Charge is an employee of MCGM, creating conflict of interest.",Refer disputes to independent arbitration.
+MCGM_Tender_01,Payment Terms,Payment shall be released after satisfactory completion of work and submission of all documents.,Medium,Completion certificate issuance is subjective.,Payment within 45 days of valid invoice and acceptance of work.
+MCGM_Tender_01,Governing Law,Indian law shall apply.,Low,"Standard statutory reference, balanced and customary.",No change required.
+MCGM_Tender_01,Indemnity,"The Contractor shall indemnify MCGM against all claims, losses, and damages arising from the work.",Medium,Broad indemnity obligation without reciprocal protection for the Contractor.,Limit indemnity to claims arising from Contractor's negligence or wilful misconduct.
+MCGM_Tender_02,Termination,MCGM may terminate without notice in case of any breach.,High,Termination without cause and short notice period creates severe risk.,Define quality standards objectively and provide cure period.
+MCGM_Tender_02,Dispute Resolution,Disputes shall be referred to the Municipal Commissioner whose decision shall be final.,High,"Vests absolute judicial power in an internal officer, denying neutral arbitration.",Refer to arbitration.
+MCGM_Tender_02,Payment Terms,Payment shall be made within 60 days of invoice submission.,Medium,Completion certificate issuance is subjective.,Define objective completion criteria.
+MCGM_Tender_02,Governing Law,Indian law shall apply.,Low,Standard jurisdiction clause.,No change required.
+MCGM_Tender_02,Indemnity,Contractor shall indemnify MCGM for all direct losses.,Medium,Includes legal costs without cap.,Cap indemnity at contract value.
+MCGM_Tender_03,Termination,The Deputy Municipal Commissioner may terminate the Contract if the Contractor fails to execute the work according to the terms.,High,Short commencement window with termination as penalty.,Extend to 30 days and provide cure period.
+MCGM_Tender_03,Dispute Resolution,Disputes shall be referred to the Municipal Commissioner whose decision shall be final.,Medium,Lacks independent arbitration fallback.,Add arbitration fallback.
+MCGM_Tender_03,Payment Terms,Payment shall be made within 45 days of invoice.,Medium,'Satisfactory completion' is subjective and can delay payment indefinitely.,Define objective completion criteria and payment milestones.
+MCGM_Tender_03,Governing Law,The laws of Maharashtra shall apply.,Low,Standard governing law clause.,No change required.
+MCGM_Tender_03,Indemnity,The Contractor shall indemnify MCGM for all direct and indirect losses.,Medium,Broad indemnity obligation without reciprocal protection for the Contractor.,Limit to claims arising from Contractor's negligence.
+MCGM_Tender_04,Termination,MCGM may terminate this agreement at any time without cause by giving 7 days written notice.,High,"Blacklisting by any agency, even unrelated, triggers termination.",Extend to 30 days and provide cure period.
+MCGM_Tender_04,Dispute Resolution,Disputes shall be resolved by the Municipal Commissioner.,High,"Chief Engineer is an MCGM employee, lacking independence.",Independent arbitration clause required.
+MCGM_Tender_04,Payment Terms,MCGM agrees to pay the Contractor the contract price at the times and in the manner prescribed by the documents.,Medium,Completion certificate issuance is subjective.,Reduce to 45 days.
+MCGM_Tender_04,Governing Law,Indian law shall apply.,Low,"Standard statutory reference, balanced and customary.",No change required.
+MCGM_Tender_04,Indemnity,The Contractor shall indemnify MCGM for all direct and indirect losses.,Medium,Includes legal costs without cap.,Cap indemnity at contract value.
+MCGM_Tender_05,Termination,MCGM may terminate if the Contractor fails to maintain quality standards.,High,Short commencement window with termination as penalty.,Limit termination trigger to blacklisting by the same authority for similar work.
+MCGM_Tender_05,Dispute Resolution,Disputes shall be referred to the Municipal Commissioner whose decision shall be final.,High,"Engineer-in-Charge is an employee of MCGM, creating conflict of interest.","Refer disputes to mutual consultation, then independent arbitration."
+MCGM_Tender_05,Payment Terms,MCGM agrees to pay the Contractor the contract price at the times and in the manner prescribed by the documents.,Medium,Completion certificate issuance is subjective.,Reduce payment period to 45 days.
+MCGM_Tender_05,Governing Law,"Governed by the Mumbai Municipal Corporation Act, 1888.",Low,"Standard statutory reference, balanced and customary.",No change required.
+MCGM_Tender_05,Indemnity,The Contractor shall indemnify MCGM for all direct and indirect losses.,Medium,Broad indemnity without limitation.,Cap indemnity at contract value.
+MCGM_Tender_06,Termination,MCGM may terminate if the Contractor fails to commence work within 7 days.,High,Termination at will creates uncertainty for Contractor.,Extend to 30 days and provide cure period.
+MCGM_Tender_06,Dispute Resolution,Disputes shall be resolved by the Municipal Commissioner.,Medium,Lacks independent arbitration fallback.,Add arbitration fallback.
+MCGM_Tender_06,Payment Terms,Payment shall be released after satisfactory completion of work and submission of all documents.,Medium,'Satisfactory completion' is subjective and can delay payment indefinitely.,Define objective completion criteria and payment milestones.
+MCGM_Tender_06,Governing Law,Subject to Mumbai jurisdiction.,Low,Standard state law reference.,No change required.
+MCGM_Tender_06,Indemnity,"Contractor shall indemnify MCGM against all claims, including legal costs.",Medium,Broad indemnity without cap.,Exclude indirect and consequential losses from indemnity.
+MCGM_Tender_07,Termination,MCGM may terminate without cause with 10 days notice.,High,Termination at will creates uncertainty for Contractor.,Require 30-day notice and compensation for work completed.
+MCGM_Tender_07,Dispute Resolution,Disputes shall be referred to the Municipal Commissioner whose decision shall be final.,High,"Committee is internal to MCGM, lacking independence.",Refer to independent arbitration.
+MCGM_Tender_07,Payment Terms,Payment shall be made after deduction of retention money of 10%.,Medium,Completion certificate issuance is subjective.,Define objective completion criteria.
+MCGM_Tender_07,Governing Law,Indian law shall apply.,Low,Standard governing law clause.,No change required.
+MCGM_Tender_07,Indemnity,"The Contractor shall indemnify MCGM against all claims, losses, and damages arising from the work.",Medium,Includes indirect losses which are difficult to quantify.,Limit indemnity to claims arising from Contractor's negligence or wilful misconduct.
+MCGM_Tender_08,Termination,MCGM may terminate at will with 15 days notice.,High,"Termination without notice for any breach, however minor.",Limit termination trigger to blacklisting by the same authority for similar work.
+MCGM_Tender_08,Dispute Resolution,Any dispute shall be resolved by the Engineer-in-Charge whose decision shall be final.,High,"Engineer-in-Charge is an employee of MCGM, creating conflict of interest.",Refer to arbitration.
+MCGM_Tender_08,Payment Terms,Payment shall be made within 30 days of submission of final bill.,Medium,"90-day payment window is longer than industry standard, impacting cash flow.",Define objective completion criteria.
+MCGM_Tender_08,Governing Law,"Governed by the Mumbai Municipal Corporation Act, 1888.",Low,Standard jurisdiction clause.,No change required.
+MCGM_Tender_08,Indemnity,Contractor shall indemnify MCGM against all third-party claims.,Medium,No cap on indemnity amount.,Exclude indirect and consequential losses from indemnity.
+MCGM_Tender_09,Termination,MCGM may terminate without notice in case of any breach.,High,Termination at will creates uncertainty for Contractor.,Define quality standards objectively and provide cure period.
+MCGM_Tender_09,Dispute Resolution,All disputes shall be settled amicably between the parties.,Medium,Lacks independent arbitration fallback.,Add arbitration fallback.
+MCGM_Tender_09,Payment Terms,Payment shall be made after deduction of retention money of 10%.,Medium,Completion certificate issuance is subjective.,Reduce retention to 5% and release within 60 days of completion.
+MCGM_Tender_09,Governing Law,Subject to Maharashtra jurisdiction.,Low,Standard jurisdiction clause.,No change required.
+MCGM_Tender_09,Indemnity,Contractor shall indemnify MCGM against all claims arising from the work.,Medium,Includes indirect losses which are difficult to quantify.,Cap total indemnity at contract value.
+MCGM_Tender_10,Termination,MCGM may terminate if the Contractor fails to commence work within 7 days.,High,Termination based on subjective opinion without objective standard or cure period.,Extend to 30 days and provide cure period.
+MCGM_Tender_10,Dispute Resolution,All disputes shall be referred to the Additional Municipal Commissioner whose decision shall be final and binding.,High,"Vests absolute judicial power in an internal officer, denying neutral arbitration.",Refer disputes to independent arbitration.
+MCGM_Tender_10,Payment Terms,Payment shall be released after satisfactory completion of work and submission of all documents.,Medium,Completion certificate issuance is subjective.,Reduce to 45 days.
+MCGM_Tender_10,Governing Law,Subject to Mumbai jurisdiction.,Low,"Standard statutory reference, balanced and customary.",No change required.
+MCGM_Tender_10,Indemnity,Contractor shall indemnify MCGM against third-party claims.,Medium,Includes legal costs without cap.,Limit to claims arising from Contractor's negligence.
+MCGM_Tender_11,Termination,MCGM may terminate without cause with 10 days notice.,High,"Blacklisting by any agency, even unrelated, triggers termination.",Define quality standards objectively and provide cure period.
+MCGM_Tender_11,Dispute Resolution,All disputes shall be referred to the Additional Municipal Commissioner whose decision shall be final and binding.,High,"Vests absolute judicial power in an internal officer, denying neutral arbitration.",Refer to arbitration.
+MCGM_Tender_11,Payment Terms,Payment shall be made after deduction of retention money of 10%.,Medium,Completion certificate issuance is subjective.,Define objective completion criteria and payment milestones.
+MCGM_Tender_11,Governing Law,This agreement shall be governed by Indian law.,Low,Standard state law reference.,No change required.
+MCGM_Tender_11,Indemnity,Contractor shall indemnify MCGM against all third-party claims.,Medium,Broad indemnity without limitation.,Limit indemnity to claims arising from Contractor's negligence or wilful misconduct.
+MCGM_Tender_12,Termination,MCGM may terminate if the Contractor fails to maintain quality standards.,High,"Quality standards not defined, creating subjective termination risk.",Extend to 30 days and provide cure period.
+MCGM_Tender_12,Dispute Resolution,Disputes shall be referred to the Municipal Commissioner whose decision shall be final.,Medium,Lacks independent arbitration fallback.,Add arbitration fallback.
+MCGM_Tender_12,Payment Terms,Payment shall be made after submission of completion certificate.,Medium,"Payment timeline not explicitly specified, creating cash-flow uncertainty.",Define objective completion criteria.
+MCGM_Tender_12,Governing Law,"Governed by the Mumbai Municipal Corporation Act, 1888.",Low,Standard governing law clause.,No change required.
+MCGM_Tender_12,Indemnity,Contractor shall indemnify MCGM for all losses arising from the work.,Medium,Includes indirect losses which are difficult to quantify.,Cap total indemnity at contract value.
+MCGM_Tender_13,Termination,MCGM may terminate without cause with 10 days notice.,High,Termination based on subjective opinion without objective standard or cure period.,Define quality standards objectively and provide cure period.
+MCGM_Tender_13,Dispute Resolution,Disputes shall be resolved by the Municipal Commissioner.,High,"Committee is internal to MCGM, lacking independence.","Refer disputes to mutual consultation, then independent arbitration."
+MCGM_Tender_13,Payment Terms,Payment shall be made within 90 days of submission of invoice.,Medium,'Satisfactory completion' is subjective and can delay payment indefinitely.,Define objective completion criteria and payment milestones.
+MCGM_Tender_13,Governing Law,Subject to Mumbai jurisdiction.,Low,"Standard statutory reference, balanced and customary.",No change required.
+MCGM_Tender_13,Indemnity,"Contractor shall indemnify MCGM against all claims, including legal costs.",Medium,Broad indemnity obligation without reciprocal protection for the Contractor.,Limit indemnity to claims arising from Contractor's negligence or wilful misconduct.
+MCGM_Tender_14,Termination,MCGM may terminate if the Contractor fails to commence work within 7 days.,High,Short commencement window with termination as penalty.,Add 30-day written notice and cure period before termination.
+MCGM_Tender_14,Dispute Resolution,All disputes shall be settled amicably between the parties.,High,"Engineer-in-Charge is an employee of MCGM, creating conflict of interest.",Refer disputes to independent arbitration.
+MCGM_Tender_14,Payment Terms,Payment shall be made within 60 days.,Medium,10% retention is high and held for indefinite period.,Reduce payment period to 45 days.
+MCGM_Tender_14,Governing Law,"Governed by the Mumbai Municipal Corporation Act, 1888.",Low,Standard jurisdiction clause.,No change required.
+MCGM_Tender_14,Indemnity,Contractor shall indemnify MCGM against all claims.,Medium,Broad indemnity without cap.,Exclude indirect and consequential losses from indemnity.
+MCGM_Tender_15,Termination,MCGM may terminate if the Contractor fails to maintain quality standards.,High,"Termination without notice for any breach, however minor.","Require termination for cause only, with cure period."
+MCGM_Tender_15,Dispute Resolution,Disputes shall be resolved by the Municipal Commissioner.,Medium,Lacks independent arbitration fallback.,Add arbitration fallback.
+MCGM_Tender_15,Payment Terms,Payment shall be made within 60 days.,Medium,10% retention is high and held for indefinite period.,Reduce to 45 days.
+MCGM_Tender_15,Governing Law,This agreement shall be governed by Indian law.,Low,Standard governing law clause.,No change required.
+MCGM_Tender_15,Indemnity,The Contractor shall indemnify MCGM for all direct and indirect losses.,Medium,No cap on indemnity amount.,Limit indemnity to claims arising from Contractor's negligence or wilful misconduct.
+MCGM_Tender_16,Termination,MCGM may terminate if the Contractor fails to maintain quality standards.,High,"Quality standards not defined, creating subjective termination risk.",Require 30-day notice and compensation for work completed.
+MCGM_Tender_16,Dispute Resolution,Disputes shall be referred to the Municipal Commissioner whose decision shall be final.,High,"Engineer-in-Charge is an employee of MCGM, creating conflict of interest.","Refer disputes to mutual consultation, then independent arbitration."
+MCGM_Tender_16,Payment Terms,Payment shall be made within 90 days of submission of invoice.,Medium,Completion certificate issuance is subjective.,Define objective completion criteria.
+MCGM_Tender_16,Governing Law,"The agreement is subject to the Mumbai Municipal Corporation Act, 1888.",Low,Standard governing law clause.,No change required.
+MCGM_Tender_16,Indemnity,"The Contractor shall indemnify MCGM against all claims, losses, and damages arising from the work.",Medium,No cap on indemnity amount.,Limit indemnity to claims arising from Contractor's negligence or wilful misconduct.
+MCGM_Tender_17,Termination,MCGM may terminate without cause with 10 days notice.,High,Termination without cause and short notice period creates severe risk.,Limit termination trigger to blacklisting by the same authority for similar work.
+MCGM_Tender_17,Dispute Resolution,Disputes shall be settled by mutual consultation.,High,"Engineer-in-Charge is an employee of MCGM, creating conflict of interest.",Refer to arbitration.
+MCGM_Tender_17,Payment Terms,Payment shall be released after satisfactory completion of work and submission of all documents.,Medium,Completion certificate issuance is subjective.,Reduce retention to 5% and release within 60 days of completion.
+MCGM_Tender_17,Governing Law,Subject to Mumbai jurisdiction.,Low,Standard jurisdiction clause.,No change required.
+MCGM_Tender_17,Indemnity,Contractor shall indemnify MCGM for all direct losses.,Medium,Broad indemnity without limitation.,Exclude indirect and consequential losses from indemnity.
+MCGM_Tender_18,Termination,MCGM may terminate this agreement at any time without cause by giving 7 days written notice.,High,Termination based on subjective opinion without objective standard or cure period.,"Require termination for cause only, with cure period."
+MCGM_Tender_18,Dispute Resolution,Disputes shall be referred to the Additional Municipal Commissioner.,Medium,Lacks independent arbitration fallback.,Add arbitration fallback.
+MCGM_Tender_18,Payment Terms,Payment shall be made within 30 days of submission of final bill.,Medium,60 days is above standard 30-45 day norms.,Reduce to 45 days.
+MCGM_Tender_18,Governing Law,"Governed by the Mumbai Municipal Corporation Act, 1888.",Low,"Standard statutory reference, balanced and customary.",No change required.
+MCGM_Tender_18,Indemnity,"The Contractor shall indemnify MCGM against all claims, losses, and damages arising from the work.",Medium,Broad indemnity without limitation.,Cap indemnity at contract value.
+MCGM_Tender_19,Termination,MCGM may terminate this agreement at any time without cause by giving 7 days written notice.,High,Termination without cause and short notice period creates severe risk.,Require 30-day notice and compensation for work completed.
+MCGM_Tender_19,Dispute Resolution,Disputes shall be referred to a committee constituted by MCGM.,High,"Chief Engineer is an MCGM employee, lacking independence.",Refer to independent arbitration.
+MCGM_Tender_19,Payment Terms,Payment shall be released after satisfactory completion of work and submission of all documents.,Medium,60 days is above standard 30-45 day norms.,Reduce payment period to 45 days.
+MCGM_Tender_19,Governing Law,"Governed by the Mumbai Municipal Corporation Act, 1888.",Low,Standard jurisdiction clause.,No change required.
+MCGM_Tender_19,Indemnity,The Contractor shall indemnify MCGM for all direct and indirect losses.,Medium,Broad indemnity without limitation.,Cap total indemnity at contract value.
+MCGM_Tender_20,Termination,MCGM may terminate this agreement at any time without cause by giving 7 days written notice.,High,Termination based on subjective opinion without objective standard or cure period.,"Require termination for cause only, with cure period."
+MCGM_Tender_20,Dispute Resolution,All disputes shall be settled amicably between the parties.,High,"Vests absolute judicial power in an internal officer, denying neutral arbitration.","Refer disputes to mutual consultation, then independent arbitration."
+MCGM_Tender_20,Payment Terms,Payment shall be made within 60 days of invoice submission.,Medium,"90-day payment window is longer than industry standard, impacting cash flow.",Reduce to 45 days.
+MCGM_Tender_20,Governing Law,"Governed by the Mumbai Municipal Corporation Act, 1888.",Low,Standard jurisdiction clause.,No change required.
+MCGM_Tender_20,Indemnity,Contractor shall indemnify MCGM against third-party claims.,Medium,Broad indemnity obligation without reciprocal protection for the Contractor.,Exclude indirect and consequential losses from indemnity.
+MCGM_Tender_21,Termination,MCGM may terminate if the Contractor becomes insolvent.,High,Termination based on subjective opinion without objective standard or cure period.,Require notice and cure period for material breaches only.
+MCGM_Tender_21,Dispute Resolution,"Any dispute shall be referred to the Chief Engineer, whose decision shall be final.",Medium,Lacks independent arbitration fallback.,Add arbitration fallback.
+MCGM_Tender_21,Payment Terms,Payment shall be made within 60 days.,Medium,'Satisfactory completion' is subjective and can delay payment indefinitely.,Reduce to 45 days.
+MCGM_Tender_21,Governing Law,Indian law shall apply.,Low,Standard jurisdiction clause.,No change required.
+MCGM_Tender_21,Indemnity,Contractor shall indemnify MCGM against all claims arising from the work.,Medium,No cap on indemnity amount.,Exclude indirect and consequential losses from indemnity.
+MCGM_Tender_22,Termination,The Deputy Municipal Commissioner may terminate the Contract if the Contractor fails to execute the work according to the terms.,High,"Quality standards not defined, creating subjective termination risk.","Require termination for cause only, with cure period."
+MCGM_Tender_22,Dispute Resolution,All disputes shall be settled amicably between the parties.,High,"Vests absolute judicial power in an internal officer, denying neutral arbitration.",Independent arbitration clause required.
+MCGM_Tender_22,Payment Terms,MCGM agrees to pay the Contractor the contract price at the times and in the manner prescribed by the documents.,Medium,"Payment timeline not explicitly specified, creating cash-flow uncertainty.",Reduce retention to 5% and release within 60 days of completion.
+MCGM_Tender_22,Governing Law,"Governed by the Mumbai Municipal Corporation Act, 1888.",Low,Standard governing law clause.,No change required.
+MCGM_Tender_22,Indemnity,Contractor shall indemnify MCGM against all claims.,Medium,Broad indemnity obligation without reciprocal protection for the Contractor.,Exclude indirect and consequential losses from indemnity.
+MCGM_Tender_23,Termination,MCGM may terminate this agreement at any time without cause by giving 7 days written notice.,High,"Quality standards not defined, creating subjective termination risk.",Add 30-day written notice and cure period before termination.
+MCGM_Tender_23,Dispute Resolution,Disputes shall be referred to a committee constituted by MCGM.,High,"Committee is internal to MCGM, lacking independence.","Refer disputes to mutual consultation, then independent arbitration."
+MCGM_Tender_23,Payment Terms,Payment shall be made within 60 days of invoice submission.,Medium,"90-day payment window is longer than industry standard, impacting cash flow.",Reduce retention to 5% and release within 60 days of completion.
+MCGM_Tender_23,Governing Law,Subject to Mumbai jurisdiction.,Low,"Standard statutory reference, balanced and customary.",No change required.
+MCGM_Tender_23,Indemnity,Contractor shall indemnify MCGM against third-party claims.,Medium,Broad indemnity without cap.,Cap total indemnity at contract value.
+MCGM_Tender_24,Termination,MCGM may terminate if the Contractor fails to maintain quality standards.,High,"Quality standards not defined, creating subjective termination risk.",Limit termination trigger to blacklisting by the same authority for similar work.
+MCGM_Tender_24,Dispute Resolution,"Any dispute shall be referred to the Chief Engineer, whose decision shall be final.",Medium,Lacks independent arbitration fallback.,Add arbitration fallback.
+MCGM_Tender_24,Payment Terms,Payment shall be made within 60 days of invoice submission.,Medium,Completion certificate issuance is subjective.,Define objective completion criteria.
+MCGM_Tender_24,Governing Law,Indian law shall apply.,Low,Standard governing law clause.,No change required.
+MCGM_Tender_24,Indemnity,Contractor shall indemnify MCGM against third-party claims.,Medium,Includes indirect losses which are difficult to quantify.,Cap indemnity at contract value.
+MCGM_Tender_25,Termination,MCGM may terminate if the Contractor fails to commence work within 7 days.,High,"Blacklisting by any agency, even unrelated, triggers termination.",Extend to 30 days and provide cure period.
+MCGM_Tender_25,Dispute Resolution,Any dispute shall be resolved by the Engineer-in-Charge whose decision shall be final.,High,"Vests absolute judicial power in an internal officer, denying neutral arbitration.",Refer to independent arbitration.
+MCGM_Tender_25,Payment Terms,Payment shall be made within 60 days of invoice submission.,Medium,10% retention is high and held for indefinite period.,Payment within 45 days of valid invoice and acceptance of work.
+MCGM_Tender_25,Governing Law,This agreement shall be governed by Indian law.,Low,Standard governing law clause.,No change required.
+MCGM_Tender_25,Indemnity,Contractor shall indemnify MCGM against all third-party claims.,Medium,No cap on indemnity amount.,Limit indemnity to claims arising from Contractor's negligence or wilful misconduct.
+MCGM_Tender_26,Termination,MCGM may terminate without notice in case of any breach.,High,"Blacklisting by any agency, even unrelated, triggers termination.",Limit termination trigger to blacklisting by the same authority for similar work.
+MCGM_Tender_26,Dispute Resolution,Disputes shall be referred to the Municipal Commissioner whose decision shall be final.,High,"Committee is internal to MCGM, lacking independence.",Refer to arbitration.
+MCGM_Tender_26,Payment Terms,Payment shall be made after deduction of retention money of 10%.,Medium,10% retention is high and held for indefinite period.,Define objective completion criteria.
+MCGM_Tender_26,Governing Law,Indian law shall apply.,Low,"Standard statutory reference, balanced and customary.",No change required.
+MCGM_Tender_26,Indemnity,The Contractor shall indemnify MCGM for all direct and indirect losses.,Medium,Includes indirect losses which are difficult to quantify.,Cap indemnity at contract value.
+MCGM_Tender_27,Termination,MCGM may terminate this agreement at any time without cause by giving 7 days written notice.,High,Termination based on subjective opinion without objective standard or cure period.,"Require termination for cause only, with cure period."
+MCGM_Tender_27,Dispute Resolution,All disputes shall be settled amicably between the parties.,Medium,Lacks independent arbitration fallback.,Add arbitration fallback.
+MCGM_Tender_27,Payment Terms,Payment shall be released after satisfactory completion of work and submission of all documents.,Medium,'Satisfactory completion' is subjective and can delay payment indefinitely.,Define objective completion criteria and payment milestones.
+MCGM_Tender_27,Governing Law,Subject to Mumbai jurisdiction.,Low,Standard governing law clause.,No change required.
+MCGM_Tender_27,Indemnity,Contractor shall indemnify MCGM against all claims arising from the work.,Medium,Broad indemnity without cap.,Cap indemnity at contract value.
+MCGM_Tender_28,Termination,MCGM may terminate without cause with 10 days notice.,High,"Termination without notice for any breach, however minor.",Limit termination trigger to blacklisting by the same authority for similar work.
+MCGM_Tender_28,Dispute Resolution,All disputes shall be referred to the Additional Municipal Commissioner whose decision shall be final and binding.,High,"Vests absolute judicial power in an internal officer, denying neutral arbitration.",Refer to independent arbitration.
+MCGM_Tender_28,Payment Terms,Payment shall be made after deduction of retention money of 10%.,Medium,"Payment timeline not explicitly specified, creating cash-flow uncertainty.",Payment within 45 days of valid invoice and acceptance of work.
+MCGM_Tender_28,Governing Law,Indian law shall apply.,Low,Standard governing law clause.,No change required.
+MCGM_Tender_28,Indemnity,Contractor shall indemnify MCGM against all third-party claims.,Medium,Broad indemnity without cap.,Limit to claims arising from Contractor's negligence.
+MCGM_Tender_29,Termination,MCGM may terminate without cause with 10 days notice.,High,Termination at will creates uncertainty for Contractor.,Require notice and cure period for material breaches only.
+MCGM_Tender_29,Dispute Resolution,All disputes shall be settled amicably between the parties.,High,"Vests absolute judicial power in an internal officer, denying neutral arbitration.","Refer disputes to mutual consultation, then independent arbitration."
+MCGM_Tender_29,Payment Terms,Payment shall be made within 90 days of submission of invoice.,Medium,Completion certificate issuance is subjective.,Reduce payment period to 45 days.
+MCGM_Tender_29,Governing Law,Indian law shall apply.,Low,"Standard statutory reference, balanced and customary.",No change required.
+MCGM_Tender_29,Indemnity,"Contractor shall indemnify MCGM against all claims, including legal costs.",Medium,Includes legal costs without cap.,Exclude indirect and consequential losses from indemnity.
+MCGM_Tender_30,Termination,MCGM may terminate if the Contractor becomes insolvent.,High,Termination without cause and short notice period creates severe risk.,Add 30-day written notice and cure period before termination.
+MCGM_Tender_30,Dispute Resolution,"Any dispute shall be referred to the Chief Engineer, whose decision shall be final.",Medium,Lacks independent arbitration fallback.,Add arbitration fallback.
+MCGM_Tender_30,Payment Terms,Payment shall be made within 30 days of submission of final bill.,Medium,"Payment timeline not explicitly specified, creating cash-flow uncertainty.",Define objective completion criteria and payment milestones.
+MCGM_Tender_30,Governing Law,Subject to Mumbai jurisdiction.,Low,Standard governing law clause.,No change required.
+MCGM_Tender_30,Indemnity,Contractor shall indemnify MCGM for all losses arising from the work.,Medium,Includes legal costs without cap.,Limit to claims arising from Contractor's negligence.
+MCGM_Tender_31,Termination,MCGM may terminate if the Contractor fails to maintain quality standards.,High,Termination at will creates uncertainty for Contractor.,Require 30-day notice and compensation for work completed.
+MCGM_Tender_31,Dispute Resolution,Disputes shall be referred to a committee constituted by MCGM.,High,"Engineer-in-Charge is an employee of MCGM, creating conflict of interest.",Refer disputes to independent arbitration.
+MCGM_Tender_31,Payment Terms,Payment shall be made within 45 days of invoice.,Medium,"Payment timeline not explicitly specified, creating cash-flow uncertainty.",Reduce payment period to 45 days.
+MCGM_Tender_31,Governing Law,Indian law shall apply.,Low,Standard jurisdiction clause.,No change required.
+MCGM_Tender_31,Indemnity,"Contractor shall indemnify MCGM against all claims, including legal costs.",Medium,Includes indirect losses which are difficult to quantify.,Limit indemnity to claims arising from Contractor's negligence or wilful misconduct.
+MCGM_Tender_32,Termination,MCGM may terminate if the Contractor becomes insolvent.,High,Short commencement window with termination as penalty.,Add 30-day written notice and cure period before termination.
+MCGM_Tender_32,Dispute Resolution,Disputes shall be settled by mutual consultation.,High,"Engineer-in-Charge is an employee of MCGM, creating conflict of interest.",Refer disputes to independent arbitration.
+MCGM_Tender_32,Payment Terms,Payment shall be made within 60 days.,Medium,'Satisfactory completion' is subjective and can delay payment indefinitely.,Define objective completion criteria and payment milestones.
+MCGM_Tender_32,Governing Law,Subject to Mumbai jurisdiction.,Low,Standard governing law clause.,No change required.
+MCGM_Tender_32,Indemnity,Contractor shall indemnify MCGM against all claims arising from the work.,Medium,Broad indemnity without limitation.,Cap indemnity at contract value.
+MCGM_Tender_33,Termination,MCGM may terminate if the Contractor fails to maintain quality standards.,High,Short commencement window with termination as penalty.,Add 30-day written notice and cure period before termination.
+MCGM_Tender_33,Dispute Resolution,"Any dispute shall be referred to the Chief Engineer, whose decision shall be final.",Medium,Lacks independent arbitration fallback.,Add arbitration fallback.
+MCGM_Tender_33,Payment Terms,Payment shall be made within 30 days of submission of final bill.,Medium,Completion certificate issuance is subjective.,Reduce retention to 5% and release within 60 days of completion.
+MCGM_Tender_33,Governing Law,Subject to Maharashtra jurisdiction.,Low,Standard state law reference.,No change required.
+MCGM_Tender_33,Indemnity,The Contractor shall indemnify MCGM for all direct and indirect losses.,Medium,No cap on indemnity amount.,Exclude indirect and consequential losses from indemnity.
+MCGM_Tender_34,Termination,MCGM may terminate if the Contractor fails to maintain quality standards.,High,"Blacklisting by any agency, even unrelated, triggers termination.",Add 30-day written notice and cure period before termination.
+MCGM_Tender_34,Dispute Resolution,Any dispute shall be resolved by the Engineer-in-Charge whose decision shall be final.,High,"Chief Engineer is an MCGM employee, lacking independence.",Refer to independent arbitration.
+MCGM_Tender_34,Payment Terms,Payment shall be made within 30 days of submission of final bill.,Medium,Completion certificate issuance is subjective.,Define objective completion criteria and payment milestones.
+MCGM_Tender_34,Governing Law,Subject to Maharashtra jurisdiction.,Low,"Standard statutory reference, balanced and customary.",No change required.
+MCGM_Tender_34,Indemnity,"Contractor shall indemnify MCGM against all claims, including legal costs.",Medium,Includes indirect losses which are difficult to quantify.,Cap indemnity at contract value.
+MCGM_Tender_35,Termination,The Deputy Municipal Commissioner may terminate the Contract if the Contractor fails to execute the work according to the terms.,High,Termination at will creates uncertainty for Contractor.,Require notice and cure period for material breaches only.
+MCGM_Tender_35,Dispute Resolution,All disputes shall be referred to the Additional Municipal Commissioner whose decision shall be final and binding.,High,"Chief Engineer is an MCGM employee, lacking independence.",Refer to arbitration.
+MCGM_Tender_35,Payment Terms,Payment shall be made within 60 days of invoice submission.,Medium,'Satisfactory completion' is subjective and can delay payment indefinitely.,Reduce to 45 days.
+MCGM_Tender_35,Governing Law,This agreement shall be governed by Indian law.,Low,Standard state law reference.,No change required.
+MCGM_Tender_35,Indemnity,The Contractor shall indemnify MCGM for all direct and indirect losses.,Medium,Broad indemnity without cap.,Cap indemnity at contract value.
+MCGM_Tender_36,Termination,MCGM may terminate without cause with 10 days notice.,High,"Blacklisting by any agency, even unrelated, triggers termination.","Require termination for cause only, with cure period."
+MCGM_Tender_36,Dispute Resolution,Disputes shall be referred to the Additional Municipal Commissioner.,Medium,Lacks independent arbitration fallback.,Add arbitration fallback.
+MCGM_Tender_36,Payment Terms,Payment shall be made within 30 days of submission of final bill.,Medium,60 days is above standard 30-45 day norms.,Define objective completion criteria.
+MCGM_Tender_36,Governing Law,"Governed by the Mumbai Municipal Corporation Act, 1888.",Low,Standard governing law clause.,No change required.
+MCGM_Tender_36,Indemnity,Contractor shall indemnify MCGM against third-party claims.,Medium,Broad indemnity without cap.,Limit to claims arising from Contractor's negligence.
+MCGM_Tender_37,Termination,MCGM may terminate if the Contractor is blacklisted by any government agency.,High,"Quality standards not defined, creating subjective termination risk.",Define quality standards objectively and provide cure period.
+MCGM_Tender_37,Dispute Resolution,"Any dispute shall be referred to the Chief Engineer, whose decision shall be final.",High,"Committee is internal to MCGM, lacking independence.",Refer to arbitration.
+MCGM_Tender_37,Payment Terms,MCGM agrees to pay the Contractor the contract price at the times and in the manner prescribed by the documents.,Medium,'Satisfactory completion' is subjective and can delay payment indefinitely.,Define objective completion criteria and payment milestones.
+MCGM_Tender_37,Governing Law,Subject to Mumbai jurisdiction.,Low,Standard jurisdiction clause.,No change required.
+MCGM_Tender_37,Indemnity,Contractor shall indemnify MCGM for all direct losses.,Medium,Broad indemnity without limitation.,Limit to claims arising from Contractor's negligence.
+MCGM_Tender_38,Termination,MCGM may terminate without notice in case of any breach.,High,"Quality standards not defined, creating subjective termination risk.",Require notice and cure period for material breaches only.
+MCGM_Tender_38,Dispute Resolution,Disputes shall be referred to the Municipal Commissioner whose decision shall be final.,High,"Vests absolute judicial power in an internal officer, denying neutral arbitration.",Independent arbitration clause required.
+MCGM_Tender_38,Payment Terms,Payment shall be made after submission of completion certificate.,Medium,Completion certificate issuance is subjective.,Define objective completion criteria.
+MCGM_Tender_38,Governing Law,Subject to Mumbai jurisdiction.,Low,Standard state law reference.,No change required.
+MCGM_Tender_38,Indemnity,Contractor shall indemnify MCGM against all claims arising from the work.,Medium,Broad indemnity without cap.,Cap indemnity at contract value.
+MCGM_Tender_39,Termination,MCGM may terminate without notice in case of any breach.,High,Short commencement window with termination as penalty.,Require 30-day notice and compensation for work completed.
+MCGM_Tender_39,Dispute Resolution,Disputes shall be referred to the Municipal Commissioner whose decision shall be final.,Medium,Lacks independent arbitration fallback.,Add arbitration fallback.
+MCGM_Tender_39,Payment Terms,MCGM agrees to pay the Contractor the contract price at the times and in the manner prescribed by the documents.,Medium,"Payment timeline not explicitly specified, creating cash-flow uncertainty.",Reduce payment period to 45 days.
+MCGM_Tender_39,Governing Law,"Governed by the Mumbai Municipal Corporation Act, 1888.",Low,"Standard statutory reference, balanced and customary.",No change required.
+MCGM_Tender_39,Indemnity,Contractor shall indemnify MCGM against third-party claims.,Medium,Broad indemnity without cap.,Cap total indemnity at contract value.
+MCGM_Tender_40,Termination,MCGM may terminate without notice in case of any breach.,High,Termination at will creates uncertainty for Contractor.,"Require termination for cause only, with cure period."
+MCGM_Tender_40,Dispute Resolution,Disputes shall be referred to the Additional Municipal Commissioner.,High,"Committee is internal to MCGM, lacking independence.",Refer to independent arbitration.
+MCGM_Tender_40,Payment Terms,Payment shall be made within 60 days of invoice submission.,Medium,"90-day payment window is longer than industry standard, impacting cash flow.",Define objective completion criteria.
+MCGM_Tender_40,Governing Law,"The agreement is subject to the Mumbai Municipal Corporation Act, 1888.",Low,"Standard statutory reference, balanced and customary.",No change required.
+MCGM_Tender_40,Indemnity,Contractor shall indemnify MCGM against all claims arising from the work.,Medium,Includes indirect losses which are difficult to quantify.,Cap total indemnity at contract value.
+MCGM_Tender_41,Termination,MCGM may terminate if the Contractor fails to commence work within 7 days.,High,Termination based on subjective opinion without objective standard or cure period.,Define quality standards objectively and provide cure period.
+MCGM_Tender_41,Dispute Resolution,Disputes shall be referred to a committee constituted by MCGM.,High,"Vests absolute judicial power in an internal officer, denying neutral arbitration.",Refer to independent arbitration.
+MCGM_Tender_41,Payment Terms,Payment shall be released after satisfactory completion of work and submission of all documents.,Medium,60 days is above standard 30-45 day norms.,Define objective completion criteria.
+MCGM_Tender_41,Governing Law,Indian law shall apply.,Low,Standard state law reference.,No change required.
+MCGM_Tender_41,Indemnity,"Contractor shall indemnify MCGM against all claims, including legal costs.",Medium,Broad indemnity without cap.,Cap total indemnity at contract value.
+MCGM_Tender_42,Termination,MCGM may terminate if the Contractor becomes insolvent.,High,Short commencement window with termination as penalty.,Define quality standards objectively and provide cure period.
+MCGM_Tender_42,Dispute Resolution,Disputes shall be settled by mutual consultation.,Medium,Lacks independent arbitration fallback.,Add arbitration fallback.
+MCGM_Tender_42,Payment Terms,Payment shall be released after satisfactory completion of work and submission of all documents.,Medium,Completion certificate issuance is subjective.,Reduce to 45 days.
+MCGM_Tender_42,Governing Law,"Governed by the Mumbai Municipal Corporation Act, 1888.",Low,Standard state law reference.,No change required.
+MCGM_Tender_42,Indemnity,"Contractor shall indemnify MCGM against all claims, including legal costs.",Medium,Includes legal costs without cap.,Limit to claims arising from Contractor's negligence.
+MCGM_Tender_43,Termination,MCGM may terminate without notice in case of any breach.,High,"Blacklisting by any agency, even unrelated, triggers termination.",Require notice and cure period for material breaches only.
+MCGM_Tender_43,Dispute Resolution,Any dispute shall be resolved by the Engineer-in-Charge whose decision shall be final.,High,Unilateral dispute resolution by a party representative.,Refer disputes to independent arbitration.
+MCGM_Tender_43,Payment Terms,Payment shall be made after deduction of retention money of 10%.,Medium,'Satisfactory completion' is subjective and can delay payment indefinitely.,Define objective completion criteria and payment milestones.
+MCGM_Tender_43,Governing Law,Indian law shall apply.,Low,"Standard statutory reference, balanced and customary.",No change required.
+MCGM_Tender_43,Indemnity,Contractor shall indemnify MCGM against all third-party claims.,Medium,Includes indirect losses which are difficult to quantify.,Limit to claims arising from Contractor's negligence.
+MCGM_Tender_44,Termination,MCGM may terminate if the Contractor is blacklisted by any government agency.,High,Termination at will creates uncertainty for Contractor.,Require 30-day notice and compensation for work completed.
+MCGM_Tender_44,Dispute Resolution,Any dispute shall be resolved by the Engineer-in-Charge whose decision shall be final.,High,"Committee is internal to MCGM, lacking independence.",Refer to independent arbitration.
+MCGM_Tender_44,Payment Terms,Payment shall be made within 30 days of submission of final bill.,Medium,10% retention is high and held for indefinite period.,Reduce to 45 days.
+MCGM_Tender_44,Governing Law,Subject to Maharashtra jurisdiction.,Low,"Standard statutory reference, balanced and customary.",No change required.
+MCGM_Tender_44,Indemnity,Contractor shall indemnify MCGM against third-party claims.,Medium,Broad indemnity without limitation.,Cap total indemnity at contract value.
+MCGM_Tender_45,Termination,The Deputy Municipal Commissioner may terminate the Contract if the Contractor fails to execute the work according to the terms.,High,Short commencement window with termination as penalty.,Extend to 30 days and provide cure period.
+MCGM_Tender_45,Dispute Resolution,Disputes shall be referred to the Municipal Commissioner whose decision shall be final.,Medium,Lacks independent arbitration fallback.,Add arbitration fallback.
+MCGM_Tender_45,Payment Terms,Payment shall be made within 45 days of invoice.,Medium,60 days is above standard 30-45 day norms.,Payment within 45 days of valid invoice and acceptance of work.
+MCGM_Tender_45,Governing Law,Indian law shall apply.,Low,Standard state law reference.,No change required.
+MCGM_Tender_45,Indemnity,Contractor shall indemnify MCGM against third-party claims.,Medium,Includes legal costs without cap.,Cap total indemnity at contract value.
+MCGM_Tender_46,Termination,MCGM may terminate if the Contractor fails to maintain quality standards.,High,Termination without cause and short notice period creates severe risk.,Require notice and cure period for material breaches only.
+MCGM_Tender_46,Dispute Resolution,Disputes shall be referred to a committee constituted by MCGM.,High,Unilateral dispute resolution by a party representative.,Refer to independent arbitration.
+MCGM_Tender_46,Payment Terms,Payment shall be made within 60 days.,Medium,"Payment timeline not explicitly specified, creating cash-flow uncertainty.",Reduce to 45 days.
+MCGM_Tender_46,Governing Law,Indian law shall apply.,Low,Standard jurisdiction clause.,No change required.
+MCGM_Tender_46,Indemnity,Contractor shall indemnify MCGM for all direct losses.,Medium,Includes indirect losses which are difficult to quantify.,Cap total indemnity at contract value.
+MCGM_Tender_47,Termination,MCGM may terminate without cause with 10 days notice.,High,Termination based on subjective opinion without objective standard or cure period.,Require notice and cure period for material breaches only.
+MCGM_Tender_47,Dispute Resolution,Disputes shall be referred to the Municipal Commissioner whose decision shall be final.,High,"Chief Engineer is an MCGM employee, lacking independence.","Refer disputes to mutual consultation, then independent arbitration."
+MCGM_Tender_47,Payment Terms,Payment shall be made within 90 days of submission of invoice.,Medium,Completion certificate issuance is subjective.,Reduce to 45 days.
+MCGM_Tender_47,Governing Law,The laws of Maharashtra shall apply.,Low,Standard jurisdiction clause.,No change required.
+MCGM_Tender_47,Indemnity,"The Contractor shall indemnify MCGM against all claims, losses, and damages arising from the work.",Medium,No cap on indemnity amount.,Limit to claims arising from Contractor's negligence.
+MCGM_Tender_48,Termination,MCGM may terminate at will with 15 days notice.,High,Termination without cause and short notice period creates severe risk.,Require notice and cure period for material breaches only.
+MCGM_Tender_48,Dispute Resolution,Disputes shall be resolved by the Municipal Commissioner.,Medium,Lacks independent arbitration fallback.,Add arbitration fallback.
+MCGM_Tender_48,Payment Terms,Payment shall be made within 30 days of submission of final bill.,Medium,60 days is above standard 30-45 day norms.,Define objective completion criteria and payment milestones.
+MCGM_Tender_48,Governing Law,Subject to Maharashtra jurisdiction.,Low,Standard state law reference.,No change required.
+MCGM_Tender_48,Indemnity,Contractor shall indemnify MCGM for all direct losses.,Medium,Broad indemnity obligation without reciprocal protection for the Contractor.,Cap total indemnity at contract value.
+MCGM_Tender_49,Termination,The Deputy Municipal Commissioner may terminate the Contract if the Contractor fails to execute the work according to the terms.,High,"Blacklisting by any agency, even unrelated, triggers termination.",Require 30-day notice and compensation for work completed.
+MCGM_Tender_49,Dispute Resolution,Any dispute shall be resolved by the Engineer-in-Charge whose decision shall be final.,High,"Vests absolute judicial power in an internal officer, denying neutral arbitration.","Refer disputes to mutual consultation, then independent arbitration."
+MCGM_Tender_49,Payment Terms,Payment shall be made within 60 days of invoice submission.,Medium,"90-day payment window is longer than industry standard, impacting cash flow.",Payment within 45 days of valid invoice and acceptance of work.
+MCGM_Tender_49,Governing Law,Subject to Mumbai jurisdiction.,Low,Standard governing law clause.,No change required.
+MCGM_Tender_49,Indemnity,Contractor shall indemnify MCGM against all third-party claims.,Medium,Broad indemnity without limitation.,Limit indemnity to claims arising from Contractor's negligence or wilful misconduct.
+MCGM_Tender_50,Termination,MCGM may terminate if the Contractor fails to maintain quality standards.,High,Termination without cause and short notice period creates severe risk.,Require notice and cure period for material breaches only.
+MCGM_Tender_50,Dispute Resolution,"Any dispute shall be referred to the Chief Engineer, whose decision shall be final.",High,Unilateral dispute resolution by a party representative.,Refer disputes to independent arbitration.
+MCGM_Tender_50,Payment Terms,Payment shall be made within 60 days of invoice submission.,Medium,10% retention is high and held for indefinite period.,Define objective completion criteria.

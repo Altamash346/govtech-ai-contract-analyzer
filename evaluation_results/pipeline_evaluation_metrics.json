@@ -1,0 +1,63 @@
+{
+  "dataset": {
+    "total_clauses": 248,
+    "contracts_count": 50,
+    "categories": [
+      "Termination",
+      "Dispute Resolution",
+      "Payment Terms",
+      "Governing Law",
+      "Indemnity"
+    ]
+  },
+  "stage_1_extraction": {
+    "CER": 0.0118,
+    "WER": 0.0242,
+    "Character_Accuracy_Pct": 98.82,
+    "Word_Accuracy_Pct": 97.58
+  },
+  "stage_2_retrieval": {
+    "FAISS_Dimension": 384,
+    "Total_Indexed": 248,
+    "Context_Precision_At_1": 1.0,
+    "Context_Precision_At_3": 1.0,
+    "Context_Precision_At_5": 1.0,
+    "Context_Recall_At_3": 1.0,
+    "Context_Recall_At_5": 1.0,
+    "MRR": 1.0,
+    "Hit_Rate_At_3": 1.0
+  },
+  "stage_3_classification": {
+    "Accuracy": 0.9354838709677419,
+    "Macro_F1": 0.9460923743735609,
+    "Weighted_F1": 0.935877102148353,
+    "High_Risk_F1": 0.9130434782608695,
+    "Medium_Risk_F1": 0.9252336448598131,
+    "Low_Risk_F1": 1.0,
+    "Confusion_Matrix": [
+      [
+        84,
+        0,
+        0
+      ],
+      [
+        16,
+        99,
+        0
+      ],
+      [
+        0,
+        0,
+        49
+      ]
+    ],
+    "High_To_Low_False_Negatives": 0
+  },
+  "stage_4_reasoning": {
+    "BERTScore_Precision": 0.37446051836013794,
+    "BERTScore_Recall": 0.3869713246822357,
+    "BERTScore_F1": 0.38061314129452617,
+    "Faithfulness": 0.9738709677419355,
+    "Hallucination_Rate": 0.02612903225806451
+  }
+}
