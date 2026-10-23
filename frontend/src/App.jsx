@@ -15,6 +15,7 @@ import {
   resetUserPassword, 
   logoutFirebase,
   reinitializeFirebase,
+  resetFirebaseConfig,
   isFirebaseConfigured
 } from './firebase';
 
@@ -866,16 +867,28 @@ Between: Municipal Corporation of Greater Mumbai (Authority) AND TechCorp Soluti
   const handleSaveFirebaseSetup = async (e) => {
     if (e) e.preventDefault();
     const key = firebaseSetupApiKey.trim();
-    if (!key || !key.startsWith('AIzaSy')) {
-      setAuthError('Please enter a valid Firebase Web API Key (begins with AIzaSy).');
+    const domain = firebaseSetupAuthDomain.trim();
+    const projId = firebaseSetupProjectId.trim();
+
+    if (!key || !key.startsWith('AIzaSy') || key.includes('...') || key.length < 25) {
+      setAuthError('Please enter a real Firebase API Key from your Firebase Console. It must start with "AIzaSy" and be ~39 characters long (do not use placeholder dots "...").');
       return;
     }
-    const projId = firebaseSetupProjectId.trim() || 'govtech-ai-contract-analyzer';
+    if (projId && (projId.includes('your-project') || projId.includes('...'))) {
+      setAuthError('Please enter your actual Firebase Project ID (not the example placeholder "your-project").');
+      return;
+    }
+    if (domain && (domain.includes('your-project') || domain.includes('...'))) {
+      setAuthError('Please enter your actual Auth Domain (e.g. my-app.firebaseapp.com, not "your-project").');
+      return;
+    }
+
+    const effectiveProjId = projId || 'govtech-ai-contract-analyzer';
     const newConfig = {
       apiKey: key,
-      authDomain: firebaseSetupAuthDomain.trim() || `${projId}.firebaseapp.com`,
-      projectId: projId,
-      storageBucket: `${projId}.appspot.com`,
+      authDomain: domain || `${effectiveProjId}.firebaseapp.com`,
+      projectId: effectiveProjId,
+      storageBucket: `${effectiveProjId}.appspot.com`,
       messagingSenderId: "102938475610",
       appId: firebaseSetupAppId.trim() || `1:102938475610:web:${key.slice(-10)}`
     };
@@ -898,6 +911,18 @@ Between: Municipal Corporation of Greater Mumbai (Authority) AND TechCorp Soluti
     setTimeout(() => {
       handleGoogleSignIn();
     }, 350);
+  };
+
+  const handleResetFirebaseConfig = async () => {
+    await resetFirebaseConfig();
+    setFirebaseSetupApiKey('');
+    setFirebaseSetupAuthDomain('');
+    setFirebaseSetupProjectId('');
+    setFirebaseSetupAppId('');
+    setFirebaseSnippetInput('');
+    setAuthError('');
+    setShowFirebaseSetupModal(false);
+    triggerToast('Saved Firebase configuration reset.', 'info');
   };
 
   const handleGoogleSignIn = async () => {
@@ -5366,10 +5391,17 @@ Between: Municipal Corporation of Greater Mumbai (Authority) AND TechCorp Soluti
               <ol className="list-decimal list-inside space-y-1 text-[11px] text-slate-600 dark:text-slate-300 pl-1">
                 <li>Go to <a href="https://console.firebase.google.com/" target="_blank" rel="noreferrer" className="text-blue-600 dark:text-blue-400 underline font-semibold">Firebase Console</a> & click <strong>Add project</strong> (free).</li>
                 <li>Under <strong>Authentication &gt; Sign-in method</strong>, enable <strong>Google</strong>.</li>
-                <li>Go to <strong>Project Settings &gt; General &gt; Your apps</strong>, click <strong>Web (&lt;/&gt;)</strong>, and copy the config.</li>
-                <li>Paste the config snippet below and click <strong>Save & Launch Google Sign-In</strong>!</li>
+                <li>Go to <strong>Project Settings &gt; General &gt; Your apps</strong>, click <strong>Web (&lt;/&gt;)</strong>, and copy your real config.</li>
+                <li>Paste the snippet below and click <strong>Save & Launch Google Sign-In</strong>!</li>
               </ol>
             </div>
+
+            {authError && (
+              <div className="mb-4 p-3 rounded-xl bg-rose-50 dark:bg-rose-950/40 text-rose-900 dark:text-rose-200 border border-rose-200 dark:border-rose-800 text-xs flex items-center gap-2">
+                <AlertCircle className="w-4 h-4 text-rose-600 shrink-0" />
+                <span>{authError}</span>
+              </div>
+            )}
 
             <form onSubmit={handleSaveFirebaseSetup} className="space-y-3.5">
               <div>
@@ -5380,7 +5412,7 @@ Between: Municipal Corporation of Greater Mumbai (Authority) AND TechCorp Soluti
                   rows={2}
                   value={firebaseSnippetInput}
                   onChange={e => handleParseFirebaseSnippet(e.target.value)}
-                  placeholder={'const firebaseConfig = {\n  apiKey: "AIzaSy...",\n  authDomain: "...",\n  projectId: "..."\n};'}
+                  placeholder={'Paste snippet here: const firebaseConfig = { apiKey: "AIzaSy...", ... };'}
                   className="w-full p-2.5 text-xs font-mono rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-slate-100 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
                 />
               </div>
@@ -5395,7 +5427,7 @@ Between: Municipal Corporation of Greater Mumbai (Authority) AND TechCorp Soluti
                     required
                     value={firebaseSetupApiKey}
                     onChange={e => setFirebaseSetupApiKey(e.target.value)}
-                    placeholder="AIzaSy..."
+                    placeholder="e.g. AIzaSyB7..."
                     className="w-full px-3 py-2 text-xs rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 placeholder-slate-400 font-mono"
                   />
                 </div>
@@ -5407,27 +5439,36 @@ Between: Municipal Corporation of Greater Mumbai (Authority) AND TechCorp Soluti
                     type="text"
                     value={firebaseSetupProjectId}
                     onChange={e => setFirebaseSetupProjectId(e.target.value)}
-                    placeholder="your-app-id"
+                    placeholder="e.g. nyayamitra-app-1234"
                     className="w-full px-3 py-2 text-xs rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 placeholder-slate-400"
                   />
                 </div>
               </div>
 
-              <div className="flex items-center justify-end gap-2.5 pt-2">
+              <div className="flex items-center justify-between gap-2.5 pt-2">
                 <button
                   type="button"
-                  onClick={() => setShowFirebaseSetupModal(false)}
-                  className="px-4 py-2 text-xs font-bold text-slate-500 hover:text-slate-800 dark:hover:text-slate-200 cursor-pointer"
+                  onClick={handleResetFirebaseConfig}
+                  className="text-[11px] font-bold text-rose-600 dark:text-rose-400 hover:underline cursor-pointer"
                 >
-                  Cancel
+                  Clear Saved Config
                 </button>
-                <button
-                  type="submit"
-                  className="px-5 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs uppercase tracking-wider shadow-sm transition-all cursor-pointer flex items-center gap-1.5"
-                >
-                  <Check className="w-3.5 h-3.5" />
-                  <span>Save & Open Google Sign-In</span>
-                </button>
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setShowFirebaseSetupModal(false)}
+                    className="px-4 py-2 text-xs font-bold text-slate-500 hover:text-slate-800 dark:hover:text-slate-200 cursor-pointer"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    className="px-5 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs uppercase tracking-wider shadow-sm transition-all cursor-pointer flex items-center gap-1.5"
+                  >
+                    <Check className="w-3.5 h-3.5" />
+                    <span>Save & Open Google Sign-In</span>
+                  </button>
+                </div>
               </div>
             </form>
           </div>

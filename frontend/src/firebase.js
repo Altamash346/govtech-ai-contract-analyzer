@@ -22,19 +22,29 @@ const FALLBACK_CONFIG = {
   appId: "1:102938475610:web:987654321abcdef"
 };
 
+export function isValidFirebaseKey(key, domain, projectId) {
+  if (!key || typeof key !== 'string') return false;
+  const trimmed = key.trim();
+  if (!trimmed.startsWith('AIzaSy')) return false;
+  if (trimmed.includes('Dummy') || trimmed.includes('...') || trimmed.length < 25) return false;
+  if (domain && (domain.includes('your-project') || domain.includes('...'))) return false;
+  if (projectId && (projectId.includes('your-project') || projectId.includes('...'))) return false;
+  return true;
+}
+
 export function getFirebaseConfig() {
   try {
     const raw = typeof window !== 'undefined' ? localStorage.getItem('gov_firebase_config') : null;
     if (raw) {
       const parsed = JSON.parse(raw);
-      if (parsed.apiKey && parsed.apiKey.startsWith('AIzaSy') && !parsed.apiKey.includes('Dummy')) {
+      if (isValidFirebaseKey(parsed.apiKey, parsed.authDomain, parsed.projectId)) {
         return parsed;
       }
     }
   } catch (e) {}
 
   const envKey = import.meta.env.VITE_FIREBASE_API_KEY;
-  if (envKey && envKey.trim() && envKey.startsWith('AIzaSy') && !envKey.includes('Dummy')) {
+  if (envKey && isValidFirebaseKey(envKey, import.meta.env.VITE_FIREBASE_AUTH_DOMAIN, import.meta.env.VITE_FIREBASE_PROJECT_ID)) {
     return {
       apiKey: envKey.trim(),
       authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN || "govtech-ai-contract-analyzer.firebaseapp.com",
@@ -50,8 +60,25 @@ export function getFirebaseConfig() {
 
 export function isFirebaseConfigured() {
   const cfg = getFirebaseConfig();
-  const key = cfg.apiKey || '';
-  return Boolean(key && !key.includes('Dummy') && key.startsWith('AIzaSy'));
+  return isValidFirebaseKey(cfg.apiKey, cfg.authDomain, cfg.projectId);
+}
+
+export async function resetFirebaseConfig() {
+  try {
+    if (typeof window !== 'undefined') {
+      localStorage.removeItem('gov_firebase_config');
+    }
+    const currentApps = getApps();
+    for (const a of currentApps) {
+      await deleteApp(a);
+    }
+    app = initializeApp(FALLBACK_CONFIG);
+    auth = getAuth(app);
+    return { success: true };
+  } catch (err) {
+    console.error('Error resetting Firebase:', err);
+    return { success: false, error: err.message };
+  }
 }
 
 // Safely initialize Firebase app & auth without ever crashing top-level import
