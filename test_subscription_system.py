@@ -1,7 +1,7 @@
 """
 test_subscription_system.py
 =============================================================================
-Comprehensive Automated Test Suite for JanDristi Subscription & Usage System.
+Comprehensive Automated Test Suite for JanDrishti Subscription & Usage System.
 Tests all 16 specified test scenarios:
   1.  New User Default Free Tier
   2.  5 Successful Uploads Allowed
@@ -56,7 +56,7 @@ DUMMY_PDF_BYTES = (
 def create_test_user(email_prefix: str = "testuser") -> dict:
     """Helper to create a fresh user in the SQLite database."""
     session = db.SessionLocal()
-    unique_email = f"{email_prefix}_{uuid.uuid4().hex[:8]}@jandristi.in"
+    unique_email = f"{email_prefix}_{uuid.uuid4().hex[:8]}@jandrishti.in"
     user = db.User(
         name="Citizen Tester",
         email=unique_email,

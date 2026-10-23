@@ -1,5 +1,5 @@
 """
-email_service.py — Email verification and notification service for JanDristi GovTech.
+email_service.py — Email verification and notification service for JanDrishti GovTech.
 Supports real SMTP (Gmail, SendGrid, Amazon SES, etc.) with automatic fallback
 to local development / sandbox mode when credentials are not configured.
 """
@@ -18,9 +18,9 @@ def send_verification_email(email: str, code: str, purpose: str = "login") -> di
     Sends a 6-digit verification code to the user's email address.
     If SMTP is not configured, logs the code in dev sandbox mode.
     """
-    subject = f"Your JanDristi Verification Code: {code}"
+    subject = f"Your JanDrishti Verification Code: {code}"
     purpose_title = {
-        "login": "Sign In to JanDristi",
+        "login": "Sign In to JanDrishti",
         "register": "Activate Your Citizen Account",
         "verify": "Verify Your Email Address"
     }.get(purpose, "Verification Code")
@@ -43,7 +43,7 @@ def send_verification_email(email: str, code: str, purpose: str = "login") -> di
                     भारत सरकार · Government of India
                   </span>
                   <h1 style="color: #ffffff; font-size: 20px; margin: 6px 0 0 0; font-weight: 700;">
-                    JanDristi AI Contract & Scheme Advisor
+                    JanDrishti AI Contract & Scheme Advisor
                   </h1>
                 </td>
               </tr>
@@ -81,7 +81,7 @@ def send_verification_email(email: str, code: str, purpose: str = "login") -> di
             msg["Subject"] = subject
             msg["From"] = config.SMTP_FROM
             msg["To"] = email
-            msg.attach(MIMEText(f"Your JanDristi verification code is: {code}\nExpires in 10 minutes.", "plain"))
+            msg.attach(MIMEText(f"Your JanDrishti verification code is: {code}\nExpires in 10 minutes.", "plain"))
             msg.attach(MIMEText(html_content, "html"))
 
             if config.SMTP_PORT == 465:

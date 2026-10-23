@@ -1,7 +1,7 @@
 """
 train_and_evaluate_pipeline.py
 =============================================================================
-Comprehensive Training & Evaluation Pipeline for JanDristi / NyayaMitra AI
+Comprehensive Training & Evaluation Pipeline for JanDrishti / NyayaMitra AI
 
 Executes evaluation across all 4 stages specified in the Architecture Spec:
 1. Extraction: OCR / PDF Parser (CER & WER)
@@ -384,7 +384,7 @@ def evaluate_reasoning_stage(df: pd.DataFrame, embedder):
 # ── Main Pipeline Execution ──────────────────────────────────────────────────
 def main():
     print("\n" + "#"*80)
-    print(" JANDRISTI / NYAYAMITRA AI -- 4-STAGE PIPELINE EVALUATION SUITE")
+    print(" JANDRISHTI / NYAYAMITRA AI -- 4-STAGE PIPELINE EVALUATION SUITE")
     print("#"*80)
 
     if not os.path.exists(DATA_PATH):

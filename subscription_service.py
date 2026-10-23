@@ -1,7 +1,7 @@
 """
 subscription_service.py
 =============================================================================
-SaaS Subscription, Quota & Payment Management Service for JanDristi.
+SaaS Subscription, Quota & Payment Management Service for JanDrishti.
 Provides server-side enforcement for Free (5 docs), Personal (30 docs),
 and Small Business (100 docs) tiers with Razorpay integration.
 =============================================================================

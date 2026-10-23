@@ -1,4 +1,4 @@
-# JanDristi AI — Live Pipeline Evaluation Audit Report
+# JanDrishti AI — Live Pipeline Evaluation Audit Report
 
 **Audit Target**: `pipeline_evaluation_report.md`  
 **Inspected Assets**: `app.db`, `vector_store/`, `evaluate_live_system.py`, `train_and_evaluate_pipeline.py`, `ingestion.py`, `rag.py`, `analysis.py`, `multilingual.py`  
@@ -165,7 +165,7 @@ VECTOR_STORE_DIR = "vector_store"
 
 def audit_system():
     print("=" * 80)
-    print(" JANDRISTI AI — LIVE SYSTEM AUDIT & METRIC RECOMPUTATION")
+    print(" JANDRISHTI AI — LIVE SYSTEM AUDIT & METRIC RECOMPUTATION")
     print("=" * 80)
 
     if not os.path.exists(DB_PATH):

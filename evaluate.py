@@ -1,7 +1,7 @@
 """
 evaluate.py
 =============================================================================
-Live System Audit & Reproducible Evaluation Script for JanDristi AI
+Live System Audit & Reproducible Evaluation Script for JanDrishti AI
 
 Recomputes and audits every metric in pipeline_evaluation_report.md
 directly from app.db and ./vector_store/, printing exact numerators,
@@ -27,7 +27,7 @@ VECTOR_STORE_DIR = "vector_store"
 
 def audit_system():
     print("=" * 80)
-    print(" JANDRISTI AI — LIVE SYSTEM AUDIT & METRIC RECOMPUTATION")
+    print(" JANDRISHTI AI — LIVE SYSTEM AUDIT & METRIC RECOMPUTATION")
     print("=" * 80)
 
     if not os.path.exists(DB_PATH):
