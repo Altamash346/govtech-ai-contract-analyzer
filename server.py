@@ -282,7 +282,7 @@ def save_firebase_config(req: SaveFirebaseConfigRequest):
     """Saves real Firebase client configuration into frontend/.env for Google OAuth."""
     env_path = os.path.join(os.path.dirname(__file__), "frontend", ".env")
     lines = [
-        "# JanDristi Frontend Environment Variables",
+        "# JanDrishti Frontend Environment Variables",
         "VITE_API_BASE=http://localhost:8001/api",
         f"VITE_FIREBASE_API_KEY={req.apiKey.strip()}",
         f"VITE_FIREBASE_AUTH_DOMAIN={req.authDomain.strip()}",

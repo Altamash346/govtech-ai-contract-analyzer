@@ -155,10 +155,10 @@ function ProLockedPaywall({ title, moduleTag, description, bulletPoints, onUpgra
           Unlock {title}
         </h3>
         <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-300 max-w-xl mx-auto leading-relaxed mb-6 font-normal">
-          {description} Free Citizen accounts are limited to Clause Risk Auditing (up to 5 PDFs/month). Upgrade to JanDristi Pro to activate all sovereign legal modules without limits.
+          {description} Free Citizen accounts are limited to Clause Risk Auditing (up to 5 PDFs/month). Upgrade to JanDrishti Pro to activate all sovereign legal modules without limits.
         </p>
         <div className="w-full max-w-md bg-white/80 dark:bg-slate-900/80 backdrop-blur-sm rounded-xl p-4 border border-amber-200/80 dark:border-slate-800 mb-8 text-left space-y-2.5 shadow-2xs">
-          <div className="text-[11px] font-bold uppercase tracking-wider text-slate-400 mb-1">Included with JanDristi Pro:</div>
+          <div className="text-[11px] font-bold uppercase tracking-wider text-slate-400 mb-1">Included with JanDrishti Pro:</div>
           {bulletPoints.map((pt, i) => (
             <div key={i} className="flex items-center gap-2 text-xs font-semibold text-slate-800 dark:text-slate-200">
               <CheckCircle className="w-4 h-4 text-emerald-600 dark:text-emerald-400 shrink-0" />
@@ -173,7 +173,7 @@ function ProLockedPaywall({ title, moduleTag, description, bulletPoints, onUpgra
             className="w-full sm:w-auto px-8 py-3.5 bg-gradient-to-r from-[#ea580c] to-[#f97316] hover:from-[#c2410c] hover:to-[#ea580c] text-white font-bold text-xs uppercase tracking-wider rounded-xl shadow-lg hover:shadow-xl transition-all cursor-pointer flex items-center justify-center gap-2"
           >
             <Sparkles className="w-4 h-4 text-amber-200" />
-            <span>Upgrade to JanDristi Pro (₹999/mo)</span>
+            <span>Upgrade to JanDrishti Pro (₹999/mo)</span>
           </button>
           <button
             type="button"
@@ -284,12 +284,12 @@ export default function App() {
           key: order.key_id,
           amount: order.amount,
           currency: order.currency || 'INR',
-          name: 'JanDristi AI',
+          name: 'JanDrishti AI',
           description: `${order.plan_name} (${order.billing_cycle})`,
           order_id: order.order_id,
           prefill: {
             name: user.name || 'Citizen User',
-            email: user.email || 'citizen@jandristi.in'
+            email: user.email || 'citizen@jandrishti.in'
           },
           theme: {
             color: '#0f3d68'
@@ -1708,7 +1708,7 @@ Between: Municipal Corporation of Greater Mumbai (Authority) AND TechCorp Soluti
             <div className="relative">
               <img
                 src="/logo.png"
-                alt="JanDristi Logo"
+                alt="JanDrishti Logo"
                 className="w-10 h-10 rounded-xl object-contain bg-white shadow-sm border border-blue-800 p-0.5"
               />
             </div>
@@ -1717,7 +1717,7 @@ Between: Municipal Corporation of Greater Mumbai (Authority) AND TechCorp Soluti
                 LEGAL & WELFARE INTELLIGENCE
               </div>
               <div className="text-xl font-extrabold font-display tracking-tight text-white">
-                JanDristi
+                JanDrishti
               </div>
             </div>
           </div>
@@ -1869,7 +1869,7 @@ Between: Municipal Corporation of Greater Mumbai (Authority) AND TechCorp Soluti
                 <div className="flex items-center gap-2">
                   <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></div>
                   <span className="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">
-                    JanDristi · Legal Workspace Suite
+                    JanDrishti · Legal Workspace Suite
                   </span>
                 </div>
                 <button
@@ -2064,7 +2064,7 @@ Between: Municipal Corporation of Greater Mumbai (Authority) AND TechCorp Soluti
               <div className="flex items-center gap-2.5">
                 <div className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse"></div>
                 <span className="text-xs font-bold uppercase tracking-wider text-slate-800 dark:text-slate-200">
-                  JanDristi Intelligence Matrix
+                  JanDrishti Intelligence Matrix
                 </span>
                 <span className="text-[10px] font-bold px-2 py-0.5 rounded-md bg-blue-50 text-blue-700 dark:bg-blue-950/60 dark:text-blue-300 border border-blue-200/80 dark:border-blue-900/60">
                   ACTIVE ENGINE
@@ -4015,7 +4015,7 @@ Between: Municipal Corporation of Greater Mumbai (Authority) AND TechCorp Soluti
               Feature Modules & Video Walkthrough
             </h2>
             <p className="text-slate-500 dark:text-slate-400 max-w-xl mx-auto text-sm sm:text-base">
-              Watch how JanDristi audits contracts and discovers citizen entitlements in real-time, or launch any module directly.
+              Watch how JanDrishti audits contracts and discovers citizen entitlements in real-time, or launch any module directly.
             </p>
           </div>
 
@@ -4124,7 +4124,7 @@ Between: Municipal Corporation of Greater Mumbai (Authority) AND TechCorp Soluti
                 <div className="p-4 sm:p-5 space-y-3.5">
                   <div>
                     <h4 className="font-bold text-sm text-slate-900 dark:text-white font-display">
-                      How JanDristi Works in 60 Seconds
+                      How JanDrishti Works in 60 Seconds
                     </h4>
                     <p className="text-xs text-slate-500 dark:text-slate-400 mt-1 leading-relaxed">
                       Instant clause health evaluation, 3-Agent legal courtroom debate, and universal citizen welfare entitlement discovery.
@@ -4331,15 +4331,15 @@ Between: Municipal Corporation of Greater Mumbai (Authority) AND TechCorp Soluti
               Frequently Asked Questions
             </h2>
             <p className="text-slate-500 dark:text-slate-400 text-sm sm:text-base">
-              Everything you need to know about the JanDristi platform.
+              Everything you need to know about the JanDrishti platform.
             </p>
           </div>
 
           <div className="space-y-3.5 reveal-hidden">
             {[
               {
-                q: 'What types of documents can JanDristi analyze?',
-                a: 'JanDristi supports commercial agreements, municipal e-tenders, procurement contracts, employment agreements, residential/commercial leases, NDAs, and government policy directives in PDF format. Both native digital PDFs and scanned image-based PDFs are supported through OCR.'
+                q: 'What types of documents can JanDrishti analyze?',
+                a: 'JanDrishti supports commercial agreements, municipal e-tenders, procurement contracts, employment agreements, residential/commercial leases, NDAs, and government policy directives in PDF format. Both native digital PDFs and scanned image-based PDFs are supported through OCR.'
               },
               {
                 q: 'How does the PII Shield protect sensitive personal data?',
@@ -4355,11 +4355,11 @@ Between: Municipal Corporation of Greater Mumbai (Authority) AND TechCorp Soluti
               },
               {
                 q: 'Which Indian regional languages are supported?',
-                a: 'JanDristi natively supports all 22 official 8th Schedule Indian languages including Hindi, Marathi, Bengali, Tamil, Telugu, Gujarati, Kannada, Malayalam, Punjabi, Odia, Assamese, Urdu, Sanskrit, Nepali, Sindhi, Maithili, Konkani, Dogri, Manipuri, Santali, and Bhojpuri. Summaries and clause explanations are translated while preserving legal precision.'
+                a: 'JanDrishti natively supports all 22 official 8th Schedule Indian languages including Hindi, Marathi, Bengali, Tamil, Telugu, Gujarati, Kannada, Malayalam, Punjabi, Odia, Assamese, Urdu, Sanskrit, Nepali, Sindhi, Maithili, Konkani, Dogri, Manipuri, Santali, and Bhojpuri. Summaries and clause explanations are translated while preserving legal precision.'
               },
               {
-                q: 'Does JanDristi provide legal advice?',
-                a: 'No. JanDristi is an automated legal contract and welfare analysis platform designed to assist citizens, advocates, and regulatory officers. The outputs represent automated statutory analysis and do not substitute for formal legal representation by an advocate.'
+                q: 'Does JanDrishti provide legal advice?',
+                a: 'No. JanDrishti is an automated legal contract and welfare analysis platform designed to assist citizens, advocates, and regulatory officers. The outputs represent automated statutory analysis and do not substitute for formal legal representation by an advocate.'
               }
             ].map((faq, idx) => (
               <div
@@ -4445,8 +4445,8 @@ Between: Municipal Corporation of Greater Mumbai (Authority) AND TechCorp Soluti
           <div className="grid grid-cols-1 md:grid-cols-4 gap-8 mb-10 text-xs">
             <div>
               <div className="flex items-center space-x-2.5 text-white font-bold font-display text-sm mb-3">
-                <img src="/logo.png" alt="JanDristi Logo" className="w-8 h-8 rounded-xl object-contain bg-white p-0.5 border border-slate-700" />
-                <span>JanDristi</span>
+                <img src="/logo.png" alt="JanDrishti Logo" className="w-8 h-8 rounded-xl object-contain bg-white p-0.5 border border-slate-700" />
+                <span>JanDrishti</span>
               </div>
               <p className="text-slate-400 leading-relaxed">
                 Empowering citizens, legal professionals, and regulatory authorities with artificial intelligence compliance verification.
@@ -4479,7 +4479,7 @@ Between: Municipal Corporation of Greater Mumbai (Authority) AND TechCorp Soluti
 
           <div className="pt-8 border-t border-slate-800 flex flex-col sm:flex-row items-center justify-between text-xs text-slate-500 gap-4">
             <div>
-              © 2026 JanDristi · Sovereign Legal & Welfare Intelligence Platform
+              © 2026 JanDrishti · Sovereign Legal & Welfare Intelligence Platform
             </div>
             <div className="flex space-x-5 text-slate-400">
               <span className="hover:text-white transition-colors cursor-pointer">Privacy Policy</span>
@@ -4504,11 +4504,11 @@ Between: Municipal Corporation of Greater Mumbai (Authority) AND TechCorp Soluti
             </button>
 
             <div className="flex items-center gap-3 mb-4">
-              <img src="/logo.png" alt="JanDristi Logo" className="w-10 h-10 rounded-xl object-contain bg-white p-0.5 border border-slate-200 dark:border-slate-700 shadow-2xs" />
+              <img src="/logo.png" alt="JanDrishti Logo" className="w-10 h-10 rounded-xl object-contain bg-white p-0.5 border border-slate-200 dark:border-slate-700 shadow-2xs" />
               <div>
                 <h3 className="font-bold text-lg font-display text-slate-900 dark:text-white leading-tight">
                   {authMode === 'login' 
-                    ? (authMethod === 'otp' ? 'Sign In via Mail Code' : 'Sign In to JanDristi') 
+                    ? (authMethod === 'otp' ? 'Sign In via Mail Code' : 'Sign In to JanDrishti') 
                     : authMode === 'register' ? 'Create GovTech Account' : 'Reset Password'}
                 </h3>
                 <p className="text-[11px] text-slate-500 dark:text-slate-400">
