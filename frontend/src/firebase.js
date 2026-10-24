@@ -153,7 +153,8 @@ export async function signInWithGoogle() {
     } else if (error.code === 'auth/popup-blocked') {
       msg = 'Sign-in popup was blocked by your browser. Please allow popups for this site.';
     } else if (error.code === 'auth/unauthorized-domain') {
-      msg = 'This domain (localhost) is not yet in Authorized Domains in Firebase Console > Authentication > Settings > Authorized domains.';
+      const currentHost = typeof window !== 'undefined' && window.location ? window.location.hostname : 'current domain';
+      msg = `This domain (${currentHost}) is not authorized in Firebase. Go to Firebase Console > Authentication > Settings > Authorized domains > Add domain, and add "${currentHost}".`;
     } else if (error.code === 'auth/operation-not-allowed') {
       msg = 'Google provider is not enabled. Go to Firebase Console > Authentication > Sign-in method > Enable Google.';
     } else if (error.code === 'auth/invalid-api-key' || error.code === 'auth/api-key-not-valid') {
