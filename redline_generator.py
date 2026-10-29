@@ -14,7 +14,7 @@ import pymupdf as fitz
 
 logger = logging.getLogger(__name__)
 
-def find_clause_rects_on_page(page: fitz.Page, excerpt: str) -> List[fitz.Rect]:
+def find_clause_rects_on_page(page: fitz.Page, excerpt: str, ocr_tp=None) -> List[fitz.Rect]:
     """
     Locates the bounding rectangles for a given risky excerpt on a PDF page.
     Uses multi-stage matching:
@@ -27,8 +27,17 @@ def find_clause_rects_on_page(page: fitz.Page, excerpt: str) -> List[fitz.Rect]:
 
     clean_excerpt = excerpt.strip()
 
+    # If the page is a scanned image with no/sparse text, use an OCR textpage
+    if ocr_tp is None and len(page.get_text().strip()) < 30:
+        try:
+            ocr_tp = page.get_textpage_ocr(dpi=150)
+        except Exception as ocr_e:
+            logger.debug(f"OCR textpage notice on page: {ocr_e}")
+
+    tp_kw = {"textpage": ocr_tp} if ocr_tp is not None else {}
+
     # 1. Direct search_for
-    direct_rects = page.search_for(clean_excerpt)
+    direct_rects = page.search_for(clean_excerpt, **tp_kw)
     if direct_rects:
         return direct_rects
 
@@ -43,14 +52,14 @@ def find_clause_rects_on_page(page: fitz.Page, excerpt: str) -> List[fitz.Rect]:
         for k in range(0, len(words), seg_size):
             segment = " ".join(words[k:k + seg_size])
             if segment:
-                r_seg = page.search_for(segment)
+                r_seg = page.search_for(segment, **tp_kw)
                 if r_seg:
                     sub_rects.extend(r_seg)
         if sub_rects:
             return sub_rects
 
     # 3. Robust word sequence matcher (handles line wraps, extra whitespace, punctuation variances)
-    raw_words = page.get_text("words")  # (x0, y0, x1, y1, word, block_no, line_no, word_no)
+    raw_words = page.get_text("words", **tp_kw)  # (x0, y0, x1, y1, word, block_no, line_no, word_no)
     if not raw_words:
         return []
 
@@ -117,6 +126,15 @@ def generate_redlined_pdf(pdf_source: Union[str, bytes], risks: List[Dict[str, A
             doc.save(output)
             return output.getvalue()
 
+        # Pre-cache OCR textpages for scanned pages once to ensure maximum performance
+        ocr_cache = {}
+        for page in doc:
+            if len(page.get_text().strip()) < 30:
+                try:
+                    ocr_cache[page.number] = page.get_textpage_ocr(dpi=150)
+                except Exception:
+                    pass
+
         # Iterate through each detected risk
         for risk in risks:
             excerpt = risk.get("risky_excerpt", "")
@@ -142,7 +160,7 @@ def generate_redlined_pdf(pdf_source: Union[str, bytes], risks: List[Dict[str, A
             # Search across all pages
             matched_on_any_page = False
             for page in doc:
-                rects = find_clause_rects_on_page(page, excerpt)
+                rects = find_clause_rects_on_page(page, excerpt, ocr_tp=ocr_cache.get(page.number))
                 if not rects:
                     continue
 

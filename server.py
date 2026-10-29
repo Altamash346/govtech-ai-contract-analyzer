@@ -332,14 +332,14 @@ async def upload_document(
         session.commit()
         doc_id = new_doc.id
 
-        # OCR & Ingestion
+        # OCR & Ingestion (Extracts every page with hybrid digital + OCR)
         result = ingestion.process_document(tmp_path, doc_id)
         # Save original uploaded PDF for visual redlining & preview
         orig_pdf_path = os.path.join(result["index_dir"], "original.pdf")
         with open(orig_pdf_path, "wb") as f_orig:
             f_orig.write(contents)
-        pages = ingestion.extract_text_from_pdf(tmp_path)
-        full_text = "\n".join([ingestion.preprocess_text(p["text"]) for p in pages])
+        pages = result.get("pages", [])
+        full_text = result.get("full_text") or "\n\n".join([f"--- [Page {p['page']}] ---\n" + ingestion.preprocess_text(p["text"]) for p in pages if p["text"] != "[Blank / Non-text page]"])
 
         # Layer 1: Sovereign Client-Side PII De-Identification (DPDP Act 2023)
         sanitized_text, pii_meta = ingestion.anonymize_pii(full_text)
@@ -705,7 +705,10 @@ def reanalyze_document(doc_id: int, req: ReanalyzeRequest):
         orig_pdf = os.path.join(actual_dir, "original.pdf")
         if os.path.exists(orig_pdf):
             pages = ingestion.extract_text_from_pdf(orig_pdf)
-            full_text = "\n".join([ingestion.preprocess_text(p["text"]) for p in pages])
+            full_text = "\n\n".join([f"--- [Page {p['page']}] ---\n" + ingestion.preprocess_text(p["text"]) for p in pages if p["text"] != "[Blank / Non-text page]"])
+            if not doc.page_count or doc.page_count != len(pages):
+                doc.page_count = len(pages)
+                session.commit()
         else:
             chunks_path = os.path.join(actual_dir, "chunks.json")
             if os.path.exists(chunks_path):

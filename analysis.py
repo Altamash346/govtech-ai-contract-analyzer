@@ -40,7 +40,7 @@ def _call_gemini(prompt: str) -> str:
         response = model.generate_content(
             sanitized_prompt,
             generation_config={"temperature": 0.1},
-            request_options={"timeout": 45}
+            request_options={"timeout": 90}
         )
         return response.text.strip()
     except Exception as e:
@@ -175,8 +175,9 @@ EXECUTIVE SUMMARY:"""
 
 def classify_clauses(full_text: str, mode: str = None) -> list[dict]:
     """Identify and categorize standard legal clauses in the document."""
-    truncated = full_text[:5000] + ("..." if len(full_text) > 5000 else "")
-    prompt = f"""You are a legal AI. Analyze the document below and identify the main legal clauses present.
+    max_chars = 80000 if (mode == "fast" or config.AI_PROCESSING_MODE == "fast") else 30000
+    truncated = full_text[:max_chars] + ("..." if len(full_text) > max_chars else "")
+    prompt = f"""You are a legal AI. Analyze the document below and identify the main legal clauses present across all pages.
 For each clause found, return a JSON array. Each item must have:
 - "clause_type": (e.g., "Indemnity", "Termination", "Payment Terms", "Confidentiality", "Dispute Resolution", "Governing Law")
 - "summary": a one-sentence plain English explanation
@@ -195,10 +196,11 @@ JSON:"""
 # ─── REQ-3.3: Risk Detection & Remediation ───────────────────────────────────
 
 def detect_risks(full_text: str, mode: str = None) -> list[dict]:
-    """Detect risky clauses and suggest safer replacement text."""
-    truncated = full_text[:5000] + ("..." if len(full_text) > 5000 else "")
+    """Detect risky clauses across all pages and suggest safer replacement text."""
+    max_chars = 80000 if (mode == "fast" or config.AI_PROCESSING_MODE == "fast") else 30000
+    truncated = full_text[:max_chars] + ("..." if len(full_text) > max_chars else "")
     prompt = f"""You are an expert legal risk analyst. Analyze the document below and identify clauses 
-that may be legally risky, one-sided, or unfavorable to the signing party.
+that may be legally risky, one-sided, or unfavorable to the signing party across all pages.
 
 For each risk, return a JSON array. Each item must have:
 - "risk_level": "High", "Medium", or "Low"
@@ -507,11 +509,11 @@ def analyze_document_complete(full_text: str, mode: str = None) -> dict:
     Extracts summary, classified clauses, risk remediation, and key entities all at once.
     Normalizes outputs across both Gemini and Ollama for unified, consistent presentation.
     """
-    # Increase context window to capture multi-page documents (Gemini supports 1M tokens; Ollama supports 8k-16k tokens)
-    max_chars = 35000 if (mode == "fast" or config.AI_PROCESSING_MODE == "fast") else 20000
+    # Set context limit to capture large multi-page documents (Gemini supports 1M tokens; Ollama supports 8k-16k tokens)
+    max_chars = 140000 if (mode == "fast" or config.AI_PROCESSING_MODE == "fast") else 40000
     truncated = full_text[:max_chars] + ("\n...[Document continues]" if len(full_text) > max_chars else "")
     prompt = f"""You are an elite legal contract and regulatory compliance analyst.
-Analyze the following document and return a comprehensive legal audit as a SINGLE valid JSON object covering all major risks throughout the entire document.
+Analyze the following document and return a comprehensive legal audit as a SINGLE valid JSON object covering all major risks throughout the entire document across all pages.
 
 Your JSON output MUST have exactly these 4 top-level keys:
 
@@ -520,7 +522,7 @@ Your JSON output MUST have exactly these 4 top-level keys:
    - "clause_type": (e.g., "Indemnity", "Termination", "Payment Terms", "Governing Law", "Confidentiality")
    - "summary": one-sentence plain English explanation
    - "verbatim_excerpt": exact quote from the document (complete sentence or clause, 15-60 words)
-3. "risks": A comprehensive list of ALL identified risks, loopholes, liability imbalances, or compliance hazards across the document (aim for 3-8 distinct risks if present). Each item must have:
+3. "risks": A comprehensive list of ALL identified risks, loopholes, liability imbalances, or compliance hazards across the document (aim for 3-10 distinct risks if present). Each item must have:
    - "risk_level": "High", "Medium", or "Low"
    - "clause_type": type of clause (e.g., "Indemnity", "Termination", "Payment Terms", "Governing Law", "Liquidated Damages", "Compliance")
    - "risky_excerpt": EXACT verbatim quote of the problematic sentence or clause. CRITICAL REQUIREMENT: This MUST be a COMPLETE, grammatically coherent sentence or full clause (at least 12-40 words from starting capital letter to full stop). NEVER return an incomplete 2-5 word sentence fragment (like "the Union did not").
@@ -556,19 +558,52 @@ JSON:"""
     raw_clauses = parsed.get("clauses")
     if not isinstance(raw_clauses, list):
         raw_clauses = []
-    clauses = []
-    for c in raw_clauses:
-        if isinstance(c, dict) and c.get("clause_type"):
-            clauses.append({
-                "clause_type": str(c.get("clause_type", "Standard Clause")).strip(),
-                "summary": str(c.get("summary", "")).strip(),
-                "verbatim_excerpt": str(c.get("verbatim_excerpt", "")).strip()
-            })
 
     raw_risks = parsed.get("risks")
     if not isinstance(raw_risks, list):
         raw_risks = []
+
+    # For massive documents (e.g. 100+ pages), scan the remaining section specifically for risks & clauses
+    if len(full_text) > max_chars:
+        second_window = full_text[max_chars - 5000: max_chars * 2]
+        sec_prompt = f"""You are an expert legal risk analyst. Analyze the following second section of a long contract and extract additional risky clauses or standard legal clauses not covered in the opening pages.
+Return a valid JSON object with:
+"clauses": list of clauses with "clause_type", "summary", "verbatim_excerpt"
+"risks": list of risks with "risk_level" (High, Medium, Low), "clause_type", "risky_excerpt" (verbatim quote), "why_risky", "severity_reasoning", "potential_impact", "trigger_factors", "suggested_replacement"
+
+DOCUMENT SECTION:
+{second_window}
+
+JSON:"""
+        try:
+            sec_raw = _call_llm(sec_prompt, mode)
+            sec_parsed = _safe_parse_json(sec_raw)
+            if isinstance(sec_parsed, dict):
+                for sc in sec_parsed.get("clauses", []):
+                    if isinstance(sc, dict) and sc.get("clause_type"):
+                        raw_clauses.append(sc)
+                for sr in sec_parsed.get("risks", []):
+                    if isinstance(sr, dict) and (sr.get("clause_type") or sr.get("why_risky")):
+                        raw_risks.append(sr)
+        except Exception as e:
+            logger.warning(f"Secondary window legal audit notice: {e}")
+    clauses = []
+    seen_clauses = set()
+    for c in raw_clauses:
+        if isinstance(c, dict) and c.get("clause_type"):
+            c_type = str(c.get("clause_type", "Standard Clause")).strip()
+            c_excerpt = str(c.get("verbatim_excerpt", "")).strip()
+            key = (c_type.lower(), c_excerpt[:40].lower())
+            if key not in seen_clauses:
+                seen_clauses.add(key)
+                clauses.append({
+                    "clause_type": c_type,
+                    "summary": str(c.get("summary", "")).strip(),
+                    "verbatim_excerpt": c_excerpt
+                })
+
     risks = []
+    seen_risks = set()
     for r in raw_risks:
         if isinstance(r, dict) and (r.get("clause_type") or r.get("why_risky")):
             lvl = str(r.get("risk_level", "Medium")).strip().capitalize()
@@ -642,16 +677,19 @@ JSON:"""
                 except Exception as exp_err:
                     logger.debug(f"Excerpt expansion skipped: {exp_err}")
 
-            risks.append({
-                "risk_level": lvl,
-                "clause_type": str(r.get("clause_type", "General Risk")).strip(),
-                "risky_excerpt": risky_excerpt,
-                "why_risky": why_risky,
-                "severity_reasoning": severity_reasoning,
-                "potential_impact": potential_impact,
-                "trigger_factors": trigger_factors,
-                "suggested_replacement": str(r.get("suggested_replacement", "")).strip()
-            })
+            risk_key = (lvl, risky_excerpt[:40].lower(), str(r.get("clause_type", "")).lower())
+            if risk_key not in seen_risks:
+                seen_risks.add(risk_key)
+                risks.append({
+                    "risk_level": lvl,
+                    "clause_type": str(r.get("clause_type", "General Risk")).strip(),
+                    "risky_excerpt": risky_excerpt,
+                    "why_risky": why_risky,
+                    "severity_reasoning": severity_reasoning,
+                    "potential_impact": potential_impact,
+                    "trigger_factors": trigger_factors,
+                    "suggested_replacement": str(r.get("suggested_replacement", "")).strip()
+                })
 
     raw_entities = parsed.get("entities")
     if not isinstance(raw_entities, dict):

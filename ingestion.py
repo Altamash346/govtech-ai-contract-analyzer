@@ -11,6 +11,14 @@ import json
 os.environ.setdefault("TRANSFORMERS_NO_ADVISORY_WARNINGS", "1")
 os.environ.setdefault("TOKENIZERS_PARALLELISM", "false")
 
+# Configure Tesseract binary path on Windows if present
+try:
+    import pytesseract
+    if os.path.exists(r"C:\Program Files\Tesseract-OCR\tesseract.exe"):
+        pytesseract.pytesseract.tesseract_cmd = r"C:\Program Files\Tesseract-OCR\tesseract.exe"
+except Exception:
+    pass
+
 import pymupdf as fitz
 import numpy as np
 from pathlib import Path
@@ -28,62 +36,78 @@ def get_embedder():
     return _embedder
 
 
-# ─── Step 1: Detect if PDF is Scanned ─────────────────────────────────────────
-
-def is_scanned_pdf(pdf_path: str) -> bool:
-    """Returns True if the PDF contains no extractable text (i.e., it's a scanned image)."""
-    doc = fitz.open(pdf_path)
-    total_text = ""
-    for page in doc:
-        total_text += page.get_text()
-    doc.close()
-    return len(total_text.strip()) < 100
-
-
-# ─── Step 2a: Extract Text from Native PDF ────────────────────────────────────
+# ─── Step 1 & 2: Hybrid Per-Page Text & OCR Extraction ────────────────────────
 
 def extract_text_from_pdf(pdf_path: str) -> list[dict]:
     """
-    Extract text from each page of a native PDF.
-    Returns: list of dicts with 'page' and 'text' keys.
+    Extract text from every single page of a PDF with robust per-page OCR fallback.
+    - If a page has native digital text, extracts it via PyMuPDF.
+    - If a page has sparse or no digital text (< 40 characters), automatically runs OCR
+      (using PyMuPDF's built-in OCR textpage and pytesseract fallback).
+    Guarantees every page (1 to N) is scanned and returned with its exact page number.
     """
     doc = fitz.open(pdf_path)
     pages = []
+
     for i, page in enumerate(doc):
+        page_num = i + 1
         text = page.get_text()
-        if text.strip():
-            pages.append({"page": i + 1, "text": text})
+        was_ocr = False
+
+        # If digital text is missing or sparse (< 40 chars), treat as scanned image or table
+        if len(text.strip()) < 40:
+            # Attempt 1: PyMuPDF built-in OCR textpage
+            try:
+                tp = page.get_textpage_ocr(dpi=150)
+                ocr_text = tp.extractText()
+                if len(ocr_text.strip()) > len(text.strip()):
+                    text = ocr_text
+                    was_ocr = True
+            except Exception:
+                pass
+
+            # Attempt 2: pytesseract with 2x zoom rendering if still sparse
+            if len(text.strip()) < 40:
+                try:
+                    import pytesseract
+                    from PIL import Image
+                    import io
+                    mat = fitz.Matrix(2, 2)
+                    pix = page.get_pixmap(matrix=mat)
+                    img = Image.open(io.BytesIO(pix.tobytes("png")))
+                    tess_text = pytesseract.image_to_string(img)
+                    if len(tess_text.strip()) > len(text.strip()):
+                        text = tess_text
+                        was_ocr = True
+                except Exception:
+                    pass
+
+        cleaned = text.strip()
+        pages.append({
+            "page": page_num,
+            "text": cleaned if cleaned else "[Blank / Non-text page]",
+            "was_ocr": was_ocr,
+            "char_count": len(cleaned)
+        })
+
     doc.close()
     return pages
 
 
-# ─── Step 2b: OCR for Scanned PDFs ────────────────────────────────────────────
+def is_scanned_pdf(pdf_path: str) -> bool:
+    """Returns True if any page or the majority of the PDF lacks native digital text."""
+    doc = fitz.open(pdf_path)
+    if len(doc) == 0:
+        doc.close()
+        return False
+    total_digital_chars = sum(len(page.get_text().strip()) for page in doc)
+    doc.close()
+    return total_digital_chars < 100
+
 
 def extract_text_via_ocr(pdf_path: str) -> list[dict]:
-    """
-    Use pytesseract OCR to extract text from scanned PDFs.
-    Requires Tesseract to be installed on the system.
-    """
-    try:
-        import pytesseract
-        from PIL import Image
-        import io
-
-        doc = fitz.open(pdf_path)
-        pages = []
-        for i, page in enumerate(doc):
-            # Render page as image
-            mat = fitz.Matrix(2, 2)  # 2x zoom for better OCR accuracy
-            pix = page.get_pixmap(matrix=mat)
-            img_data = pix.tobytes("png")
-            img = Image.open(io.BytesIO(img_data))
-            text = pytesseract.image_to_string(img)
-            if text.strip():
-                pages.append({"page": i + 1, "text": text})
-        doc.close()
-        return pages
-    except Exception as e:
-        return [{"page": 1, "text": f"OCR Error: {str(e)}. Please install Tesseract OCR."}]
+    """Compatibility wrapper that delegates to the robust per-page extractor."""
+    return extract_text_from_pdf(pdf_path)
 
 
 # ─── Step 3: Preprocess Text ─────────────────────────────────────────────────
@@ -225,21 +249,25 @@ def build_faiss_index(chunks: list[dict], index_dir: str) -> str:
 def process_document(pdf_path: str, doc_id: int) -> dict:
     """
     Full ingestion pipeline for a single PDF.
-    Returns: dict with 'index_dir', 'page_count', 'chunk_count'
+    Extracts every page using hybrid per-page digital + OCR extraction.
+    Returns: dict with 'index_dir', 'page_count', 'chunk_count', 'pages', 'full_text', 'used_ocr'
     """
-    # Detect if scanned
-    scanned = is_scanned_pdf(pdf_path)
-
-    # Extract text (with or without OCR)
-    if scanned:
-        pages = extract_text_via_ocr(pdf_path)
-    else:
-        pages = extract_text_from_pdf(pdf_path)
-
+    pages = extract_text_from_pdf(pdf_path)
     page_count = len(pages)
+    scanned_count = sum(1 for p in pages if p.get("was_ocr", False))
+    used_ocr = scanned_count > 0
 
-    # Chunk the extracted pages
-    chunks = chunk_pages(pages)
+    # Build full text with explicit page delimiters for AI context awareness
+    valid_page_texts = []
+    for p in pages:
+        txt = preprocess_text(p["text"])
+        if txt and txt != "[Blank / Non-text page]":
+            valid_page_texts.append(f"--- [Page {p['page']}] ---\n{txt}")
+
+    full_text = "\n\n".join(valid_page_texts)
+
+    # Chunk the extracted pages for vector RAG (excluding blank pages)
+    chunks = chunk_pages([p for p in pages if p["text"] != "[Blank / Non-text page]"])
 
     # Build and store FAISS index
     index_dir = os.path.join(config.FAISS_INDEX_PATH, str(doc_id))
@@ -249,5 +277,8 @@ def process_document(pdf_path: str, doc_id: int) -> dict:
         "index_dir": index_dir,
         "page_count": page_count,
         "chunk_count": len(chunks),
-        "used_ocr": scanned
+        "pages": pages,
+        "full_text": full_text,
+        "used_ocr": used_ocr,
+        "scanned_pages_count": scanned_count
     }
