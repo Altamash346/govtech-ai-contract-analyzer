@@ -3109,7 +3109,7 @@ Between: Municipal Corporation of Greater Mumbai (Authority) AND TechCorp Soluti
               Automated Contract Redlining
             </h2>
             <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 mt-1.5 max-w-xl mx-auto">
-              Visual strikethrough red lines and highlight annotations applied directly to the uploaded PDF for all detected risky text and clauses.
+              Visual red highlight annotations applied directly to the uploaded PDF for all detected risky text and clauses.
             </p>
           </div>
 
@@ -3164,7 +3164,7 @@ Between: Municipal Corporation of Greater Mumbai (Authority) AND TechCorp Soluti
                       </span>
                     </div>
                     <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">
-                      Vector-rendered strikethrough red lines & caution tags drawn directly onto the PDF file pages.
+                      Vector-rendered red highlights & caution tags drawn directly onto the PDF file pages.
                     </p>
                   </div>
                 </div>
@@ -3197,7 +3197,7 @@ Between: Municipal Corporation of Greater Mumbai (Authority) AND TechCorp Soluti
                   <div className={`p-3 rounded-2xl border border-slate-200/90 dark:border-slate-800 shadow-[0_2px_12px_rgba(15,23,42,0.04)] flex-1 flex flex-col ${isDark ? 'bg-slate-900' : 'bg-white'}`}>
                     <div className="px-3 py-2 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between text-xs text-slate-500 font-semibold">
                       <span className="flex items-center gap-1.5 text-slate-800 dark:text-slate-200">
-                        <FileText className="w-4 h-4 text-rose-500" /> Live Redlined PDF Preview (Direct Strikethroughs)
+                        <FileText className="w-4 h-4 text-rose-500" /> Live Redlined PDF Preview (Red Highlights)
                       </span>
                       <span className="text-[11px] text-slate-400">
                         Interactive View · Zoom / Scroll

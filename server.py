@@ -587,7 +587,7 @@ def view_redline_pdf(doc_id: int):
 
 @app.get("/api/redline/download-pdf/{doc_id}")
 def download_redline_pdf(doc_id: int):
-    """Downloads the visual redlined PDF with strikethrough lines on risky clauses."""
+    """Downloads the visual redlined PDF with red highlights on risky clauses."""
     pdf_bytes, filename = _get_redlined_pdf_bytes(doc_id)
     return Response(
         content=pdf_bytes,

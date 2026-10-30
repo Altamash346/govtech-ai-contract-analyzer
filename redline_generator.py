@@ -1,6 +1,6 @@
 """
 redline_generator.py — Direct Visual Redlining on Contract PDFs.
-Draws visual red lines (strikethrough lines, highlight bounding boxes, and risk badges)
+Draws clean visual red highlights and risk badges (no cutting lines)
 directly onto the original uploaded PDF across all risky text and clauses.
 """
 import io
@@ -110,8 +110,8 @@ def find_clause_rects_on_page(page: fitz.Page, excerpt: str, ocr_tp=None) -> Lis
 
 def generate_redlined_pdf(pdf_source: Union[str, bytes], risks: List[Dict[str, Any]]) -> bytes:
     """
-    Annotates the PDF document by drawing visible red strikethrough lines,
-    red highlight rectangles, and risk warning tags directly over all risky text.
+    Annotates the PDF document by drawing clean translucent red highlights
+    and risk warning tags directly over all risky text without cutting strikethroughs.
     Returns the marked-up PDF file as bytes.
     """
     try:
@@ -143,19 +143,19 @@ def generate_redlined_pdf(pdf_source: Union[str, bytes], risks: List[Dict[str, A
             if not excerpt:
                 continue
 
-            # Determine colors based on risk level
+            # Determine colors based on risk level (clean translucent highlights)
             if "HIGH" in risk_level:
-                line_color = (0.85, 0.05, 0.05)      # Deep Red
-                fill_color = (1.0, 0.88, 0.88)      # Light Red
-                badge_bg   = (0.85, 0.05, 0.05)
+                fill_color   = (1.0, 0.15, 0.15)      # Clear Vivid Red Highlight
+                fill_opacity = 0.28
+                badge_bg     = (0.85, 0.05, 0.05)
             elif "MED" in risk_level:
-                line_color = (0.85, 0.35, 0.0)       # Amber/Orange
-                fill_color = (1.0, 0.93, 0.85)      # Light Amber
-                badge_bg   = (0.85, 0.35, 0.0)
+                fill_color   = (1.0, 0.55, 0.05)      # Clear Amber/Orange Highlight
+                fill_opacity = 0.28
+                badge_bg     = (0.85, 0.35, 0.0)
             else:
-                line_color = (0.75, 0.55, 0.05)      # Golden Yellow
-                fill_color = (1.0, 0.97, 0.88)
-                badge_bg   = (0.75, 0.55, 0.05)
+                fill_color   = (0.95, 0.80, 0.05)      # Clear Golden Yellow Highlight
+                fill_opacity = 0.32
+                badge_bg     = (0.75, 0.55, 0.05)
 
             # Search across all pages
             matched_on_any_page = False
@@ -170,35 +170,13 @@ def generate_redlined_pdf(pdf_source: Union[str, bytes], risks: List[Dict[str, A
                 rects.sort(key=lambda r: (r.y0, r.x0))
 
                 for r in rects:
-                    # 1. Draw subtle background highlight box
+                    # Draw clean translucent red highlight directly over the text (NO strikethrough cut line, NO borders)
                     page.draw_rect(
                         r,
-                        color=line_color,
+                        color=None,
                         fill=fill_color,
-                        fill_opacity=0.35,
-                        width=0.8
+                        fill_opacity=fill_opacity
                     )
-
-                    # 2. Draw prominent RED strikethrough line through center of line
-                    y_mid = (r.y0 + r.y1) / 2.0
-                    page.draw_line(
-                        fitz.Point(r.x0, y_mid),
-                        fitz.Point(r.x1, y_mid),
-                        color=line_color,
-                        width=2.2
-                    )
-
-                    # 3. Add native strikeout PDF annotation for Acrobat/Edge compatibility
-                    try:
-                        annot = page.add_strikeout_annot(r)
-                        annot.set_colors(stroke=line_color)
-                        annot.set_info(
-                            content=f"RISK: {risk.get('why_risky', '')}\nREPLACEMENT: {risk.get('suggested_replacement', '')}",
-                            title=f"{risk_level} - {clause_type}"
-                        )
-                        annot.update()
-                    except Exception as annot_err:
-                        logger.debug(f"Annotation notice: {annot_err}")
 
                 # 4. Draw Risk Badge Tag above the first line
                 first_r = rects[0]
