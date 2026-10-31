@@ -3199,9 +3199,19 @@ Between: Municipal Corporation of Greater Mumbai (Authority) AND TechCorp Soluti
                       <span className="flex items-center gap-1.5 text-slate-800 dark:text-slate-200">
                         <FileText className="w-4 h-4 text-rose-500" /> Live Redlined PDF Preview (Red Highlights)
                       </span>
-                      <span className="text-[11px] text-slate-400">
-                        Interactive View · Zoom / Scroll
-                      </span>
+                      <div className="flex items-center gap-3">
+                        <a
+                          href={`${API_BASE}/redline/pdf/${currentDoc.id}`}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="inline-flex items-center gap-1 text-[11px] font-semibold text-rose-600 dark:text-rose-400 hover:text-rose-700 hover:underline transition-colors"
+                        >
+                          <ExternalLink className="w-3.5 h-3.5" /> Open Fullscreen
+                        </a>
+                        <span className="text-[11px] text-slate-400 hidden sm:inline">
+                          Interactive View · Zoom / Scroll
+                        </span>
+                      </div>
                     </div>
                     <div className="relative w-full h-[640px] sm:h-[720px] rounded-xl overflow-hidden bg-slate-100 dark:bg-slate-950 mt-2">
                       <iframe
@@ -3222,7 +3232,7 @@ Between: Municipal Corporation of Greater Mumbai (Authority) AND TechCorp Soluti
                           Red-Marked Clauses
                         </h4>
                         <span className="text-[10px] text-slate-400">
-                          Clauses struck through in red in the PDF
+                          Highlighted in translucent red in the PDF document
                         </span>
                       </div>
                       <span className="text-[11px] font-bold px-2.5 py-0.5 rounded-full bg-rose-100 text-rose-800 dark:bg-rose-950 dark:text-rose-300">
@@ -3260,11 +3270,11 @@ Between: Municipal Corporation of Greater Mumbai (Authority) AND TechCorp Soluti
                             {/* Marked Redline Excerpt with Visual Line */}
                             <div>
                               <div className="text-[10px] font-bold uppercase text-rose-600 dark:text-rose-400 mb-1 flex items-center gap-1">
-                                <span className="w-2 h-0.5 bg-rose-500 inline-block"></span>
-                                Struck Through with Red Line in PDF:
+                                <span className="w-2 h-2 rounded-full bg-rose-500 inline-block"></span>
+                                Highlighted Risky Excerpt:
                               </div>
                               <div className="p-3 rounded-xl bg-rose-50 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-900/60 border-l-4 border-l-rose-500 text-rose-950 dark:text-rose-200 text-xs font-mono leading-relaxed relative">
-                                <span className="line-through decoration-rose-600 decoration-2 font-medium">
+                                <span className="bg-rose-500/20 text-rose-950 dark:text-rose-100 font-medium px-1.5 py-0.5 rounded leading-relaxed inline">
                                   {risk.risky_excerpt}
                                 </span>
                               </div>

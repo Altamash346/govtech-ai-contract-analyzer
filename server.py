@@ -610,7 +610,11 @@ def view_redline_pdf(doc_id: int):
     return Response(
         content=pdf_bytes,
         media_type="application/pdf",
-        headers={"Content-Disposition": f'inline; filename="redlined_{filename}"'}
+        headers={
+            "Content-Disposition": f'inline; filename="redlined_{filename}"',
+            "Content-Type": "application/pdf",
+            "Content-Security-Policy": "frame-ancestors *",
+        }
     )
 
 @app.get("/api/redline/download-pdf/{doc_id}")
