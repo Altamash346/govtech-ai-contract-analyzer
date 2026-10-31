@@ -9,7 +9,7 @@ import tempfile
 from datetime import datetime, timedelta
 from typing import Optional
 
-from fastapi import FastAPI, UploadFile, File, Form, HTTPException, Depends, Request
+from fastapi import FastAPI, UploadFile, File, Form, HTTPException, Depends, Request, BackgroundTasks
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import Response, JSONResponse
 from pydantic import BaseModel
@@ -298,6 +298,7 @@ def save_firebase_config(req: SaveFirebaseConfigRequest):
 # ─── Document Processing / Upload ─────────────────────────────────────────────
 @app.post("/api/upload")
 async def upload_document(
+    background_tasks: BackgroundTasks,
     file: UploadFile = File(...),
     doc_type: str = Form("contract"),
     user_id: int = Form(...),
@@ -365,6 +366,9 @@ async def upload_document(
         new_doc.entities = json.dumps(entities)
         new_doc.faiss_index_path = result["index_dir"]
         session.commit()
+
+        # Pre-cache redline PDF in background so viewing it is instantaneous
+        background_tasks.add_task(_get_redlined_pdf_bytes, doc_id)
 
         # 2. Record successful upload: only called once the document is ingested & saved
         # Failed uploads that raise exceptions will never reach this call!
@@ -724,7 +728,7 @@ class ReanalyzeRequest(BaseModel):
     ai_mode: str = "fast"
 
 @app.post("/api/documents/{doc_id}/reanalyze")
-def reanalyze_document(doc_id: int, req: ReanalyzeRequest):
+def reanalyze_document(doc_id: int, req: ReanalyzeRequest, background_tasks: BackgroundTasks):
     session = db.SessionLocal()
     doc = session.query(db.Document).filter_by(id=doc_id).first()
     if not doc:
@@ -768,7 +772,7 @@ def reanalyze_document(doc_id: int, req: ReanalyzeRequest):
     doc.entities = json.dumps(entities)
     session.commit()
 
-    # Invalidate stale redline PDF so fresh highlights are generated
+    # Invalidate stale redline PDF and pre-cache fresh highlights in background
     if actual_dir:
         old_redline = os.path.join(actual_dir, "redlined.pdf")
         if os.path.exists(old_redline):
@@ -776,6 +780,7 @@ def reanalyze_document(doc_id: int, req: ReanalyzeRequest):
                 os.unlink(old_redline)
             except Exception:
                 pass
+    background_tasks.add_task(_get_redlined_pdf_bytes, doc.id)
 
     updated_doc = {
         "id": doc.id,

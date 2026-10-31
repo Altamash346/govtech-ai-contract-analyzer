@@ -521,6 +521,13 @@ export default function App() {
   const [isUploading, setIsUploading] = useState(false);
   const [uploadStage, setUploadStage] = useState('');
   const [isReanalyzing, setIsReanalyzing] = useState(false);
+  const [redlinePdfLoading, setRedlinePdfLoading] = useState(true);
+
+  useEffect(() => {
+    if (currentDoc?.id) {
+      setRedlinePdfLoading(true);
+    }
+  }, [currentDoc?.id]);
 
   // Derived Safe Document Analysis Data (Guarantees zero-crash rendering)
   const docRisks = React.useMemo(() => {
@@ -3214,10 +3221,23 @@ Between: Municipal Corporation of Greater Mumbai (Authority) AND TechCorp Soluti
                       </div>
                     </div>
                     <div className="relative w-full h-[640px] sm:h-[720px] rounded-xl overflow-hidden bg-slate-100 dark:bg-slate-950 mt-2">
+                      {redlinePdfLoading && (
+                        <div className="absolute inset-0 flex flex-col items-center justify-center bg-slate-100/95 dark:bg-slate-950/95 z-20 backdrop-blur-xs transition-opacity duration-300">
+                          <div className="w-10 h-10 border-3 border-rose-500 border-t-transparent rounded-full animate-spin mb-3"></div>
+                          <span className="text-xs font-semibold text-slate-700 dark:text-slate-200">
+                            Rendering Redlined PDF ({currentDoc?.filename || 'Contract'})...
+                          </span>
+                          <span className="text-[11px] text-slate-400 mt-1">
+                            Highlighting risky clauses and drawing vector caution badges
+                          </span>
+                        </div>
+                      )}
                       <iframe
+                        key={currentDoc.id}
                         src={`${API_BASE}/redline/pdf/${currentDoc.id}#toolbar=1&navpanes=0`}
                         title="Redlined Contract PDF"
                         className="w-full h-full border-0"
+                        onLoad={() => setRedlinePdfLoading(false)}
                       />
                     </div>
                   </div>
