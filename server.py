@@ -730,19 +730,21 @@ def reanalyze_document(doc_id: int, req: ReanalyzeRequest):
     full_text = ""
     actual_dir = resolve_index_dir(doc.faiss_index_path, doc.id)
     if actual_dir:
+        chunks_path = os.path.join(actual_dir, "chunks.json")
         orig_pdf = os.path.join(actual_dir, "original.pdf")
-        if os.path.exists(orig_pdf):
+        if os.path.exists(chunks_path):
+            try:
+                with open(chunks_path, "r", encoding="utf-8") as f:
+                    chunks_data = json.load(f)
+                    full_text = "\n\n".join([f"--- [Page {c.get('page', 1)}] ---\n" + c.get("text", "") for c in chunks_data])
+            except Exception:
+                full_text = ""
+        if not full_text and os.path.exists(orig_pdf):
             pages = ingestion.extract_text_from_pdf(orig_pdf)
             full_text = "\n\n".join([f"--- [Page {p['page']}] ---\n" + ingestion.preprocess_text(p["text"]) for p in pages if p["text"] != "[Blank / Non-text page]"])
             if not doc.page_count or doc.page_count != len(pages):
                 doc.page_count = len(pages)
                 session.commit()
-        else:
-            chunks_path = os.path.join(actual_dir, "chunks.json")
-            if os.path.exists(chunks_path):
-                with open(chunks_path, "r", encoding="utf-8") as f:
-                    chunks_data = json.load(f)
-                    full_text = "\n".join([c.get("text", "") for c in chunks_data])
 
     if not full_text:
         full_text = doc.summary or "Standard Contract Agreement"
