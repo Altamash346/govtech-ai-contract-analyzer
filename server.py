@@ -547,16 +547,36 @@ def _get_redlined_pdf_bytes(doc_id: int) -> tuple[bytes, str]:
         filename += ".pdf"
 
     actual_dir = resolve_index_dir(doc.faiss_index_path, doc.id)
+    cached_redline_path = os.path.join(actual_dir or "", "redlined.pdf")
+
+    # 1. Fast Cache Hit: serve pre-generated redlined PDF immediately in <10ms
+    if actual_dir and os.path.exists(cached_redline_path):
+        try:
+            with open(cached_redline_path, "rb") as f:
+                cached_bytes = f.read()
+            if len(cached_bytes) > 500:
+                session.close()
+                return cached_bytes, filename
+        except Exception as cache_read_err:
+            logger.warning(f"Error reading cached redlined.pdf: {cache_read_err}")
+
     orig_pdf_path = os.path.join(actual_dir or "", "original.pdf")
     pdf_bytes = b""
 
-    if actual_dir and os.path.exists(orig_pdf_path):
-        pdf_bytes = redline_generator.generate_redlined_pdf(orig_pdf_path, risks)
-    else:
-        chunks_path = os.path.join(actual_dir or "", "chunks.json")
-        if actual_dir and os.path.exists(chunks_path):
+    # Load chunks if available to assist fast page lookup
+    chunks = None
+    chunks_path = os.path.join(actual_dir or "", "chunks.json")
+    if actual_dir and os.path.exists(chunks_path):
+        try:
             with open(chunks_path, "r", encoding="utf-8") as f:
                 chunks = json.load(f)
+        except Exception:
+            chunks = None
+
+    if actual_dir and os.path.exists(orig_pdf_path):
+        pdf_bytes = redline_generator.generate_redlined_pdf(orig_pdf_path, risks, chunks_data=chunks)
+    else:
+        if chunks:
             pdf_bytes = redline_generator.generate_fallback_pdf_from_text(chunks, risks)
         else:
             # Fallback using clauses and summary if raw PDF not cached on disk
@@ -569,6 +589,14 @@ def _get_redlined_pdf_bytes(doc_id: int) -> tuple[bytes, str]:
                 except Exception:
                     pass
             pdf_bytes = redline_generator.generate_fallback_pdf_from_text(fallback_chunks, risks)
+
+    # Cache on disk so subsequent iframe views and downloads are instantaneous
+    if actual_dir and pdf_bytes and len(pdf_bytes) > 500:
+        try:
+            with open(cached_redline_path, "wb") as f:
+                f.write(pdf_bytes)
+        except Exception as cache_write_err:
+            logger.warning(f"Error caching redlined.pdf: {cache_write_err}")
 
     session.close()
     if not pdf_bytes:
@@ -733,6 +761,15 @@ def reanalyze_document(doc_id: int, req: ReanalyzeRequest):
     doc.risks = json.dumps(audit["risks"])
     doc.entities = json.dumps(entities)
     session.commit()
+
+    # Invalidate stale redline PDF so fresh highlights are generated
+    if actual_dir:
+        old_redline = os.path.join(actual_dir, "redlined.pdf")
+        if os.path.exists(old_redline):
+            try:
+                os.unlink(old_redline)
+            except Exception:
+                pass
 
     updated_doc = {
         "id": doc.id,
